@@ -1,5 +1,7 @@
 import { APIResponseError } from "./types";
 
+//TODO: add APIResponseError.params
+
 export interface APIErrorDetails {
     method: string;
     params: Record<string, any>;

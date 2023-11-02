@@ -8,6 +8,7 @@ import {
     APIResponseOk,
     BotOptions,
 } from "./types";
+import { Updates } from "./updates";
 
 export class Bot {
     private readonly options: BotOptions = {};
@@ -16,6 +17,8 @@ export class Bot {
             return this._callApi(method, args);
         },
     });
+
+    updates = new Updates(this);
 
     private async _callApi(method: string, params: Record<string, any> = {}) {
         const url =

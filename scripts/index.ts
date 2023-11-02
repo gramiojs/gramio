@@ -26,7 +26,7 @@ request(BOT_API_SCHEMA_URL)
                 ],
             },
             {
-                path: "./src/generated/methods.ts",
+                path: "./src/generated/api-params.ts",
                 lines: [
                     generateHeader(botApiSchema.version),
                     [`import * as Objects from "./objects";`, ""],
@@ -38,11 +38,12 @@ request(BOT_API_SCHEMA_URL)
                 lines: [
                     generateHeader(botApiSchema.version),
                     [
-                        `import * as Params from "./methods"`,
+                        `import * as Params from "./api-params"`,
                         `import * as Objects from "./objects";`,
                         "",
                         "type TCallApi<T, R> = (params: T) => Promise<R>;",
                         "type TCallApiWithoutParams<R> = () => Promise<R>;",
+                        "type TCallApiWithOptionalParams<T, R> = (params?: T) => Promise<R>;",
                         "",
                     ],
 
@@ -53,7 +54,7 @@ request(BOT_API_SCHEMA_URL)
                 path: "./src/generated/index.ts",
                 lines: [
                     [`export * from "./api-methods"`],
-                    [`export * from "./methods"`],
+                    [`export * from "./api-params"`],
                     [`export * from "./objects"`],
                 ],
             },
