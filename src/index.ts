@@ -1,7 +1,13 @@
 import { stringify } from "node:querystring";
 import { fetch } from "undici";
+import { APIError } from "./apiErrors";
 import { ApiMethods } from "./generated";
-import { ApiResponse, BotOptions } from "./types";
+import {
+    APIResponse,
+    APIResponseError,
+    APIResponseOk,
+    BotOptions,
+} from "./types";
 
 export class Bot {
     private readonly options: BotOptions = {};
@@ -11,20 +17,24 @@ export class Bot {
         },
     });
 
-    private async _callApi(path: string, params: Record<string, any> = {}) {
+    private async _callApi(method: string, params: Record<string, any> = {}) {
         const url =
             `http://api.telegram.org/bot` +
             this.options.token +
             "/" +
-            path +
+            method +
             `?${stringify(params).toString()}`;
 
-        const req = await fetch(url, {
+        const response = await fetch(url, {
             method: "GET",
         });
-        const data = (await req.json()) as ApiResponse;
 
-        return data.result;
+        const data = (await response.json()) as APIResponse;
+
+        if (!response.ok)
+            throw new APIError({ method, params }, data as APIResponseError);
+
+        return (data as APIResponseOk).result;
     }
 
     constructor(token: string, options?: Omit<BotOptions, "token">) {
