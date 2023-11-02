@@ -1,25 +1,15 @@
-import { OBJECTS_PREFIX } from "./config";
 import { CodeGenerator, TextEditor } from "./helpers";
-import { PropertyRemapper, typesRemapper } from "./properties";
+import { PropertyRemapper } from "./properties";
 import { IBotApi } from "./types";
 
-//TODO: унифицировать многое
+//TODO: unify and refactor
 export class MethodsGenerator {
     static generateMany(methods: IBotApi.IMethod[]) {
         return methods.flatMap(this.generate);
     }
 
     static generate(method: IBotApi.IMethod) {
-        if (!method.arguments?.length)
-            return [
-                `export type ${TextEditor.uppercaseFirstLetter(
-                    method.name,
-                )} = () => Promise<${typesRemapper[method.return_type.type](
-                    method.return_type,
-                    method,
-                    "method",
-                )}>`,
-            ];
+        if (!method.arguments?.length) return [];
 
         const unionTypes = method.arguments
             .filter((argument) => argument.enumeration)
@@ -45,20 +35,6 @@ export class MethodsGenerator {
                 "method",
             ).flat(),
             "}",
-            "",
-            ...CodeGenerator.generateComment(
-                method.description +
-                    `\n\n{@link ${method.documentation_link} | [Documentation]}`,
-            ),
-            `export type ${TextEditor.uppercaseFirstLetter(
-                method.name,
-            )} = (params: ${TextEditor.uppercaseFirstLetter(
-                method.name + "Params",
-            )}) => Promise<${typesRemapper[method.return_type.type](
-                method.return_type,
-                method,
-                "method",
-            )}>`,
             "",
         ];
     }

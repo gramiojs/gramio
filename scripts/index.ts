@@ -29,7 +29,7 @@ request(BOT_API_SCHEMA_URL)
                 path: "./src/generated/methods.ts",
                 lines: [
                     generateHeader(botApiSchema.version),
-                    [`import * as Objects from "./objects";`],
+                    [`import * as Objects from "./objects";`, ""],
                     MethodsGenerator.generateMany(botApiSchema.methods),
                 ],
             },
@@ -37,7 +37,14 @@ request(BOT_API_SCHEMA_URL)
                 path: "./src/generated/api-methods.ts",
                 lines: [
                     generateHeader(botApiSchema.version),
-                    [`import * as Api from "./methods"`, ""],
+                    [
+                        `import * as Params from "./methods"`,
+                        `import * as Objects from "./objects";`,
+                        "",
+                        "type TCallApi<T, R> = (params: T) => Promise<R>;",
+                        "type TCallApiWithoutParams<R> = () => Promise<R>;",
+                        "",
+                    ],
 
                     ApiMethodsGenerator.generateMany(botApiSchema.methods),
                 ],

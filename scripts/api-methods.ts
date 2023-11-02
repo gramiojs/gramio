@@ -1,4 +1,5 @@
 import { CodeGenerator, TextEditor } from "./helpers";
+import { typesRemapper } from "./properties";
 import { IBotApi } from "./types";
 
 export class ApiMethodsGenerator {
@@ -16,9 +17,17 @@ export class ApiMethodsGenerator {
                 method.description +
                     `\n\n{@link ${method.documentation_link} | [Documentation]}`,
             ),
-            `${method.name}: Api.${TextEditor.uppercaseFirstLetter(
-                method.name,
-            )};`,
+            !method.arguments?.length
+                ? `${method.name}: TCallApiWithoutParams<${typesRemapper[
+                      method.return_type.type
+                  ](method.return_type, method, "method")}>;`
+                : `${method.name}: TCallApi<Params.${
+                      TextEditor.uppercaseFirstLetter(method.name) + "Params"
+                  }, ${typesRemapper[method.return_type.type](
+                      method.return_type,
+                      method,
+                      "method",
+                  )}>;`,
         ];
     }
 }
