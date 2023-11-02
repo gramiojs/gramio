@@ -21,7 +21,11 @@ export class ApiMethodsGenerator {
                 ? `${method.name}: TCallApiWithoutParams<${typesRemapper[
                       method.return_type.type
                   ](method.return_type, method, "method")}>;`
-                : `${method.name}: TCallApi<Params.${
+                : `${method.name}: ${
+                      method.arguments.some((argument) => !argument.required)
+                          ? "TCallApiWithOptionalParams"
+                          : "TCallApi"
+                  }<Params.${
                       TextEditor.uppercaseFirstLetter(method.name) + "Params"
                   }, ${typesRemapper[method.return_type.type](
                       method.return_type,
