@@ -1,0 +1,20 @@
+{
+    "name": "gramio",
+    "version": "1.0.0",
+    "description": "",
+    "main": "./dist/index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "kravets",
+    "license": "ISC",
+    "devDependencies": {
+        "@types/node": "^20.8.9",
+        "eslint": "^8.52.0",
+        "eslint-kit": "^10.6.0",
+        "prettier": "^3.0.3"
+    },
+    "dependencies": {
+        "undici": "^5.27.0"
+    }
+}
