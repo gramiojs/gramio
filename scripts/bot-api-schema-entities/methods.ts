@@ -1,9 +1,9 @@
-import { CodeGenerator, TextEditor } from "./helpers";
-import { PropertyRemapper } from "./properties";
-import { IBotApi } from "./types";
+import { CodeGenerator, TextEditor } from "../helpers";
+import { IBotApi } from "../types";
+import { Properties } from "./properties";
 
 //TODO: unify and refactor
-export class MethodsGenerator {
+export class Methods {
     static generateMany(methods: IBotApi.IMethod[]) {
         return methods.flatMap(this.generate);
     }
@@ -29,7 +29,7 @@ export class MethodsGenerator {
             `export interface ${
                 TextEditor.uppercaseFirstLetter(method.name) + "Params"
             } {`,
-            ...PropertyRemapper.convertMany(
+            ...Properties.convertMany(
                 method,
                 method.arguments,
                 "method",

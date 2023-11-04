@@ -1,10 +1,8 @@
 import fs from "node:fs/promises";
 import prettier from "prettier";
 import { request } from "undici";
-import { ApiMethodsGenerator } from "./api-methods";
+import { ApiMethods, Methods, Objects } from "./bot-api-schema-entities";
 import { BOT_API_SCHEMA_URL, PRETTIER_OPTIONS } from "./config";
-import { MethodsGenerator } from "./methods";
-import { ObjectGenerator } from "./objects";
 import { IBotApi } from "./types";
 
 export interface IGeneratedFile {
@@ -17,26 +15,28 @@ request(BOT_API_SCHEMA_URL)
     .then(async (data) => {
         const botApiSchema = data as IBotApi.ISchema;
 
+        const header = generateHeader(
+            botApiSchema.version,
+            botApiSchema.recent_changes,
+        );
+
         const files: IGeneratedFile[] = [
             {
                 path: "./src/generated/objects.ts",
-                lines: [
-                    generateHeader(botApiSchema.version),
-                    ObjectGenerator.generateMany(botApiSchema.objects),
-                ],
+                lines: [header, Objects.generateMany(botApiSchema.objects)],
             },
             {
                 path: "./src/generated/api-params.ts",
                 lines: [
-                    generateHeader(botApiSchema.version),
+                    header,
                     [`import * as Objects from "./objects";`, ""],
-                    MethodsGenerator.generateMany(botApiSchema.methods),
+                    Methods.generateMany(botApiSchema.methods),
                 ],
             },
             {
                 path: "./src/generated/api-methods.ts",
                 lines: [
-                    generateHeader(botApiSchema.version),
+                    header,
                     [
                         `import * as Params from "./api-params"`,
                         `import * as Objects from "./objects";`,
@@ -47,7 +47,7 @@ request(BOT_API_SCHEMA_URL)
                         "",
                     ],
 
-                    ApiMethodsGenerator.generateMany(botApiSchema.methods),
+                    ApiMethods.generateMany(botApiSchema.methods),
                 ],
             },
             {
@@ -72,8 +72,14 @@ request(BOT_API_SCHEMA_URL)
         }
     });
 
-export function generateHeader(version: IBotApi.IVersion) {
+export function generateHeader(
+    version: IBotApi.IVersion,
+    recentChanges: IBotApi.IRecentChangesObject,
+) {
     return [
-        `// Based on Bot Api v${version.major}.${version.minor}.${version.patch}`,
+        `/**`,
+        `* Based on Bot Api v${version.major}.${version.minor}.${version.patch} (${recentChanges.day}.${recentChanges.month}.${recentChanges.year})`,
+        `* Generated at ${new Date().toLocaleString()} using {@link https://ark0f.github.io/tg-bot-api | [this repository]}`,
+        `*/`,
     ];
 }

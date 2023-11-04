@@ -1,9 +1,9 @@
-import { OBJECTS_PREFIX } from "./config";
-import { CodeGenerator, TextEditor } from "./helpers";
-import { PropertyRemapper } from "./properties";
-import { IBotApi } from "./types";
+import { OBJECTS_PREFIX } from "../config";
+import { CodeGenerator, TextEditor } from "../helpers";
+import { IBotApi } from "../types";
+import { Properties } from "./properties";
 
-export class ObjectGenerator {
+export class Objects {
     static generateMany(objects: IBotApi.IObject[]) {
         return objects.flatMap(this.generate);
     }
@@ -41,7 +41,7 @@ export class ObjectGenerator {
                     `\n\n{@link ${object.documentation_link} | [Documentation]}`,
             ),
             `export interface ${OBJECTS_PREFIX + object.name} {`,
-            ...PropertyRemapper.convertMany(
+            ...Properties.convertMany(
                 object,
                 object.properties,
                 "object",

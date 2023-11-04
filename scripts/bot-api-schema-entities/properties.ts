@@ -1,6 +1,6 @@
-import { OBJECTS_PREFIX } from "./config";
-import { CodeGenerator, TextEditor } from "./helpers";
-import { IBotApi, TObjectType } from "./types";
+import { OBJECTS_PREFIX } from "../config";
+import { CodeGenerator, TextEditor } from "../helpers";
+import { IBotApi, TObjectType } from "../types";
 
 type TTypeRemapper = Record<
     IBotApi.IType,
@@ -52,7 +52,7 @@ export const typesRemapper: TTypeRemapper = {
     },
 };
 
-export class PropertyRemapper {
+export class Properties {
     static convertMany(
         object: IBotApi.IObject,
         properties: IBotApi.IProperty[],

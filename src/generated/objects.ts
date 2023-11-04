@@ -1,4 +1,7 @@
-// Based on Bot Api v6.9.0
+/**
+ * Based on Bot Api v6.9.0 (22.9.2023)
+ * Generated at 04.11.2023, 16:23:24 using {@link https://ark0f.github.io/tg-bot-api | [this repository]}
+ */
 
 /**
  * This [object](https://core.telegram.org/bots/api/#available-types) represents an incoming update.
