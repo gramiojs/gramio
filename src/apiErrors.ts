@@ -12,6 +12,7 @@ export class APIError extends Error {
     method: string;
     params: Record<string, any>;
     code: number;
+    payload?: APIResponseError["parameters"];
 
     constructor({ method, params }: APIErrorDetails, error: APIResponseError) {
         super(error.description);
@@ -20,5 +21,7 @@ export class APIError extends Error {
         this.method = method;
         this.params = params;
         this.code = error.error_code;
+        //TODO: delete when undefined
+        if (error.parameters) this.payload = error.parameters;
     }
 }
