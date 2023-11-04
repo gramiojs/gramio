@@ -1,3 +1,5 @@
+import "reflect-metadata";
+import { Inspectable } from "inspectable";
 import { stringify } from "node:querystring";
 import { fetch } from "undici";
 import { APIError } from "./apiErrors";
@@ -10,8 +12,12 @@ import {
 } from "./types";
 import { Updates } from "./updates";
 
+@Inspectable<Bot>({
+    serialize: () => ({}),
+})
 export class Bot {
-    private readonly options: BotOptions = {};
+    readonly options: BotOptions = {};
+
     readonly api = new Proxy<ApiMethods>({} as ApiMethods, {
         get: (_target, method: string) => (args: Record<string, any>) => {
             return this._callApi(method, args);
