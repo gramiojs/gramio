@@ -4,7 +4,7 @@
     "description": "",
     "main": "./dist/index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "imports": "ts-node ./scripts/generate-imports.ts"
     },
     "author": "kravets",
     "license": "ISC",
