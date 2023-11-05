@@ -45,22 +45,26 @@ export class Updates {
 
         this.offset = data.update_id + 1;
 
-        const context = new contextMappings[updateType]({
-            bot: this.bot,
-            raw: {
-                update: data,
-                updateId: data.update_id,
-                updateType,
-            },
-        });
+        try {
+            const context = new contextMappings[updateType]({
+                bot: this.bot,
+                raw: {
+                    update: data,
+                    updateId: data.update_id,
+                    updateType,
+                },
+            });
 
-        this.composer.compose()(
-            //TODO: fix typings
-            context as unknown as Context & {
-                [key: string]: unknown;
-            },
-            noopNext,
-        );
+            this.composer.compose()(
+                //TODO: fix typings
+                context as unknown as Context & {
+                    [key: string]: unknown;
+                },
+                noopNext,
+            );
+        } catch (error) {
+            throw new Error(`Update type ${updateType} not supported.`);
+        }
     }
 
     async startPolling() {
@@ -69,13 +73,19 @@ export class Updates {
 
         this.isStarted = true;
 
+        this.startFetchLoop();
+        return null;
+    }
+
+    async startFetchLoop() {
         while (this.isStarted) {
             const updates = await this.bot.api.getUpdates({
                 offset: this.offset,
             });
 
             for await (const update of updates) {
-                await this.handleUpdate(update);
+                //TODO: update errors
+                await this.handleUpdate(update).catch(console.error);
             }
         }
     }
