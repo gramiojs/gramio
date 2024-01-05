@@ -1,5 +1,5 @@
-import { Inspect, Inspectable } from "inspectable";
-import { TelegramChatPermissions } from "../../generated";
+import { Inspect, Inspectable } from "inspectable"
+import { TelegramChatPermissions } from "../../generated"
 
 /**
  * Describes actions that a non-administrator user is allowed to take in a
@@ -10,7 +10,7 @@ export class ChatPermissions {
     constructor(public payload: TelegramChatPermissions) {}
 
     get [Symbol.toStringTag]() {
-        return this.constructor.name;
+        return this.constructor.name
     }
 
     /**
@@ -19,7 +19,7 @@ export class ChatPermissions {
      */
     @Inspect({ compute: true, nullable: false })
     canSendMessages() {
-        return !!this.payload.can_send_messages;
+        return !!this.payload.can_send_messages
     }
 
     /**
@@ -27,7 +27,7 @@ export class ChatPermissions {
      */
     @Inspect({ compute: true, nullable: false })
     canSendAudios() {
-        return !!this.payload.can_send_audios;
+        return !!this.payload.can_send_audios
     }
 
     /**
@@ -35,7 +35,7 @@ export class ChatPermissions {
      */
     @Inspect({ compute: true, nullable: false })
     canSendDocuments() {
-        return !!this.payload.can_send_documents;
+        return !!this.payload.can_send_documents
     }
 
     /**
@@ -43,7 +43,7 @@ export class ChatPermissions {
      */
     @Inspect({ compute: true, nullable: false })
     canSendPhotos() {
-        return !!this.payload.can_send_photos;
+        return !!this.payload.can_send_photos
     }
 
     /**
@@ -51,7 +51,7 @@ export class ChatPermissions {
      */
     @Inspect({ compute: true, nullable: false })
     canSendVideos() {
-        return !!this.payload.can_send_videos;
+        return !!this.payload.can_send_videos
     }
 
     /**
@@ -59,7 +59,7 @@ export class ChatPermissions {
      */
     @Inspect({ compute: true, nullable: false })
     canSendVideoNotes() {
-        return !!this.payload.can_send_video_notes;
+        return !!this.payload.can_send_video_notes
     }
 
     /**
@@ -67,7 +67,7 @@ export class ChatPermissions {
      */
     @Inspect({ compute: true, nullable: false })
     canSendVoiceNotes() {
-        return !!this.payload.can_send_voice_notes;
+        return !!this.payload.can_send_voice_notes
     }
 
     /**
@@ -75,7 +75,7 @@ export class ChatPermissions {
      */
     @Inspect({ compute: true, nullable: false })
     canSendPolls() {
-        return !!this.payload.can_send_polls;
+        return !!this.payload.can_send_polls
     }
 
     /**
@@ -84,7 +84,7 @@ export class ChatPermissions {
      */
     @Inspect({ compute: true, nullable: false })
     canSendOtherMessages() {
-        return !!this.payload.can_send_other_messages;
+        return !!this.payload.can_send_other_messages
     }
 
     /**
@@ -93,7 +93,7 @@ export class ChatPermissions {
      */
     @Inspect({ compute: true, nullable: false })
     canAddWebPagePreviews() {
-        return !!this.payload.can_add_web_page_previews;
+        return !!this.payload.can_add_web_page_previews
     }
 
     /**
@@ -102,13 +102,13 @@ export class ChatPermissions {
      */
     @Inspect({ compute: true, nullable: false })
     canChangeInfo() {
-        return !!this.payload.can_change_info;
+        return !!this.payload.can_change_info
     }
 
     /** `true`, if the user is allowed to invite new users to the chat */
     @Inspect({ compute: true, nullable: false })
     canInviteUsers() {
-        return !!this.payload.can_invite_users;
+        return !!this.payload.can_invite_users
     }
 
     /**
@@ -117,12 +117,12 @@ export class ChatPermissions {
      */
     @Inspect({ compute: true, nullable: false })
     canPinMessages() {
-        return !!this.payload.can_pin_messages;
+        return !!this.payload.can_pin_messages
     }
 
     /** `true`, if the user is allowed to create forum topics. If omitted defaults to the value of can_pin_messages */
     @Inspect({ compute: true, nullable: false })
     canManageTopics() {
-        return !!this.payload.can_manage_topics;
+        return !!this.payload.can_manage_topics
     }
 }

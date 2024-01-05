@@ -1,5 +1,5 @@
-import { Inspect, Inspectable } from "inspectable";
-import { TelegramLocation } from "../generated";
+import { Inspect, Inspectable } from "inspectable"
+import { TelegramLocation } from "../generated"
 
 /** This object represents a point on the map. */
 @Inspectable()
@@ -7,25 +7,25 @@ export class Location {
     constructor(public payload: TelegramLocation) {}
 
     get [Symbol.toStringTag]() {
-        return this.constructor.name;
+        return this.constructor.name
     }
 
     /** Longitude as defined by sender */
     @Inspect()
     get longitude() {
-        return this.payload.longitude;
+        return this.payload.longitude
     }
 
     /** Latitude as defined by sender */
     @Inspect()
     get latitude() {
-        return this.payload.latitude;
+        return this.payload.latitude
     }
 
     /** The radius of uncertainty for the location, measured in meters; `0-1500` */
     @Inspect()
     get horizontalAccuracy() {
-        return this.payload.horizontal_accuracy;
+        return this.payload.horizontal_accuracy
     }
 
     /**
@@ -35,7 +35,7 @@ export class Location {
      */
     @Inspect()
     get livePeriod() {
-        return this.payload.live_period;
+        return this.payload.live_period
     }
 
     /**
@@ -44,7 +44,7 @@ export class Location {
      */
     @Inspect()
     get heading() {
-        return this.payload.heading;
+        return this.payload.heading
     }
 
     /**
@@ -53,6 +53,6 @@ export class Location {
      */
     @Inspect()
     get proximityAlertRadius() {
-        return this.payload.proximity_alert_radius;
+        return this.payload.proximity_alert_radius
     }
 }

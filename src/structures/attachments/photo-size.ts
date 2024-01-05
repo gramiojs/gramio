@@ -1,13 +1,16 @@
-import { Inspect, Inspectable } from "inspectable";
-import { TelegramPhotoSize } from "../../generated";
+import { Inspect, Inspectable } from "inspectable"
+import { TelegramPhotoSize } from "../../generated"
+import { Attachment } from "./attachment"
 
 /** This object represents one size of a photo or a file / sticker thumbnail */
 @Inspectable()
-export class PhotoSize {
-    constructor(public payload: TelegramPhotoSize) {}
+export class PhotoSize extends Attachment {
+    constructor(public payload: TelegramPhotoSize) {
+        super()
+    }
 
     get [Symbol.toStringTag]() {
-        return this.constructor.name;
+        return this.constructor.name
     }
 
     /**
@@ -15,7 +18,7 @@ export class PhotoSize {
      */
     @Inspect()
     get fileId() {
-        return this.payload.file_id;
+        return this.payload.file_id
     }
 
     /**
@@ -24,24 +27,24 @@ export class PhotoSize {
      */
     @Inspect()
     get fileUniqueId() {
-        return this.payload.file_unique_id;
+        return this.payload.file_unique_id
     }
 
     /** Photo width */
     @Inspect()
     get width() {
-        return this.payload.width;
+        return this.payload.width
     }
 
     /** Photo height */
     @Inspect()
     get height() {
-        return this.payload.height;
+        return this.payload.height
     }
 
     /** File size */
     @Inspect({ nullable: false })
     get fileSize() {
-        return this.payload.file_size;
+        return this.payload.file_size
     }
 }

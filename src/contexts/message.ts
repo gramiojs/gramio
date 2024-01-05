@@ -1,69 +1,69 @@
-import { inspectable } from "inspectable";
-import { TelegramMessage } from "../generated";
-import * as Params from "../generated/api-params";
-import { applyMixins, filterPayload } from "../helpers";
+import { inspectable } from "inspectable"
+import { TelegramMessage } from "../generated"
+import * as Params from "../generated/api-params"
+import { applyMixins, filterPayload } from "../helpers"
 import {
     ContactAttachment,
     LocationAttachment,
     PhotoAttachment,
     PollAttachment,
     VenueAttachment,
-} from "../structures";
-import { Message } from "../structures/message/message";
+} from "../structures"
+import { Message } from "../structures/message/message"
 import {
     AttachmentsMapping,
     AttachmentType,
     Optional,
     Require,
     RequireValue,
-} from "../types";
-import { Context, ContextData } from "./context";
-import { CloneMixin } from "./mixins/clone";
+} from "../types"
+import { Context, ContextData } from "./context"
+import { CloneMixin } from "./mixins/clone"
 
 export class MessageContext extends Context {
-    payload: TelegramMessage;
-    #text?: string;
+    payload: TelegramMessage
+    #text?: string
 
     constructor(payload: ContextData) {
         super({
             bot: payload.bot,
             raw: payload.raw,
-        });
+        })
 
-        this.payload = payload.raw.update.message!;
+        this.payload = payload.raw.update.message!
 
-        this.#text = this.payload.text;
+        this.#text = this.payload.text
     }
 
     /**
      * For text messages, the actual UTF-8 text of the message, 0-4096 characters
      */
     get text() {
-        return this.#text;
+        return this.#text
     }
 
     set text(text) {
-        this.#text = text;
+        this.#text = text
     }
 
     /** Checks if the message has `text` property */
     hasText(): this is Require<this, "text"> {
-        return this.text !== undefined;
+        return this.text !== undefined
     }
 
     /** Message attachment */
     get attachment() {
-        if (this.photo) return new PhotoAttachment(this.photo);
+        if (this.photo) return new PhotoAttachment(this.photo)
 
         if (this.payload.contact)
-            return new ContactAttachment(this.payload.contact);
+            return new ContactAttachment(this.payload.contact)
 
-        if (this.payload.poll) return new PollAttachment(this.payload.poll);
+        if (this.payload.poll) return new PollAttachment(this.payload.poll)
 
-        if (this.payload.venue) return new VenueAttachment(this.payload.venue);
+        if (this.payload.venue) return new VenueAttachment(this.payload.venue)
 
         if (this.payload.location)
-            return new LocationAttachment(this.payload.location);
+            return new LocationAttachment(this.payload.location)
 
         return (
             this.sticker ??
@@ -74,19 +74,19 @@ export class MessageContext extends Context {
             this.video ??
             this.videoNote ??
             this.voice
-        );
+        )
     }
 
     /** Does this message have an attachment with a specific type `type`? */
     hasAttachmentType<T extends AttachmentType>(
         type: T,
     ): this is RequireValue<this, "attachment", AttachmentsMapping[T]> {
-        return this.attachment?.attachmentType === type;
+        return this.attachment?.attachmentType === type
     }
 
     /** Does this message even have an attachment? */
     hasAttachment(): this is Require<this, "attachment"> {
-        return this.attachment !== undefined;
+        return this.attachment !== null
     }
 
     async send(
@@ -97,12 +97,12 @@ export class MessageContext extends Context {
             chat_id: this.payload.chat.id || this.payload.from?.id || 0,
             text,
             ...params,
-        });
+        })
     }
 }
 
 export interface MessageContext extends Message {}
-applyMixins(MessageContext, [Message, CloneMixin]);
+applyMixins(MessageContext, [Message, CloneMixin])
 
 inspectable(MessageContext, {
     serialize: (context) =>
@@ -111,9 +111,8 @@ inspectable(MessageContext, {
             from: context.from,
             createdAt: context.createdAt,
             chat: context.chat,
-            //TODO: maybe forwarded/replied???
-            forwardMessage: context.forwardedMessage,
-            replyMessage: context.replyMessage,
+            forwardedMessage: context.forwardedMessage,
+            repliedMessage: context.repliedMessage,
             viaBot: context.viaBot,
             updatedAt: context.updatedAt,
             authorSignature: context.authorSignature,
@@ -129,4 +128,4 @@ inspectable(MessageContext, {
             // replyMarkup: context.replyMarkup,
             attachment: context.attachment,
         }),
-});
+})

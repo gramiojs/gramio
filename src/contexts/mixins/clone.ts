@@ -1,9 +1,9 @@
-import { TelegramUpdate } from "../../generated";
-import { Constructor } from "../../types";
-import { Context } from "../context";
+import { TelegramUpdate } from "../../generated"
+import { Constructor } from "../../types"
+import { Context } from "../context"
 
 interface CloneMixinMetadata<P> {
-    payload: P;
+    payload: P
 }
 
 /** This object represents a mixin which has `clone(options?)` method */
@@ -21,7 +21,7 @@ class CloneMixin<
                 type: this.raw.updateType,
             },
             ...options,
-        });
+        })
     }
 }
 
@@ -29,4 +29,4 @@ interface CloneMixin<C, Options>
     extends Context,
         CloneMixinMetadata<Options["payload"]> {}
 
-export { CloneMixin };
+export { CloneMixin }

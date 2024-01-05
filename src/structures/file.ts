@@ -1,5 +1,5 @@
-import { Inspect, Inspectable } from "inspectable";
-import { TelegramFile } from "../generated";
+import { Inspect, Inspectable } from "inspectable"
+import { TelegramFile } from "../generated"
 
 /** This object represents a file ready to be downloaded. The file can be downloaded via the link `https://api.telegram.org/file/bot<token>/<file_path>`. It is guaranteed that the link will be valid for at least 1 hour. When the link expires, a new one can be requested by calling `getFile`. */
 @Inspectable()
@@ -7,7 +7,7 @@ export class File {
     constructor(public payload: TelegramFile) {}
 
     get [Symbol.toStringTag]() {
-        return this.constructor.name;
+        return this.constructor.name
     }
 
     /**
@@ -15,7 +15,7 @@ export class File {
      */
     @Inspect()
     get fileId() {
-        return this.payload.file_id;
+        return this.payload.file_id
     }
 
     /**
@@ -24,13 +24,13 @@ export class File {
      */
     @Inspect()
     get fileUniqueId() {
-        return this.payload.file_unique_id;
+        return this.payload.file_unique_id
     }
 
     /** File size, if known */
     @Inspect()
     get fileSize() {
-        return this.payload.file_size;
+        return this.payload.file_size
     }
 
     /**
@@ -40,6 +40,6 @@ export class File {
      */
     @Inspect({ nullable: false })
     get filePath() {
-        return this.payload.file_path;
+        return this.payload.file_path
     }
 }

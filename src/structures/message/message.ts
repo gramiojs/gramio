@@ -1,5 +1,5 @@
-import { Inspect, Inspectable } from "inspectable";
-import { TelegramMessage } from "../../generated";
+import { Inspect, Inspectable } from "inspectable"
+import { TelegramMessage } from "../../generated"
 import {
     AnimationAttachment,
     AudioAttachment,
@@ -15,9 +15,9 @@ import {
     VideoAttachment,
     VideoNoteAttachment,
     VoiceAttachment,
-} from "..";
-import { Chat } from "../chat";
-import { ForwardedMessage } from "./forwarded-message";
+} from ".."
+import { Chat } from "../chat"
+import { ForwardedMessage } from "./forwarded-message"
 
 /** This object represents a message. */
 @Inspectable()
@@ -25,25 +25,25 @@ export class Message {
     constructor(public payload: TelegramMessage) {}
 
     get [Symbol.toStringTag]() {
-        return this.constructor.name;
+        return this.constructor.name
     }
 
     /** Unique message identifier inside this chat */
     @Inspect()
     get id() {
-        return this.payload.message_id;
+        return this.payload.message_id
     }
 
     /** Unique identifier of a message thread to which the message belongs; for supergroups only */
     @Inspect({ nullable: false })
     get threadId() {
-        return this.payload.message_thread_id;
+        return this.payload.message_thread_id
     }
 
     /** Sender, empty for messages sent to channels */
     @Inspect({ nullable: false })
     get from() {
-        return this.payload.from ? new User(this.payload.from) : null;
+        return this.payload.from ? new User(this.payload.from) : null
     }
 
     /**
@@ -56,19 +56,19 @@ export class Message {
     get senderChat() {
         return this.payload.sender_chat
             ? new Chat(this.payload.sender_chat)
-            : null;
+            : null
     }
 
     /** Date the message was sent in Unix time */
     @Inspect()
     get createdAt() {
-        return this.payload.date;
+        return this.payload.date
     }
 
     /** Conversation the message belongs to */
     @Inspect()
     get chat() {
-        return new Chat(this.payload.chat);
+        return new Chat(this.payload.chat)
     }
 
     /** Forwarded message if there is any */
@@ -77,39 +77,39 @@ export class Message {
         // INFO: this.payload contains forwardedMessage data
         return this.payload.forward_date
             ? new ForwardedMessage(this.payload)
-            : null;
+            : null
     }
 
     /** `true`, if the message is sent to a forum topic */
     @Inspect({ compute: true, nullable: false })
     isTopicMessage() {
-        return !!this.payload.is_topic_message;
+        return !!this.payload.is_topic_message
     }
 
     /** `true`, if the message is a channel post that was automatically forwarded to the connected discussion group */
     @Inspect({ compute: true, nullable: false })
     isAutomaticForward() {
-        return !!this.payload.is_automatic_forward;
+        return !!this.payload.is_automatic_forward
     }
 
     /** For replies, the original message */
     @Inspect({ nullable: false })
-    get replyMessage(): Omit<Message, "replyMessage"> | null {
+    get repliedMessage(): Omit<Message, "repliedMessage"> | null {
         return this.payload.reply_to_message
             ? new Message(this.payload.reply_to_message)
-            : null;
+            : null
     }
 
     /** Bot through which the message was sent */
     @Inspect({ nullable: false })
     get viaBot() {
-        return this.payload.via_bot ? new User(this.payload.via_bot) : null;
+        return this.payload.via_bot ? new User(this.payload.via_bot) : null
     }
 
     /** Date the message was last edited in Unix time */
     @Inspect({ nullable: false })
     get updatedAt() {
-        return this.payload.edit_date;
+        return this.payload.edit_date
     }
 
     //TODO: omit forward
@@ -117,13 +117,13 @@ export class Message {
     /** `true`, if the message can't be forwarded */
     @Inspect({ compute: true, nullable: false })
     hasProtectedContent() {
-        return !!this.payload.has_protected_content;
+        return !!this.payload.has_protected_content
     }
 
     /** The unique identifier of a media message group this message belongs to */
     @Inspect({ nullable: false })
     get mediaGroupId() {
-        return this.payload.media_group_id;
+        return this.payload.media_group_id
     }
 
     /**
@@ -132,7 +132,7 @@ export class Message {
      */
     @Inspect({ nullable: false })
     get authorSignature() {
-        return this.payload.author_signature;
+        return this.payload.author_signature
     }
 
     /**
@@ -140,7 +140,7 @@ export class Message {
      */
     @Inspect({ nullable: false })
     get text() {
-        return this.payload.text;
+        return this.payload.text
     }
 
     /**
@@ -150,7 +150,7 @@ export class Message {
     @Inspect({ nullable: false })
     get entities() {
         //TODO: impl a struct
-        return this.payload.entities;
+        return this.payload.entities
     }
 
     /**
@@ -161,7 +161,7 @@ export class Message {
     get animation() {
         return this.payload.animation
             ? new AnimationAttachment(this.payload.animation)
-            : null;
+            : null
     }
 
     /** Message is an audio file, information about the file */
@@ -169,7 +169,7 @@ export class Message {
     get audio() {
         return this.payload.audio
             ? new AudioAttachment(this.payload.audio)
-            : null;
+            : null
     }
 
     /** Message is a general file, information about the file */
@@ -177,13 +177,13 @@ export class Message {
     get document() {
         return this.payload.document
             ? new DocumentAttachment(this.payload.document)
-            : null;
+            : null
     }
 
     /** Message is a photo, available sizes of the photo */
     @Inspect({ nullable: false })
     get photo() {
-        return this.payload.photo?.map((size) => new PhotoSize(size));
+        return this.payload.photo?.map((size) => new PhotoSize(size))
     }
 
     /** Message is a sticker, information about the sticker */
@@ -191,7 +191,7 @@ export class Message {
     get sticker() {
         return this.payload.sticker
             ? new StickerAttachment(this.payload.sticker)
-            : null;
+            : null
     }
 
     /** Message is a forwarded story */
@@ -199,7 +199,7 @@ export class Message {
     get story() {
         return this.payload.story
             ? new StoryAttachment(this.payload.story)
-            : null;
+            : null
     }
 
     /** Message is a video, information about the video */
@@ -207,7 +207,7 @@ export class Message {
     get video() {
         return this.payload.video
             ? new VideoAttachment(this.payload.video)
-            : null;
+            : null
     }
 
     /** Message is a video note, information about the video message */
@@ -215,7 +215,7 @@ export class Message {
     get videoNote() {
         return this.payload.video_note
             ? new VideoNoteAttachment(this.payload.video_note)
-            : null;
+            : null
     }
 
     /** Message is a voice message, information about the file */
@@ -223,7 +223,7 @@ export class Message {
     get voice() {
         return this.payload.voice
             ? new VoiceAttachment(this.payload.voice)
-            : null;
+            : null
     }
 
     /**
@@ -232,7 +232,7 @@ export class Message {
      */
     @Inspect({ nullable: false })
     get caption() {
-        return this.payload.caption;
+        return this.payload.caption
     }
 
     /**
@@ -242,25 +242,25 @@ export class Message {
     @Inspect({ nullable: false })
     get captionEntities() {
         //TODO: impl
-        return this.payload.caption_entities;
+        return this.payload.caption_entities
     }
 
     /** `true`, if the message media is covered by a spoiler animation */
     @Inspect({ compute: true, nullable: false })
     hasMediaSpoiler() {
-        return !!this.payload.has_media_spoiler;
+        return !!this.payload.has_media_spoiler
     }
 
     /** Message is a shared contact, information about the contact */
     @Inspect({ nullable: false })
     get contact() {
-        return this.payload.contact ? new Contact(this.payload.contact) : null;
+        return this.payload.contact ? new Contact(this.payload.contact) : null
     }
 
     /** Message is a native poll, information about the poll */
     @Inspect({ nullable: false })
     get poll() {
-        return this.payload.poll ? new Poll(this.payload.poll) : null;
+        return this.payload.poll ? new Poll(this.payload.poll) : null
     }
 
     /**
@@ -270,7 +270,7 @@ export class Message {
      */
     @Inspect({ nullable: false })
     get venue() {
-        return this.payload.venue ? new Venue(this.payload.venue) : null;
+        return this.payload.venue ? new Venue(this.payload.venue) : null
     }
 
     /** Message is a shared location, information about the location */
@@ -278,13 +278,13 @@ export class Message {
     get location() {
         return this.payload.location
             ? new Location(this.payload.location)
-            : null;
+            : null
     }
 
     /** The domain name of the website on which the user has logged in. */
     @Inspect({ nullable: false })
     get connectedWebsite() {
-        return this.payload.connected_website;
+        return this.payload.connected_website
     }
 
     /**
@@ -293,7 +293,7 @@ export class Message {
      */
     @Inspect({ nullable: false })
     get newChatMembers() {
-        return this.payload.new_chat_members?.map((member) => new User(member));
+        return this.payload.new_chat_members?.map((member) => new User(member))
     }
 
     /**
@@ -304,31 +304,31 @@ export class Message {
     get leftChatMember() {
         return this.payload.left_chat_member
             ? new User(this.payload.left_chat_member)
-            : null;
+            : null
     }
 
     /** A chat title was changed to this value */
     @Inspect({ nullable: false })
     get newChatTitle() {
-        return this.payload.new_chat_title;
+        return this.payload.new_chat_title
     }
 
     /** A chat photo was change to this value */
     @Inspect({ nullable: false })
     get newChatPhoto() {
-        return this.payload.new_chat_photo?.map((size) => new PhotoSize(size));
+        return this.payload.new_chat_photo?.map((size) => new PhotoSize(size))
     }
 
     /** Service message: the chat photo was deleted */
     @Inspect({ compute: true, nullable: false })
     isChatPhotoDeleted() {
-        return !!this.payload.delete_chat_photo;
+        return !!this.payload.delete_chat_photo
     }
 
     /** Service message: the group has been created */
     @Inspect({ compute: true, nullable: false })
     isGroupChatCreated() {
-        return !!this.payload.group_chat_created;
+        return !!this.payload.group_chat_created
     }
 
     /**
@@ -340,7 +340,7 @@ export class Message {
      */
     @Inspect({ compute: true, nullable: false })
     isSupergroupChatCreated() {
-        return this.payload.supergroup_chat_created;
+        return this.payload.supergroup_chat_created
     }
 
     /**
@@ -351,7 +351,7 @@ export class Message {
      */
     @Inspect({ compute: true, nullable: false })
     isChannelChatCreated() {
-        return this.payload.channel_chat_created;
+        return this.payload.channel_chat_created
     }
 
     /**
@@ -363,7 +363,7 @@ export class Message {
      */
     @Inspect({ nullable: false })
     get migrateToChatId() {
-        return this.payload.migrate_to_chat_id;
+        return this.payload.migrate_to_chat_id
     }
 
     /**
@@ -375,6 +375,6 @@ export class Message {
      */
     @Inspect({ nullable: false })
     get migrateFromChatId() {
-        return this.payload.migrate_from_chat_id;
+        return this.payload.migrate_from_chat_id
     }
 }

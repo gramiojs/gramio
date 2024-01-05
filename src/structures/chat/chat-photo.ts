@@ -1,5 +1,5 @@
-import { Inspect, Inspectable } from "inspectable";
-import { TelegramChatPhoto } from "../../generated";
+import { Inspect, Inspectable } from "inspectable"
+import { TelegramChatPhoto } from "../../generated"
 
 //TODO: maybe add a file struct
 
@@ -9,7 +9,7 @@ export class ChatPhoto {
     constructor(public payload: TelegramChatPhoto) {}
 
     get [Symbol.toStringTag]() {
-        return this.constructor.name;
+        return this.constructor.name
     }
 
     /**
@@ -19,7 +19,7 @@ export class ChatPhoto {
      */
     @Inspect()
     get smallFileId() {
-        return this.payload.small_file_id;
+        return this.payload.small_file_id
     }
 
     /**
@@ -29,7 +29,7 @@ export class ChatPhoto {
      */
     @Inspect()
     get smallFileUniqueId() {
-        return this.payload.small_file_unique_id;
+        return this.payload.small_file_unique_id
     }
 
     /**
@@ -38,7 +38,7 @@ export class ChatPhoto {
      */
     @Inspect()
     get bigFileId() {
-        return this.payload.big_file_id;
+        return this.payload.big_file_id
     }
 
     /**
@@ -48,6 +48,6 @@ export class ChatPhoto {
      */
     @Inspect()
     get bigFileUniqueId() {
-        return this.payload.big_file_unique_id;
+        return this.payload.big_file_unique_id
     }
 }

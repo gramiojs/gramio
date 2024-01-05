@@ -1,24 +1,26 @@
-import { Inspect } from "inspectable";
-import { AttachmentType } from "../../types";
+import { Inspect, Inspectable } from "inspectable"
+import { Attachment } from "./attachment"
 
 export interface AttachmentData {
-    file_id: string;
-    file_unique_id: string;
+    file_id: string
+    file_unique_id: string
 }
-
-export class FileAttachment<T extends AttachmentData = AttachmentData> {
-    protected payload: T;
-    /** Returns attachment's type (e.g. `'audio'`, `'photo'`) */
-    attachmentType?: AttachmentType;
+@Inspectable()
+export class FileAttachment<
+    T extends AttachmentData = AttachmentData,
+> extends Attachment {
+    protected payload: T
 
     constructor(payload: T) {
-        this.payload = payload;
+        super()
+
+        this.payload = payload
     }
 
     /** Identifier for this file, which can be used to download or reuse the file */
     @Inspect()
     get fileId() {
-        return this.payload.file_id;
+        return this.payload.file_id
     }
 
     /**
@@ -27,6 +29,6 @@ export class FileAttachment<T extends AttachmentData = AttachmentData> {
      */
     @Inspect()
     get fileUniqueId() {
-        return this.payload.file_unique_id;
+        return this.payload.file_unique_id
     }
 }

@@ -1,16 +1,16 @@
-import { Inspect, Inspectable } from "inspectable";
-import { TelegramChat } from "../../generated";
-import { Message } from "..";
-import { ChatLocation } from "./chat-location";
-import { ChatPermissions } from "./chat-permissions";
-import { ChatPhoto } from "./chat-photo";
+import { Inspect, Inspectable } from "inspectable"
+import { TelegramChat } from "../../generated"
+import { Message } from ".."
+import { ChatLocation } from "./chat-location"
+import { ChatPermissions } from "./chat-permissions"
+import { ChatPhoto } from "./chat-photo"
 
 @Inspectable()
 export class Chat {
     constructor(public payload: TelegramChat) {}
 
     get [Symbol.toStringTag]() {
-        return this.constructor.name;
+        return this.constructor.name
     }
 
     /**
@@ -22,7 +22,7 @@ export class Chat {
      */
     @Inspect()
     get id() {
-        return this.payload.id;
+        return this.payload.id
     }
 
     /**
@@ -30,37 +30,37 @@ export class Chat {
      */
     @Inspect()
     get type() {
-        return this.payload.type;
+        return this.payload.type
     }
 
     /** Title, for supergroups, channels and group chats */
     @Inspect({ nullable: false })
     get title() {
-        return this.payload.title;
+        return this.payload.title
     }
 
     /** Username, for private chats, supergroups and channels if available */
     @Inspect({ nullable: false })
     get username() {
-        return this.payload.username;
+        return this.payload.username
     }
 
     /** First name of the other party in a private chat */
     @Inspect({ nullable: false })
     get firstName() {
-        return this.payload.first_name;
+        return this.payload.first_name
     }
 
     /** Last name of the other party in a private chat */
     @Inspect({ nullable: false })
     get lastName() {
-        return this.payload.last_name;
+        return this.payload.last_name
     }
 
     /** `true`, if the supergroup chat is a forum (has [topics](https://telegram.org/blog/topics-in-groups-collectible-usernames#topics-in-groups) enabled) */
     @Inspect({ compute: true, nullable: false })
     isForum() {
-        return !!this.payload.is_forum;
+        return !!this.payload.is_forum
     }
 
     /**
@@ -70,7 +70,7 @@ export class Chat {
      */
     @Inspect({ nullable: false })
     get photo() {
-        return this.payload.photo ? new ChatPhoto(this.payload.photo) : null;
+        return this.payload.photo ? new ChatPhoto(this.payload.photo) : null
     }
 
     /**
@@ -80,7 +80,7 @@ export class Chat {
      */
     @Inspect({ nullable: false })
     get activeUsernames() {
-        return this.payload.active_usernames;
+        return this.payload.active_usernames
     }
 
     /**
@@ -90,7 +90,7 @@ export class Chat {
      */
     @Inspect({ nullable: false })
     get emojiStatusCustomEmojiId() {
-        return this.payload.emoji_status_custom_emoji_id;
+        return this.payload.emoji_status_custom_emoji_id
     }
 
     /**
@@ -100,7 +100,7 @@ export class Chat {
      */
     @Inspect({ nullable: false })
     get emojiStatusExpirationDate() {
-        return this.payload.emoji_status_expiration_date;
+        return this.payload.emoji_status_expiration_date
     }
 
     /**
@@ -110,12 +110,12 @@ export class Chat {
      */
     @Inspect({ nullable: false })
     get bio() {
-        return this.payload.bio;
+        return this.payload.bio
     }
 
     @Inspect({ compute: true, nullable: false })
     hasPrivateForwards() {
-        return !!this.payload.has_private_forwards;
+        return !!this.payload.has_private_forwards
     }
 
     /**
@@ -125,7 +125,7 @@ export class Chat {
      */
     @Inspect({ compute: true, nullable: false })
     hasRestrictedVoiceAndVideoMessages() {
-        return !!this.payload.has_restricted_voice_and_video_messages;
+        return !!this.payload.has_restricted_voice_and_video_messages
     }
 
     /**
@@ -135,7 +135,7 @@ export class Chat {
      */
     @Inspect({ compute: true, nullable: false })
     isJoinToSendMessages() {
-        return !!this.payload.join_to_send_messages;
+        return !!this.payload.join_to_send_messages
     }
 
     /**
@@ -146,7 +146,7 @@ export class Chat {
      */
     @Inspect({ compute: true, nullable: false })
     isJoinByRequest() {
-        return !!this.payload.join_by_request;
+        return !!this.payload.join_by_request
     }
 
     /**
@@ -158,7 +158,7 @@ export class Chat {
     get location() {
         return this.payload.location
             ? new ChatLocation(this.payload.location)
-            : null;
+            : null
     }
 
     /**
@@ -168,7 +168,7 @@ export class Chat {
      */
     @Inspect({ nullable: false })
     get description() {
-        return this.payload.description;
+        return this.payload.description
     }
 
     /**
@@ -180,7 +180,7 @@ export class Chat {
      */
     @Inspect({ nullable: false })
     get inviteLink() {
-        return this.payload.invite_link;
+        return this.payload.invite_link
     }
 
     /**
@@ -192,7 +192,7 @@ export class Chat {
     get pinnedMessage(): Message | null {
         return this.payload.pinned_message
             ? new Message(this.payload.pinned_message)
-            : null;
+            : null
     }
 
     /**
@@ -204,7 +204,7 @@ export class Chat {
     get permissions() {
         return this.payload.permissions
             ? new ChatPermissions(this.payload.permissions)
-            : null;
+            : null
     }
 
     /**
@@ -215,7 +215,7 @@ export class Chat {
      */
     @Inspect({ nullable: false })
     get slowModeDelay() {
-        return this.payload.slow_mode_delay;
+        return this.payload.slow_mode_delay
     }
 
     /**
@@ -225,7 +225,7 @@ export class Chat {
      */
     @Inspect({ nullable: false })
     get messageAutoDeleteTime() {
-        return this.payload.message_auto_delete_time;
+        return this.payload.message_auto_delete_time
     }
 
     /**
@@ -235,7 +235,7 @@ export class Chat {
      */
     @Inspect({ compute: true, nullable: false })
     hasAggressiveAntiSpamEnabled() {
-        return this.payload.has_aggressive_anti_spam_enabled;
+        return this.payload.has_aggressive_anti_spam_enabled
     }
 
     /**
@@ -245,7 +245,7 @@ export class Chat {
      */
     @Inspect({ compute: true, nullable: false })
     hasHiddenMembers() {
-        return this.payload.has_hidden_members;
+        return this.payload.has_hidden_members
     }
 
     /**
@@ -255,7 +255,7 @@ export class Chat {
      */
     @Inspect({ compute: true, nullable: false })
     hasProtectedContent() {
-        return this.payload.has_protected_content;
+        return this.payload.has_protected_content
     }
 
     /**
@@ -265,7 +265,7 @@ export class Chat {
      */
     @Inspect({ nullable: false })
     get stickerSetName() {
-        return this.payload.sticker_set_name;
+        return this.payload.sticker_set_name
     }
 
     /**
@@ -275,7 +275,7 @@ export class Chat {
      */
     @Inspect({ compute: true, nullable: false })
     canSetStickerSet() {
-        return this.payload.can_set_sticker_set;
+        return this.payload.can_set_sticker_set
     }
 
     /**
@@ -291,6 +291,6 @@ export class Chat {
      */
     @Inspect({ nullable: false })
     get linkedChatId() {
-        return this.payload.linked_chat_id;
+        return this.payload.linked_chat_id
     }
 }

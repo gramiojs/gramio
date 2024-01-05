@@ -1,5 +1,5 @@
-import { Inspect, Inspectable } from "inspectable";
-import { TelegramMaskPosition } from "../generated";
+import { Inspect, Inspectable } from "inspectable"
+import { TelegramMaskPosition } from "../generated"
 
 /**
  * This object describes the position on faces where a mask should be placed
@@ -10,7 +10,7 @@ export class MaskPosition {
     constructor(public payload: TelegramMaskPosition) {}
 
     get [Symbol.toStringTag]() {
-        return this.constructor.name;
+        return this.constructor.name
     }
 
     /**
@@ -19,7 +19,7 @@ export class MaskPosition {
      */
     @Inspect()
     get point() {
-        return this.payload.point;
+        return this.payload.point
     }
 
     /**
@@ -29,7 +29,7 @@ export class MaskPosition {
      */
     @Inspect()
     get xShift() {
-        return this.payload.x_shift;
+        return this.payload.x_shift
     }
 
     /**
@@ -39,12 +39,12 @@ export class MaskPosition {
      */
     @Inspect()
     get yShift() {
-        return this.payload.y_shift;
+        return this.payload.y_shift
     }
 
     /** Mask scaling coefficient. For example, `2.0` means double size. */
     @Inspect()
     get scale() {
-        return this.payload.scale;
+        return this.payload.scale
     }
 }

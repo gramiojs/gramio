@@ -1,41 +1,41 @@
-import { Inspect, Inspectable } from "inspectable";
-import { TelegramUser } from "../generated";
+import { Inspect, Inspectable } from "inspectable"
+import { TelegramUser } from "../generated"
 
 @Inspectable()
 export class User {
     constructor(public payload: TelegramUser) {}
 
     get [Symbol.toStringTag]() {
-        return this.constructor.name;
+        return this.constructor.name
     }
 
     /** Unique identifier for this user or bot */
     @Inspect()
     get id() {
-        return Number(this.payload.id);
+        return Number(this.payload.id)
     }
 
     /** `true`, if this user is a bot */
     isBot() {
-        return this.payload.is_bot;
+        return this.payload.is_bot
     }
 
     /** User's or bot's first name */
     @Inspect()
     get firstName() {
-        return this.payload.first_name;
+        return this.payload.first_name
     }
 
     /** User's or bot's last name */
     @Inspect({ nullable: false })
     get lastName() {
-        return this.payload.last_name;
+        return this.payload.last_name
     }
 
     /** User's or bot's username */
     @Inspect({ nullable: false })
     get username() {
-        return this.payload.username;
+        return this.payload.username
     }
 
     /**
@@ -44,19 +44,19 @@ export class User {
      */
     @Inspect({ nullable: false })
     get languageCode() {
-        return this.payload.language_code;
+        return this.payload.language_code
     }
 
     /** `true`, if this user is a Telegram Premium user */
     @Inspect({ compute: true, nullable: false })
     isPremium() {
-        return !!this.payload.is_premium;
+        return !!this.payload.is_premium
     }
 
     /** `true`, if this user added the bot to the attachment menu */
     @Inspect({ compute: true, nullable: false })
     isAddedToAttachmentMenu() {
-        return !!this.payload.added_to_attachment_menu;
+        return !!this.payload.added_to_attachment_menu
     }
 
     /**
@@ -66,7 +66,7 @@ export class User {
      */
     @Inspect({ compute: true, nullable: false })
     canJoinGroups() {
-        return !!this.payload.can_join_groups;
+        return !!this.payload.can_join_groups
     }
 
     /**
@@ -76,7 +76,7 @@ export class User {
      */
     @Inspect({ compute: true, nullable: false })
     canReadAllGroupMessages() {
-        return !!this.payload.can_read_all_group_messages;
+        return !!this.payload.can_read_all_group_messages
     }
 
     /**
@@ -86,6 +86,6 @@ export class User {
      */
     @Inspect({ compute: true, nullable: false })
     hasSupportsInlineQueries() {
-        return !!this.payload.supports_inline_queries;
+        return !!this.payload.supports_inline_queries
     }
 }
