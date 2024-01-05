@@ -1,5 +1,5 @@
+import type { TelegramUpdate } from "@gramio/types"
 import { Bot } from ".."
-import { TelegramUpdate } from "../generated/objects"
 import { UpdateNames } from "../types"
 import { contextMappings } from "."
 

@@ -1,4 +1,4 @@
-import { TelegramStory } from "../generated"
+import type { TelegramStory } from "@gramio/types"
 
 /**
  * This object has not been completed yet

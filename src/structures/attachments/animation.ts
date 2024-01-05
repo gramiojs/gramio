@@ -1,5 +1,5 @@
+import type { TelegramAnimation } from "@gramio/types"
 import { Inspect } from "inspectable"
-import { TelegramAnimation } from "../../generated"
 import { AttachmentType } from "../../types"
 import { FileAttachment } from "./file-attachment"
 import { PhotoSize } from "./photo-size"

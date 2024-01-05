@@ -1,5 +1,5 @@
+import type { TelegramContact } from "@gramio/types"
 import { Inspect, Inspectable } from "inspectable"
-import { TelegramContact } from "../generated"
 
 /** This object represents a phone contact. */
 @Inspectable()

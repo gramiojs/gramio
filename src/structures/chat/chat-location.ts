@@ -1,5 +1,5 @@
+import type { TelegramChatLocation } from "@gramio/types"
 import { Inspect, Inspectable } from "inspectable"
-import { TelegramChatLocation } from "../../generated"
 import { Location } from "../location"
 
 @Inspectable()

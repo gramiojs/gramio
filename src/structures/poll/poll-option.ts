@@ -1,5 +1,5 @@
+import type { TelegramPollOption } from "@gramio/types"
 import { Inspect, Inspectable } from "inspectable"
-import { TelegramPollOption } from "../../generated"
 
 /** This object contains information about one answer option in a poll. */
 @Inspectable()

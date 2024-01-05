@@ -1,8 +1,8 @@
+import type { TelegramUpdate } from "@gramio/types"
 import { Composer, noopNext } from "middleware-io"
 import { Bot } from "."
 import { contextMappings } from "./contexts"
 import { Context } from "./contexts/context"
-import { TelegramUpdate } from "./generated"
 import { THandler, UpdateNames } from "./types"
 
 export class Updates {

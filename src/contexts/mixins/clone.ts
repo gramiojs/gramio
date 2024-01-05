@@ -1,4 +1,4 @@
-import { TelegramUpdate } from "../../generated"
+import type { TelegramUpdate } from "@gramio/types"
 import { Constructor } from "../../types"
 import { Context } from "../context"
 

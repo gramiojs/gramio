@@ -1,26 +1,27 @@
 {
-    "name": "gramio",
-    "version": "1.0.0",
-    "description": "",
-    "main": "./dist/index.js",
-    "scripts": {
-        "imports": "ts-node ./scripts/generate-imports.ts",
-        "lint": "eslint \"src/**/*.{js,ts}\"",
-        "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix"
-    },
-    "author": "kravets",
-    "license": "ISC",
-    "devDependencies": {
-        "@types/node": "^20.8.9",
-        "eslint": "^8.52.0",
-        "eslint-kit": "^10.6.0",
-        "prettier": "^3.0.3"
-    },
-    "dependencies": {
-        "inspectable": "^2.1.0",
-        "middleware-io": "^2.8.1",
-        "reflect-metadata": "^0.1.13",
-        "undici": "^5.27.0"
-    },
-    "files": []
+  "name": "gramio",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/index.js",
+  "scripts": {
+    "imports": "ts-node ./scripts/generate-imports.ts",
+    "lint": "eslint \"src/**/*.{js,ts}\"",
+    "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix"
+  },
+  "author": "kravets",
+  "license": "ISC",
+  "devDependencies": {
+    "@gramio/types": "^7.0.0",
+    "@types/node": "^20.8.9",
+    "eslint": "^8.52.0",
+    "eslint-kit": "^10.6.0",
+    "prettier": "^3.0.3"
+  },
+  "dependencies": {
+    "inspectable": "^2.1.0",
+    "middleware-io": "^2.8.1",
+    "reflect-metadata": "^0.1.13",
+    "undici": "^5.27.0"
+  },
+  "files": []
 }

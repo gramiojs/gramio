@@ -1,5 +1,5 @@
+import type { TelegramPhotoSize } from "@gramio/types"
 import { Inspect, Inspectable } from "inspectable"
-import { TelegramPhotoSize } from "../../generated"
 import { Attachment } from "./attachment"
 
 /** This object represents one size of a photo or a file / sticker thumbnail */

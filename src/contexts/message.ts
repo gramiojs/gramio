@@ -1,6 +1,6 @@
+import type { TelegramMessage } from "@gramio/types"
+import type * as Params from "@gramio/types/types/api-params"
 import { inspectable } from "inspectable"
-import { TelegramMessage } from "../generated"
-import * as Params from "../generated/api-params"
 import { applyMixins, filterPayload } from "../helpers"
 import {
     ContactAttachment,

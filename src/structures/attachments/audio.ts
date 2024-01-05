@@ -1,5 +1,5 @@
+import type { TelegramAudio } from "@gramio/types"
 import { Inspect, Inspectable } from "inspectable"
-import { TelegramAudio } from "../../generated"
 import { AttachmentType } from "../../types"
 import { FileAttachment } from "./file-attachment"
 import { PhotoSize } from "./photo-size"

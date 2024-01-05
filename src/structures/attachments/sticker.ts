@@ -1,5 +1,5 @@
+import type { TelegramSticker } from "@gramio/types"
 import { Inspect, Inspectable } from "inspectable"
-import { TelegramSticker } from "../../generated"
 import { AttachmentType, Require } from "../../types"
 import { File } from "../file"
 import { MaskPosition } from "../mask-position"

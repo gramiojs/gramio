@@ -1,5 +1,5 @@
+import type { TelegramUser } from "@gramio/types"
 import { Inspect, Inspectable } from "inspectable"
-import { TelegramUser } from "../generated"
 
 @Inspectable()
 export class User {

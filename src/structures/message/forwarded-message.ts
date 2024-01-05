@@ -1,5 +1,5 @@
+import type { TelegramMessage } from "@gramio/types"
 import { Inspect, Inspectable } from "inspectable"
-import { TelegramMessage } from "../../generated"
 import { Chat } from "../chat"
 import { User } from "../user"
 

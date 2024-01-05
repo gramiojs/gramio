@@ -1,6 +1,6 @@
+import type { TelegramResponseParameters } from "@gramio/types"
 import { NextMiddleware } from "middleware-io"
 import { contextMappings } from "./contexts"
-import { TelegramResponseParameters } from "./generated"
 import {
     AnimationAttachment,
     AudioAttachment,

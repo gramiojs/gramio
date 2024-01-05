@@ -1,5 +1,5 @@
+import type { TelegramMaskPosition } from "@gramio/types"
 import { Inspect, Inspectable } from "inspectable"
-import { TelegramMaskPosition } from "../generated"
 
 /**
  * This object describes the position on faces where a mask should be placed

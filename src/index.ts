@@ -1,9 +1,9 @@
 import "reflect-metadata"
+import type { ApiMethods } from "@gramio/types"
 import { Inspectable } from "inspectable"
 import { stringify } from "node:querystring"
 import { fetch } from "undici"
 import { APIError } from "./apiErrors"
-import { ApiMethods } from "./generated"
 import {
     APIResponse,
     APIResponseError,
@@ -50,3 +50,5 @@ export class Bot {
         this.options = { ...options, token }
     }
 }
+
+export * from "@gramio/types"

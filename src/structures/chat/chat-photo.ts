@@ -1,5 +1,5 @@
+import type { TelegramChatPhoto } from "@gramio/types"
 import { Inspect, Inspectable } from "inspectable"
-import { TelegramChatPhoto } from "../../generated"
 
 //TODO: maybe add a file struct
 

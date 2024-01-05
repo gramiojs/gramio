@@ -1,5 +1,5 @@
+import type { TelegramVenue } from "@gramio/types"
 import { Inspect, Inspectable } from "inspectable"
-import { TelegramVenue } from "../generated"
 import { Location } from "./location"
 
 /** This object represents a venue. */

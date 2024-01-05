@@ -1,5 +1,5 @@
+import type { TelegramVideoNote } from "@gramio/types"
 import { Inspect, Inspectable } from "inspectable"
-import { TelegramVideoNote } from "../../generated"
 import { AttachmentType } from "../../types"
 import { FileAttachment } from "./file-attachment"
 import { PhotoSize } from "./photo-size"

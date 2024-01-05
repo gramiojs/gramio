@@ -1,5 +1,5 @@
+import type { TelegramChatPermissions } from "@gramio/types"
 import { Inspect, Inspectable } from "inspectable"
-import { TelegramChatPermissions } from "../../generated"
 
 /**
  * Describes actions that a non-administrator user is allowed to take in a

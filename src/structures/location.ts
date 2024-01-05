@@ -1,5 +1,5 @@
+import type { TelegramLocation } from "@gramio/types"
 import { Inspect, Inspectable } from "inspectable"
-import { TelegramLocation } from "../generated"
 
 /** This object represents a point on the map. */
 @Inspectable()
