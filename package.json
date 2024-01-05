@@ -4,7 +4,9 @@
     "description": "",
     "main": "./dist/index.js",
     "scripts": {
-        "imports": "ts-node ./scripts/generate-imports.ts"
+        "imports": "ts-node ./scripts/generate-imports.ts",
+        "lint": "eslint \"src/**/*.{js,ts}\"",
+        "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix"
     },
     "author": "kravets",
     "license": "ISC",
@@ -19,5 +21,6 @@
         "middleware-io": "^2.8.1",
         "reflect-metadata": "^0.1.13",
         "undici": "^5.27.0"
-    }
+    },
+    "files": []
 }
