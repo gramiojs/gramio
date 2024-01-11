@@ -1,5 +1,5 @@
 import type { TelegramMessage } from "@gramio/types"
-import type * as Params from "@gramio/types/types/api-params"
+import type * as Params from "@gramio/types/types/params"
 import { inspectable } from "inspectable"
 import { applyMixins, filterPayload } from "../helpers"
 import {

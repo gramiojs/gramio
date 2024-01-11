@@ -11,7 +11,7 @@
   "author": "kravets",
   "license": "ISC",
   "devDependencies": {
-    "@gramio/types": "^7.0.0",
+    "@gramio/types": "^7.0.2",
     "@types/node": "^20.8.9",
     "eslint": "^8.52.0",
     "eslint-kit": "^10.6.0",

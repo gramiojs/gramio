@@ -47,8 +47,8 @@ export type Known<T> = {
     [K in keyof T as string extends K
         ? never
         : number extends K
-        ? never
-        : K]: T[K]
+          ? never
+          : K]: T[K]
 }
 
 export type Optional<T, K extends keyof Known<T>> =
