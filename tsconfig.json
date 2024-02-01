@@ -1,17 +1,27 @@
 {
   "compilerOptions": {
-    "target": "es2022",
-    "module": "commonjs",
-    "rootDir": "./",
-    "outDir": "./dist",
-    "declaration": true,
-    "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
+    "lib": ["ESNext"],
+    "target": "ESNext",
+    "module": "NodeNext",
+    "moduleDetection": "force",
+
+    /* Bundler mode */
+    "moduleResolution": "NodeNext",
+    "allowImportingTsExtensions": true,
+    /* Linting */
     "skipLibCheck": true,
-    "sourceMap": true,
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "emitDeclarationOnly": true,
     "composite": true,
-    "experimentalDecorators": true
-  }
+    "experimentalDecorators": true,
+    "baseUrl": "./src",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "paths": {
+      "#*": ["./*"],
+    }
+  },
+  "include": ["src"]
 }
