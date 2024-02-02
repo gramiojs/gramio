@@ -7,13 +7,11 @@
 
     /* Bundler mode */
     "moduleResolution": "NodeNext",
-    "allowImportingTsExtensions": true,
     /* Linting */
     "skipLibCheck": true,
     "strict": true,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
-    "emitDeclarationOnly": true,
     "composite": true,
     "experimentalDecorators": true,
     "baseUrl": "./src",
@@ -23,5 +21,6 @@
       "#*": ["./*"],
     }
   },
-  "include": ["src"]
+  "include": ["./src"],
+  "exclude": ["./dist"]
 }

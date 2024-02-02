@@ -3,6 +3,7 @@
     "version": "0.0.1",
     "description": "",
     "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
     "scripts": {
         "imports": "ts-node ./scripts/generate-imports.ts",
         "lint": "eslint \"src/**/*.{js,ts}\"",
@@ -11,7 +12,7 @@
     "author": "kravets",
     "license": "ISC",
     "devDependencies": {
-        "@gramio/types": "^7.0.6",
+        "@gramio/types": "^7.0.7",
         "@types/node": "^20.8.9",
         "eslint": "^8.52.0",
         "eslint-kit": "^10.6.0",

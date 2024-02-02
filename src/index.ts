@@ -1,4 +1,3 @@
-import { stringify } from "node:querystring";
 import type { ApiMethods } from "@gramio/types";
 import { Inspectable } from "inspectable";
 import "reflect-metadata";
@@ -19,23 +18,22 @@ export class Bot {
 	readonly options: BotOptions = {};
 
 	readonly api = new Proxy<ApiMethods>({} as ApiMethods, {
-		get: (_target, method: string) => (args: Record<string, any>) => {
+		get: (_target, method: string) => (args: Record<string, unknown>) => {
 			return this._callApi(method, args);
 		},
 	});
 
 	updates = new Updates(this);
 
-	private async _callApi(method: string, params: Record<string, any> = {}) {
-		const url =
-			`http://api.telegram.org/bot` +
-			this.options.token +
-			"/" +
-			method +
-			`?${stringify(params).toString()}`;
+	private async _callApi(method: string, params: Record<string, unknown> = {}) {
+		const url = `https://api.telegram.org/bot${this.options.token}/${method}`;
 
 		const response = await fetch(url, {
-			method: "GET",
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(params),
 		});
 
 		const data = (await response.json()) as APIResponse;
@@ -52,12 +50,3 @@ export class Bot {
 }
 
 export * from "@gramio/types";
-
-const bot = new Bot("5625571394:AAGbN2mjSazNPEAOqynRLnE1I-518BiDl4s");
-
-bot.updates.on("message", async (ctx) => {
-	const a = await ctx.send("test");
-	console.log(a);
-});
-
-bot.updates.startPolling().then(console.log);

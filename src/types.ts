@@ -24,7 +24,4 @@ export type APIResponse = APIResponseOk | APIResponseError;
 export type THandler<T> = (context: T, next: NextMiddleware) => unknown;
 
 //TODO: fix
-export type UpdateNames = Exclude<
-	keyof typeof contextsMappings,
-	"delete_chat_photo"
->;
+export type UpdateNames = keyof typeof contextsMappings;
