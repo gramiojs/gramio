@@ -1,14 +1,9 @@
-import type { ApiMethods } from "@gramio/types";
+import type { ApiMethods, TelegramAPIResponse } from "@gramio/types";
 import { Inspectable } from "inspectable";
 import "reflect-metadata";
 import { fetch } from "undici";
 import { APIError } from "./apiErrors";
-import {
-	APIResponse,
-	APIResponseError,
-	APIResponseOk,
-	BotOptions,
-} from "./types";
+import { BotOptions } from "./types";
 import { Updates } from "./updates";
 
 @Inspectable<Bot>({
@@ -17,7 +12,7 @@ import { Updates } from "./updates";
 export class Bot {
 	readonly options: BotOptions = {};
 
-	readonly api = new Proxy<ApiMethods>({} as ApiMethods, {
+	readonly api = new Proxy({} as ApiMethods, {
 		get: (_target, method: string) => (args: Record<string, unknown>) => {
 			return this._callApi(method, args);
 		},
@@ -36,12 +31,11 @@ export class Bot {
 			body: JSON.stringify(params),
 		});
 
-		const data = (await response.json()) as APIResponse;
+		const data = (await response.json()) as TelegramAPIResponse;
 
-		if (!response.ok)
-			throw new APIError({ method, params }, data as APIResponseError);
+		if (!data.ok) throw new APIError({ method, params }, data);
 
-		return (data as APIResponseOk).result;
+		return data.result;
 	}
 
 	constructor(token: string, options?: Omit<BotOptions, "token">) {

@@ -45,7 +45,6 @@ export class Updates {
 			const context = new contextsMappings[updateType]({
 				//@ts-expect-error
 				bot: this.bot,
-				//@ts-expect-error
 				update: data,
 				//TODO: fix
 				//@ts-ignore
