@@ -12,14 +12,15 @@
   "license": "ISC",
   "devDependencies": {
     "@biomejs/biome": "1.5.3",
-    "@gramio/types": "^7.0.8",
-    "@types/node": "^20.8.9"
+    "@gramio/types": "^7.0.11",
+    "@types/node": "^20.11.16"
   },
   "dependencies": {
+    "form-data-encoder": "^4.0.2",
     "inspectable": "^2.1.0",
     "middleware-io": "^2.8.1",
     "reflect-metadata": "^0.1.13",
-    "undici": "^5.27.0"
+    "undici": "^5.28.3"
   },
   "files": []
 }
