@@ -35,7 +35,8 @@ export class Bot {
 		};
 
 		if (isMediaUpload(method, params)) {
-			const formData = convertJsonToFormData(method, params);
+			const formData = await convertJsonToFormData(method, params);
+
 			const encoder = new FormDataEncoder(formData);
 
 			reqOptions.body = encoder.encode();
