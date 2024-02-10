@@ -1,26 +1,32 @@
 {
-  "name": "gramio",
-  "version": "0.0.1",
-  "description": "",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "scripts": {
-    "lint": "bun check ./src",
-    "lint:fix": "bun lint --apply"
-  },
-  "author": "kravets",
-  "license": "ISC",
-  "devDependencies": {
-    "@biomejs/biome": "1.5.3",
-    "@gramio/types": "^7.0.11",
-    "@types/node": "^20.11.16"
-  },
-  "dependencies": {
-    "form-data-encoder": "^4.0.2",
-    "inspectable": "^2.1.0",
-    "middleware-io": "^2.8.1",
-    "reflect-metadata": "^0.1.13",
-    "undici": "^5.28.3"
-  },
-  "files": []
+    "name": "gramio",
+    "version": "0.0.5",
+    "description": "WIP",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "scripts": {
+        "lint": "bun check ./src",
+        "lint:fix": "bun lint --apply"
+    },
+    "author": "kravets",
+    "license": "ISC",
+    "devDependencies": {
+        "@biomejs/biome": "1.5.3",
+        "@gramio/types": "^7.0.14",
+        "@types/node": "^20.11.17"
+    },
+    "dependencies": {
+        "@gramio/contexts": "^0.0.1",
+        "@gramio/files": "^0.0.2",
+        "@gramio/format": "^0.0.2",
+        "@gramio/keyboards": "^0.1.6",
+        "form-data-encoder": "^4.0.2",
+        "inspectable": "^2.1.0",
+        "middleware-io": "^2.8.1",
+        "reflect-metadata": "^0.2.1",
+        "undici": "^6.6.2"
+    },
+    "files": [
+        "dist"
+    ]
 }
