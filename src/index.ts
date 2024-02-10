@@ -1,64 +1,9 @@
-import { convertJsonToFormData, isMediaUpload } from "@gramio/files";
-import type { ApiMethods, TelegramAPIResponse } from "@gramio/types";
-import { FormDataEncoder } from "form-data-encoder";
-import { Inspectable } from "inspectable";
-import "reflect-metadata";
-import { fetch } from "undici";
-import { APIError } from "./apiErrors";
-import { BotOptions } from "./types";
-import { Updates } from "./updates";
+export * from "./bot";
+export * from "./apiErrors";
+export * from "./types";
 
-@Inspectable<Bot>({
-	serialize: () => ({}),
-})
-export class Bot {
-	readonly options: BotOptions = {};
-
-	readonly api = new Proxy({} as ApiMethods, {
-		get:
-			<T extends keyof ApiMethods>(_target: ApiMethods, method: T) =>
-			(args: Parameters<ApiMethods[T]>[0]) =>
-				this._callApi(method, args),
-	});
-
-	updates = new Updates(this);
-
-	private async _callApi<T extends keyof ApiMethods>(
-		method: T,
-		params: NonNullable<Parameters<ApiMethods[T]>[0]> = {},
-	) {
-		const url = `https://api.telegram.org/bot${this.options.token}/${method}`;
-
-		const reqOptions: RequestInit = {
-			method: "POST",
-			duplex: "half",
-		};
-
-		if (isMediaUpload(method, params)) {
-			const formData = await convertJsonToFormData(method, params);
-
-			const encoder = new FormDataEncoder(formData);
-
-			reqOptions.body = encoder.encode();
-			reqOptions.headers = encoder.headers;
-		} else {
-			reqOptions.headers = {
-				"Content-Type": "application/json",
-			};
-			reqOptions.body = JSON.stringify(params);
-		}
-
-		const response = await fetch(url, reqOptions);
-
-		const data = (await response.json()) as TelegramAPIResponse;
-		if (!data.ok) throw new APIError({ method, params }, data);
-
-		return data.result;
-	}
-
-	constructor(token: string, options?: Omit<BotOptions, "token">) {
-		this.options = { ...options, token };
-	}
-}
-
+export * from "@gramio/contexts";
+export * from "@gramio/files";
+export * from "@gramio/keyboards";
 export * from "@gramio/types";
+export * from "@gramio/format";

@@ -1,7 +1,7 @@
 import { Context, contextsMappings } from "@gramio/contexts";
 import type { TelegramUpdate } from "@gramio/types";
 import { Composer, noopNext } from "middleware-io";
-import { Bot } from ".";
+import type { Bot } from "./bot";
 import { THandler, UpdateNames } from "./types";
 
 export class Updates {
@@ -43,7 +43,7 @@ export class Updates {
 
 		try {
 			const context = new contextsMappings[updateType]({
-				//@ts-expect-error
+				// @ts-expect-error
 				bot: this.bot,
 				update: data,
 				//TODO: fix
