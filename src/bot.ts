@@ -39,8 +39,8 @@ export class Bot {
 		// biome-ignore lint/style/noParameterAssign: mutate formattable
 		if (formattable && params) params = formattable(params);
 
-		if (isMediaUpload(method, params || {})) {
-			const formData = await convertJsonToFormData(method, params || {});
+		if (params && isMediaUpload(method, params)) {
+			const formData = await convertJsonToFormData(method, params);
 
 			const encoder = new FormDataEncoder(formData);
 

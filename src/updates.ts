@@ -66,7 +66,7 @@ export class Updates {
 				noopNext,
 			);
 		} catch (error) {
-			throw new Error(`Update type ${updateType} not supported.`);
+			throw new Error(`[UPDATES] Update type ${updateType} not supported.`);
 		}
 	}
 
