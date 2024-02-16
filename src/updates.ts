@@ -76,7 +76,8 @@ export class Updates {
 		this.isStarted = true;
 
 		this.startFetchLoop();
-		return null;
+
+		return;
 	}
 
 	async startFetchLoop() {
