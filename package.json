@@ -1,6 +1,6 @@
 {
     "name": "gramio",
-    "version": "0.0.9",
+    "version": "0.0.10",
     "description": "WIP",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -14,7 +14,7 @@
     "license": "ISC",
     "devDependencies": {
         "@biomejs/biome": "1.5.3",
-        "@gramio/types": "^7.1.0",
+        "@gramio/types": "^7.1.1",
         "@types/node": "^20.11.19"
     },
     "dependencies": {

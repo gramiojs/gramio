@@ -1,6 +1,10 @@
 import { convertJsonToFormData, isMediaUpload } from "@gramio/files";
 import { FormattableMap } from "@gramio/format";
-import type { ApiMethods, TelegramAPIResponse } from "@gramio/types";
+import type {
+	APIMethodParams,
+	APIMethods,
+	TelegramAPIResponse,
+} from "@gramio/types";
 import { FormDataEncoder } from "form-data-encoder";
 import { Inspectable } from "inspectable";
 import "reflect-metadata";
@@ -15,10 +19,10 @@ import { Updates } from "./updates";
 export class Bot {
 	readonly options: BotOptions = {};
 
-	readonly api = new Proxy({} as ApiMethods, {
+	readonly api = new Proxy({} as APIMethods, {
 		get:
-			<T extends keyof ApiMethods>(_target: ApiMethods, method: T) =>
-			(args: Parameters<ApiMethods[T]>[0]) =>
+			<T extends keyof APIMethods>(_target: APIMethods, method: T) =>
+			(args: APIMethodParams<T>) =>
 				this._callApi(method, args),
 	});
 
@@ -28,9 +32,9 @@ export class Bot {
 		this.options = { ...options, token };
 	}
 
-	private async _callApi<T extends keyof ApiMethods>(
+	private async _callApi<T extends keyof APIMethods>(
 		method: T,
-		params: Parameters<ApiMethods[T]>[0] = {},
+		params: APIMethodParams<T> = {},
 	) {
 		const url = `https://api.telegram.org/bot${this.options.token}/${method}`;
 

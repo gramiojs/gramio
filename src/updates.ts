@@ -1,8 +1,9 @@
 import { Context, UpdateName, contextsMappings } from "@gramio/contexts";
 import type { TelegramUpdate } from "@gramio/types";
 import { Composer, noopNext } from "middleware-io";
+import { TelegramError } from "#TelegramError";
 import type { Bot } from "./bot";
-import { THandler } from "./types";
+import { ErrorHandler, Handler } from "./types";
 
 export class Updates {
 	private readonly bot: Bot;
@@ -13,6 +14,7 @@ export class Updates {
 			[key: string]: unknown;
 		}
 	>();
+	private errorHandler: ErrorHandler | undefined;
 
 	constructor(bot: Bot) {
 		this.bot = bot;
@@ -20,18 +22,36 @@ export class Updates {
 
 	on<T extends UpdateName>(
 		updateName: T,
-		handler: THandler<InstanceType<(typeof contextsMappings)[T]>>,
+		handler: Handler<InstanceType<(typeof contextsMappings)[T]>>,
 	) {
-		return this.use((context, next) => {
+		return this.use(async (context, next) => {
 			//TODO: fix typings
 			if (context.is(updateName))
-				handler(context as InstanceType<(typeof contextsMappings)[T]>, next);
-			else next();
+				await handler(
+					context as InstanceType<(typeof contextsMappings)[T]>,
+					next,
+				);
+			else await next();
 		});
 	}
 
-	use(handler: THandler<Context>) {
-		this.composer.use(handler);
+	use(handler: Handler<Context>) {
+		this.composer
+			.caught((ctx, error) => {
+				if (error instanceof TelegramError)
+					return this.errorHandler?.({
+						context: ctx,
+						kind: "TELEGRAM",
+						error: error,
+					});
+
+				this.errorHandler?.({
+					context: ctx,
+					kind: "UNKNOWN",
+					error: error,
+				});
+			})
+			.use(handler);
 
 		return this;
 	}
@@ -108,5 +128,9 @@ export class Updates {
 
 	stopPolling() {
 		this.isStarted = false;
+	}
+
+	onError(handler: ErrorHandler) {
+		this.errorHandler = handler;
 	}
 }

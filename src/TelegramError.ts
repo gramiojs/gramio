@@ -1,19 +1,20 @@
 import {
-	ApiMethods,
+	APIMethodParams,
+	APIMethods,
 	TelegramAPIResponseError,
 	TelegramResponseParameters,
 } from "@gramio/types";
 
-export class TelegramError<T extends keyof ApiMethods> extends Error {
+export class TelegramError<T extends keyof APIMethods> extends Error {
 	method: T;
-	params: Parameters<ApiMethods[T]>[0];
+	params: APIMethodParams<T>;
 	code: number;
 	payload?: TelegramResponseParameters;
 
 	constructor(
 		error: TelegramAPIResponseError,
 		method: T,
-		params: Parameters<ApiMethods[T]>[0],
+		params: APIMethodParams<T>,
 	) {
 		super(error.description);
 
