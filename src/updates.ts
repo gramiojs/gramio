@@ -129,7 +129,15 @@ export class Updates {
 	stopPolling() {
 		this.isStarted = false;
 	}
-
+	/**
+	 * Set error handler.
+	 * @example
+	 * ```ts
+	 * bot.updates.onError(({ context, kind, error }) => {
+	 * 	if(context.is("message")) return context.send(`${kind}: ${error.message}`);
+	 * })
+	 * ```
+	 */
 	onError(handler: ErrorHandler) {
 		this.errorHandler = handler;
 	}

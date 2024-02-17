@@ -1,5 +1,5 @@
 import { Context } from "@gramio/contexts";
-import { APIMethods, TelegramAPIResponseError } from "@gramio/types";
+import { APIMethodParams, APIMethods } from "@gramio/types";
 import { NextMiddleware } from "middleware-io";
 import { TelegramError } from "./TelegramError";
 
@@ -24,3 +24,23 @@ export type ErrorHandler = (
 		| ErrorHandlerParams<"TELEGRAM", AnyTelegramError>
 		| ErrorHandlerParams<"UNKNOWN", Error>,
 ) => unknown;
+
+type AnyTelegramMethod = {
+	[APIMethod in keyof APIMethods]: {
+		method: APIMethod;
+		params: APIMethodParams<APIMethod>;
+	};
+}[keyof APIMethods];
+
+type MaybePromise<T> = T | Promise<T>;
+
+export namespace Hooks {
+	export type PreRequestContext = AnyTelegramMethod;
+	export type PreRequest = (
+		ctx: PreRequestContext,
+	) => MaybePromise<PreRequestContext>;
+
+	export interface Store {
+		preRequest: PreRequest[];
+	}
+}

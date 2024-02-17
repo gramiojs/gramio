@@ -10,7 +10,7 @@ import { Inspectable } from "inspectable";
 import "reflect-metadata";
 import { fetch } from "undici";
 import { TelegramError } from "./TelegramError";
-import { BotOptions } from "./types";
+import { BotOptions, Hooks } from "./types";
 import { Updates } from "./updates";
 
 @Inspectable<Bot>({
@@ -28,8 +28,34 @@ export class Bot {
 
 	updates = new Updates(this);
 
+	private hooks: Hooks.Store = {
+		preRequest: [
+			(ctx) => {
+				if (!ctx.params) return ctx;
+
+				const formattable = FormattableMap[ctx.method];
+				if (formattable) ctx.params = formattable(ctx.params);
+
+				return ctx;
+			},
+		],
+	};
+
 	constructor(token: string, options?: Omit<BotOptions, "token">) {
 		this.options = { ...options, token };
+	}
+
+	private async runHooks<T extends keyof Hooks.Store>(
+		type: T,
+		context: Parameters<Hooks.Store[T][0]>[0],
+	) {
+		let data = context;
+
+		for await (const hook of this.hooks[type]) {
+			data = await hook(data);
+		}
+
+		return data;
 	}
 
 	private async _callApi<T extends keyof APIMethods>(
@@ -43,9 +69,18 @@ export class Bot {
 			duplex: "half",
 		};
 
-		const formattable = FormattableMap[method];
-		// biome-ignore lint/style/noParameterAssign: mutate formattable
-		if (formattable && params) params = formattable(params);
+		const context = await this.runHooks(
+			"preRequest",
+			// TODO: fix type error
+			// @ts-expect-error
+			{
+				method,
+				params,
+			},
+		);
+
+		// biome-ignore lint/style/noParameterAssign: mutate params
+		params = context.params;
 
 		if (params && isMediaUpload(method, params)) {
 			const formData = await convertJsonToFormData(method, params);
