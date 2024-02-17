@@ -1,8 +1,8 @@
-import { Context, contextsMappings } from "@gramio/contexts";
+import { Context, UpdateName, contextsMappings } from "@gramio/contexts";
 import type { TelegramUpdate } from "@gramio/types";
 import { Composer, noopNext } from "middleware-io";
 import type { Bot } from "./bot";
-import { THandler, UpdateNames } from "./types";
+import { THandler } from "./types";
 
 export class Updates {
 	private readonly bot: Bot;
@@ -18,7 +18,7 @@ export class Updates {
 		this.bot = bot;
 	}
 
-	on<T extends UpdateNames>(
+	on<T extends UpdateName>(
 		updateName: T,
 		handler: THandler<InstanceType<(typeof contextsMappings)[T]>>,
 	) {
@@ -37,26 +37,39 @@ export class Updates {
 	}
 
 	async handleUpdate(data: TelegramUpdate) {
-		const updateType = Object.keys(data).at(1) as UpdateNames;
+		const updateType = Object.keys(data).at(1) as UpdateName;
 
 		this.offset = data.update_id + 1;
 
+		const UpdateContext = contextsMappings[updateType];
+		if (!UpdateContext) return;
+
 		try {
-			const context = new contextsMappings[updateType]({
-				// @ts-expect-error
+			let context = new UpdateContext({
+				//@ts-expect-error
 				bot: this.bot,
 				update: data,
-				//TODO: fix
-				//@ts-ignore
+				//@ts-expect-error
 				payload: data[updateType as Exclude<keyof typeof data, "update_id">],
 				type: updateType,
 				updateId: data.update_id,
-				// raw: {
-				// 	update: data,
-				// 	updateId: data.update_id,
-				// 	updateType,
-				// },
 			});
+
+			if ("isEvent" in context && context.isEvent() && context.eventType) {
+				context = new contextsMappings[context.eventType]({
+					//@ts-expect-error
+					bot: this.bot,
+					update: data,
+					//@ts-expect-error
+					payload:
+						data.message ??
+						data.edited_message ??
+						data.channel_post ??
+						data.edited_channel_post,
+					type: context.eventType,
+					updateId: data.update_id,
+				});
+			}
 
 			this.composer.compose()(
 				//TODO: fix typings
