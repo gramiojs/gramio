@@ -5,7 +5,7 @@ import { FormDataEncoder } from "form-data-encoder";
 import { Inspectable } from "inspectable";
 import "reflect-metadata";
 import { fetch } from "undici";
-import { APIError } from "./apiErrors";
+import { TelegramError } from "./TelegramError";
 import { BotOptions } from "./types";
 import { Updates } from "./updates";
 
@@ -23,6 +23,10 @@ export class Bot {
 	});
 
 	updates = new Updates(this);
+
+	constructor(token: string, options?: Omit<BotOptions, "token">) {
+		this.options = { ...options, token };
+	}
 
 	private async _callApi<T extends keyof ApiMethods>(
 		method: T,
@@ -56,12 +60,8 @@ export class Bot {
 		const response = await fetch(url, reqOptions);
 
 		const data = (await response.json()) as TelegramAPIResponse;
-		if (!data.ok) throw new APIError({ method, params }, data);
+		if (!data.ok) throw new TelegramError(data, method, params);
 
 		return data.result;
-	}
-
-	constructor(token: string, options?: Omit<BotOptions, "token">) {
-		this.options = { ...options, token };
 	}
 }
