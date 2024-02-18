@@ -1,5 +1,5 @@
 export * from "./bot";
-export * from "./TelegramError";
+export * from "./errors";
 export * from "./types";
 
 export * from "@gramio/contexts";

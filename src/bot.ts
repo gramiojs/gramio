@@ -10,8 +10,8 @@ import { FormDataEncoder } from "form-data-encoder";
 import { Inspectable } from "inspectable";
 import "reflect-metadata";
 import { fetch } from "undici";
-import { TelegramError } from "./TelegramError";
-import { BotOptions, Hooks } from "./types";
+import { ErrorKind, TelegramError } from "./errors";
+import { BotOptions, ErrorDefinitions, Hooks } from "./types";
 import { Updates } from "./updates";
 
 @Inspectable<Bot>({
@@ -27,22 +27,20 @@ export class Bot {
 				this._callApi(method, args),
 	});
 
-	private errorHandler(context: Context, error: Error) {
-		if (error instanceof TelegramError)
-			return this.runImmutableHooks("onError", {
-				context,
-				kind: "TELEGRAM",
-				error,
-			});
+	private errorsDefinitions: ErrorDefinitions = {
+		TELEGRAM: TelegramError,
+	};
 
+	private errorHandler(context: Context, error: Error) {
 		return this.runImmutableHooks("onError", {
 			context,
-			kind: "UNKNOWN",
-			error,
+			//@ts-expect-error ErrorKind exists if user register error-class with .error("kind", SomeError);
+			kind: error.constructor[ErrorKind] ?? "UNKNOWN",
+			error: error,
 		});
 	}
 
-	updates = new Updates(this, this.errorHandler);
+	updates = new Updates(this, this.errorHandler.bind(this));
 
 	private hooks: Hooks.Store = {
 		preRequest: [
@@ -129,6 +127,14 @@ export class Bot {
 		return data.result;
 	}
 
+	error(kind: string, error: { prototype: Error }) {
+		//@ts-expect-error Set ErrorKind
+		error[ErrorKind] = kind;
+		this.errorsDefinitions[kind] = error;
+
+		return this;
+	}
+
 	/**
 	 * Set error handler.
 	 * @example
@@ -140,5 +146,7 @@ export class Bot {
 	 */
 	onError(handler: Hooks.OnError) {
 		this.hooks.onError.push(handler);
+
+		return this;
 	}
 }

@@ -1,7 +1,7 @@
 import { Context } from "@gramio/contexts";
 import { APIMethodParams, APIMethods } from "@gramio/types";
 import { NextMiddleware } from "middleware-io";
-import { TelegramError } from "./TelegramError";
+import { TelegramError } from "./errors";
 
 export interface BotOptions {
 	token?: string;
@@ -34,14 +34,15 @@ export namespace Hooks {
 		ctx: PreRequestContext,
 	) => MaybePromise<PreRequestContext>;
 
-	export type OnError = (
-		options:
-			| ErrorHandlerParams<"TELEGRAM", AnyTelegramError>
-			| ErrorHandlerParams<"UNKNOWN", Error>,
-	) => unknown;
+	export type OnErrorContext =
+		| ErrorHandlerParams<"TELEGRAM", AnyTelegramError>
+		| ErrorHandlerParams<"UNKNOWN", Error>;
+	export type OnError = (options: OnErrorContext) => unknown;
 
 	export interface Store {
 		preRequest: PreRequest[];
 		onError: OnError[];
 	}
 }
+
+export type ErrorDefinitions = Record<string, { prototype: Error }>;

@@ -5,6 +5,8 @@ import {
 	TelegramResponseParameters,
 } from "@gramio/types";
 
+export const ErrorKind = Symbol("ErrorKind");
+
 export class TelegramError<T extends keyof APIMethods> extends Error {
 	method: T;
 	params: APIMethodParams<T>;
@@ -26,3 +28,6 @@ export class TelegramError<T extends keyof APIMethods> extends Error {
 		if (error.parameters) this.payload = error.parameters;
 	}
 }
+
+//@ts-expect-error
+TelegramError.constructor[ErrorKind] = "TELEGRAM";
