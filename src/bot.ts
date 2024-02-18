@@ -127,6 +127,36 @@ export class Bot<Errors extends ErrorDefinitions = {}> {
 		return data.result;
 	}
 
+	/**
+	 * Register custom class-error for type-safe catch in `onError` hook
+	 *
+	 * @example
+	 * ```ts
+	 * export class NoRights extends Error {
+	 *     needRole: "admin" | "moderator";
+	 *
+	 *     constructor(role: "admin" | "moderator") {
+	 *         super();
+	 *         this.needRole = role;
+	 *     }
+	 * }
+	 *
+	 * const bot = new Bot(process.env.TOKEN!)
+	 *     .error("NO_RIGHTS", NoRights)
+	 *     .onError(({ context, kind, error }) => {
+	 *         if (context.is("message") && kind === "NO_RIGHTS")
+	 *             return context.send(
+	 *                 format`You don't have enough rights! You need to have an «${bold(
+	 *                     error.needRole
+	 *                 )}» role.`
+	 *             );
+	 *     });
+	 *
+	 * bot.updates.on("message", (context) => {
+	 *     if (context.text === "bun") throw new NoRights("admin");
+	 * });
+	 * ```
+	 */
 	error<
 		Name extends string,
 		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
