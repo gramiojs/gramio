@@ -1,3 +1,4 @@
+import { Context } from "@gramio/contexts";
 import { convertJsonToFormData, isMediaUpload } from "@gramio/files";
 import { FormattableMap } from "@gramio/format";
 import type {
@@ -26,7 +27,22 @@ export class Bot {
 				this._callApi(method, args),
 	});
 
-	updates = new Updates(this);
+	private errorHandler(context: Context, error: Error) {
+		if (error instanceof TelegramError)
+			return this.runImmutableHooks("onError", {
+				context,
+				kind: "TELEGRAM",
+				error,
+			});
+
+		return this.runImmutableHooks("onError", {
+			context,
+			kind: "UNKNOWN",
+			error,
+		});
+	}
+
+	updates = new Updates(this, this.errorHandler);
 
 	private hooks: Hooks.Store = {
 		preRequest: [
@@ -39,13 +55,14 @@ export class Bot {
 				return ctx;
 			},
 		],
+		onError: [],
 	};
 
 	constructor(token: string, options?: Omit<BotOptions, "token">) {
 		this.options = { ...options, token };
 	}
 
-	private async runHooks<T extends keyof Hooks.Store>(
+	private async runHooks<T extends Exclude<keyof Hooks.Store, "onError">>(
 		type: T,
 		context: Parameters<Hooks.Store[T][0]>[0],
 	) {
@@ -56,6 +73,14 @@ export class Bot {
 		}
 
 		return data;
+	}
+
+	private async runImmutableHooks<
+		T extends Extract<keyof Hooks.Store, "onError">,
+	>(type: T, context: Parameters<Hooks.Store[T][0]>[0]) {
+		for await (const hook of this.hooks[type]) {
+			await hook(context);
+		}
 	}
 
 	private async _callApi<T extends keyof APIMethods>(
@@ -102,5 +127,18 @@ export class Bot {
 		if (!data.ok) throw new TelegramError(data, method, params);
 
 		return data.result;
+	}
+
+	/**
+	 * Set error handler.
+	 * @example
+	 * ```ts
+	 * bot.updates.onError(({ context, kind, error }) => {
+	 * 	if(context.is("message")) return context.send(`${kind}: ${error.message}`);
+	 * })
+	 * ```
+	 */
+	onError(handler: Hooks.OnError) {
+		this.hooks.onError.push(handler);
 	}
 }

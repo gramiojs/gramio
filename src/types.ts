@@ -19,12 +19,6 @@ type AnyTelegramError = {
 	[APIMethod in keyof APIMethods]: TelegramError<APIMethod>;
 }[keyof APIMethods];
 
-export type ErrorHandler = (
-	options:
-		| ErrorHandlerParams<"TELEGRAM", AnyTelegramError>
-		| ErrorHandlerParams<"UNKNOWN", Error>,
-) => unknown;
-
 type AnyTelegramMethod = {
 	[APIMethod in keyof APIMethods]: {
 		method: APIMethod;
@@ -40,7 +34,14 @@ export namespace Hooks {
 		ctx: PreRequestContext,
 	) => MaybePromise<PreRequestContext>;
 
+	export type OnError = (
+		options:
+			| ErrorHandlerParams<"TELEGRAM", AnyTelegramError>
+			| ErrorHandlerParams<"UNKNOWN", Error>,
+	) => unknown;
+
 	export interface Store {
 		preRequest: PreRequest[];
+		onError: OnError[];
 	}
 }

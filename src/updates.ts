@@ -1,9 +1,8 @@
 import { Context, UpdateName, contextsMappings } from "@gramio/contexts";
 import type { TelegramUpdate } from "@gramio/types";
-import { Composer, noopNext } from "middleware-io";
-import { TelegramError } from "#TelegramError";
+import { CaughtMiddlewareHandler, Composer, noopNext } from "middleware-io";
 import type { Bot } from "./bot";
-import { ErrorHandler, Handler } from "./types";
+import { Handler } from "./types";
 
 export class Updates {
 	private readonly bot: Bot;
@@ -14,10 +13,11 @@ export class Updates {
 			[key: string]: unknown;
 		}
 	>();
-	private errorHandler: ErrorHandler | undefined;
+	private onError: CaughtMiddlewareHandler<Context>;
 
-	constructor(bot: Bot) {
+	constructor(bot: Bot, onError: CaughtMiddlewareHandler<Context>) {
 		this.bot = bot;
+		this.onError = onError;
 	}
 
 	on<T extends UpdateName>(
@@ -36,22 +36,7 @@ export class Updates {
 	}
 
 	use(handler: Handler<Context>) {
-		this.composer
-			.caught((ctx, error) => {
-				if (error instanceof TelegramError)
-					return this.errorHandler?.({
-						context: ctx,
-						kind: "TELEGRAM",
-						error: error,
-					});
-
-				this.errorHandler?.({
-					context: ctx,
-					kind: "UNKNOWN",
-					error: error,
-				});
-			})
-			.use(handler);
+		this.composer.caught(this.onError).use(handler);
 
 		return this;
 	}
@@ -128,17 +113,5 @@ export class Updates {
 
 	stopPolling() {
 		this.isStarted = false;
-	}
-	/**
-	 * Set error handler.
-	 * @example
-	 * ```ts
-	 * bot.updates.onError(({ context, kind, error }) => {
-	 * 	if(context.is("message")) return context.send(`${kind}: ${error.message}`);
-	 * })
-	 * ```
-	 */
-	onError(handler: ErrorHandler) {
-		this.errorHandler = handler;
 	}
 }
