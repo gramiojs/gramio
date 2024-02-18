@@ -9,7 +9,7 @@ export interface BotOptions {
 
 export type Handler<T> = (context: T, next: NextMiddleware) => unknown;
 
-interface ErrorHandlerParams<Kind extends string, Err extends Error> {
+interface ErrorHandlerParams<Kind extends string, Err> {
 	context: Context;
 	kind: Kind;
 	error: Err;
@@ -34,14 +34,20 @@ export namespace Hooks {
 		ctx: PreRequestContext,
 	) => MaybePromise<PreRequestContext>;
 
-	export type OnErrorContext =
+	export type OnErrorContext<T extends ErrorDefinitions> =
 		| ErrorHandlerParams<"TELEGRAM", AnyTelegramError>
-		| ErrorHandlerParams<"UNKNOWN", Error>;
-	export type OnError = (options: OnErrorContext) => unknown;
+		| ErrorHandlerParams<"UNKNOWN", Error>
+		| {
+				// TODO: improve typings
+				[K in keyof T]: ErrorHandlerParams<K & string, T[K & string]>;
+		  }[keyof T];
+	export type OnError<T extends ErrorDefinitions> = (
+		options: OnErrorContext<T>,
+	) => unknown;
 
-	export interface Store {
+	export interface Store<T extends ErrorDefinitions> {
 		preRequest: PreRequest[];
-		onError: OnError[];
+		onError: OnError<T>[];
 	}
 }
 

@@ -17,7 +17,8 @@ import { Updates } from "./updates";
 @Inspectable<Bot>({
 	serialize: () => ({}),
 })
-export class Bot {
+// biome-ignore lint/complexity/noBannedTypes: <explanation>
+export class Bot<Errors extends ErrorDefinitions = {}> {
 	readonly options: BotOptions = {};
 
 	readonly api = new Proxy({} as APIMethods, {
@@ -42,7 +43,7 @@ export class Bot {
 
 	updates = new Updates(this, this.errorHandler.bind(this));
 
-	private hooks: Hooks.Store = {
+	private hooks: Hooks.Store<Errors> = {
 		preRequest: [
 			(ctx) => {
 				if (!ctx.params) return ctx;
@@ -60,10 +61,9 @@ export class Bot {
 		this.options = { ...options, token };
 	}
 
-	private async runHooks<T extends Exclude<keyof Hooks.Store, "onError">>(
-		type: T,
-		context: Parameters<Hooks.Store[T][0]>[0],
-	) {
+	private async runHooks<
+		T extends Exclude<keyof Hooks.Store<Errors>, "onError">,
+	>(type: T, context: Parameters<Hooks.Store<Errors>[T][0]>[0]) {
 		let data = context;
 
 		for await (const hook of this.hooks[type]) {
@@ -74,8 +74,8 @@ export class Bot {
 	}
 
 	private async runImmutableHooks<
-		T extends Extract<keyof Hooks.Store, "onError">,
-	>(type: T, context: Parameters<Hooks.Store[T][0]>[0]) {
+		T extends Extract<keyof Hooks.Store<Errors>, "onError">,
+	>(type: T, context: Parameters<Hooks.Store<Errors>[T][0]>[0]) {
 		for await (const hook of this.hooks[type]) {
 			await hook(context);
 		}
@@ -127,12 +127,18 @@ export class Bot {
 		return data.result;
 	}
 
-	error(kind: string, error: { prototype: Error }) {
+	error<
+		Name extends string,
+		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		NewError extends { new (...args: any): any; prototype: Error },
+	>(kind: Name, error: NewError) {
 		//@ts-expect-error Set ErrorKind
 		error[ErrorKind] = kind;
 		this.errorsDefinitions[kind] = error;
 
-		return this;
+		return this as unknown as Bot<
+			Errors & { [name in Name]: InstanceType<NewError> }
+		>;
 	}
 
 	/**
@@ -144,7 +150,7 @@ export class Bot {
 	 * })
 	 * ```
 	 */
-	onError(handler: Hooks.OnError) {
+	onError(handler: Hooks.OnError<Errors>) {
 		this.hooks.onError.push(handler);
 
 		return this;
