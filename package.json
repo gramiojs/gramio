@@ -14,13 +14,14 @@
     "license": "ISC",
     "devDependencies": {
         "@biomejs/biome": "1.5.3",
-        "@gramio/types": "^7.1.1",
-        "@types/node": "^20.11.19"
+        "@gramio/types": "^7.1.2",
+        "@types/node": "^20.11.19",
+        "typescript": "^5.3.3"
     },
     "dependencies": {
         "@gramio/contexts": "^0.0.2",
         "@gramio/files": "^0.0.3",
-        "@gramio/format": "^0.0.7",
+        "@gramio/format": "^0.0.8",
         "@gramio/keyboards": "^0.1.6",
         "form-data-encoder": "^4.0.2",
         "inspectable": "^2.1.0",
