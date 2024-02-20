@@ -5,7 +5,6 @@ import type { Bot } from "./bot";
 import { Handler } from "./types";
 
 export class Updates {
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	private readonly bot: Bot<any>;
 	private isStarted = false;
 	private offset = 0;
@@ -16,7 +15,6 @@ export class Updates {
 	>();
 	private onError: CaughtMiddlewareHandler<Context>;
 
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 	constructor(bot: Bot<any>, onError: CaughtMiddlewareHandler<Context>) {
 		this.bot = bot;
 		this.onError = onError;

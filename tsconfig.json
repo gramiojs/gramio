@@ -16,7 +16,10 @@
     "experimentalDecorators": true,
     "baseUrl": "./src",
     "rootDir": "./src",
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "paths": {
+      "#*": ["./*"],
+    }
   },
   "include": ["./src"],
   "exclude": ["./dist"]

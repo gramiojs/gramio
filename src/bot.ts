@@ -10,6 +10,7 @@ import { FormDataEncoder } from "form-data-encoder";
 import { Inspectable } from "inspectable";
 import "reflect-metadata";
 import { fetch } from "undici";
+import { Plugin } from "#plugin";
 import { ErrorKind, TelegramError } from "./errors";
 import { BotOptions, ErrorDefinitions, Hooks } from "./types";
 import { Updates } from "./updates";
@@ -17,7 +18,6 @@ import { Updates } from "./updates";
 @Inspectable<Bot>({
 	serialize: () => ({}),
 })
-// biome-ignore lint/complexity/noBannedTypes: <explanation>
 export class Bot<Errors extends ErrorDefinitions = {}> {
 	readonly options: BotOptions = {};
 
@@ -28,7 +28,10 @@ export class Bot<Errors extends ErrorDefinitions = {}> {
 				this._callApi(method, args),
 	});
 
-	private errorsDefinitions: ErrorDefinitions = {
+	private errorsDefinitions: Record<
+		string,
+		{ new (...args: any): any; prototype: Error }
+	> = {
 		TELEGRAM: TelegramError,
 	};
 
@@ -49,6 +52,7 @@ export class Bot<Errors extends ErrorDefinitions = {}> {
 				if (!ctx.params) return ctx;
 
 				const formattable = FormattableMap[ctx.method];
+				// @ts-ignore add AnyTelegramMethod to @gramio/format
 				if (formattable) ctx.params = formattable(ctx.params);
 
 				return ctx;
@@ -159,7 +163,6 @@ export class Bot<Errors extends ErrorDefinitions = {}> {
 	 */
 	error<
 		Name extends string,
-		// biome-ignore lint/suspicious/noExplicitAny: <explanation>
 		NewError extends { new (...args: any): any; prototype: Error },
 	>(kind: Name, error: NewError) {
 		//@ts-expect-error Set ErrorKind
@@ -184,5 +187,13 @@ export class Bot<Errors extends ErrorDefinitions = {}> {
 		this.hooks.onError.push(handler);
 
 		return this;
+	}
+
+	extend<NewPlugin extends Plugin>(plugin: NewPlugin) {
+		for (const [key, value] of Object.entries(plugin.errorsDefinitions)) {
+			if (this.errorsDefinitions[key]) this.errorsDefinitions[key] = value;
+		}
+
+		return this as Bot<Errors & NewPlugin["Errors"]>;
 	}
 }

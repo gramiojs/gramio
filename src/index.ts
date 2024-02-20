@@ -1,6 +1,7 @@
 export * from "./bot";
 export * from "./errors";
 export * from "./types";
+export * from "./plugin";
 
 export * from "@gramio/contexts";
 export * from "@gramio/files";

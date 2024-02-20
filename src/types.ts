@@ -51,4 +51,4 @@ export namespace Hooks {
 	}
 }
 
-export type ErrorDefinitions = Record<string, { prototype: Error }>;
+export type ErrorDefinitions = Record<string, Error>;
