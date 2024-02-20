@@ -51,6 +51,7 @@ export class Updates {
 
 		try {
 			let context = new UpdateContext({
+				//@ts-expect-error
 				bot: this.bot,
 				update: data,
 				//@ts-expect-error
@@ -61,6 +62,7 @@ export class Updates {
 
 			if ("isEvent" in context && context.isEvent() && context.eventType) {
 				context = new contextsMappings[context.eventType]({
+					//@ts-expect-error
 					bot: this.bot,
 					update: data,
 					//@ts-expect-error
