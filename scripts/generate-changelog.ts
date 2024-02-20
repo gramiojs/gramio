@@ -6,6 +6,7 @@ function getLatestTag() {
 	try {
 		return execSync("git describe --abbrev=0 --tags").toString().trim();
 	} catch (e) {
+		console.warn(e);
 		return execSync("git rev-list --max-parents=0 HEAD").toString().trim();
 	}
 }

@@ -17,6 +17,9 @@ jobs:
               name: Generate changelog
               run: bun scripts/generate-changelog.ts
 
+            - name: Install modules
+              run: bun install
+
             - name: Install Node
               uses: actions/setup-node@v4
               with:
