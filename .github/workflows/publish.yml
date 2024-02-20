@@ -1,0 +1,41 @@
+name: Publish package
+
+on: workflow_dispatch
+
+jobs:
+    publish_package:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Install Bun
+              uses: oven-sh/setup-bun@v1
+
+            - id: changelog
+              name: Generate changelog
+              run: bun scripts/generate-changelog.ts
+
+            - name: Install Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20.x"
+                  registry-url: "https://registry.npmjs.org"
+                  scope: "@gramio"
+
+            - name: Publish package
+              run: npm publish
+              env:
+                  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+            - name: GitHub Release
+              uses: ncipollo/release-action@v1
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  tag: v${{ steps.changelog.outputs.version }}
+                  name: v${{ steps.changelog.outputs.version }}
+                  body: ${{ steps.changelog.outputs.changelog }}
+                  draft: false
+                  prerelease: false
+                  generateReleaseNotes: true
