@@ -5,7 +5,7 @@ import type { Bot } from "./bot";
 import { Handler } from "./types";
 
 export class Updates {
-	private readonly bot: Bot<any>;
+	private readonly bot: Bot<any, any>;
 	private isStarted = false;
 	private offset = 0;
 	private composer = Composer.builder<
@@ -15,7 +15,7 @@ export class Updates {
 	>();
 	private onError: CaughtMiddlewareHandler<Context>;
 
-	constructor(bot: Bot<any>, onError: CaughtMiddlewareHandler<Context>) {
+	constructor(bot: Bot<any, any>, onError: CaughtMiddlewareHandler<Context>) {
 		this.bot = bot;
 		this.onError = onError;
 	}
@@ -35,7 +35,7 @@ export class Updates {
 		});
 	}
 
-	use(handler: Handler<Context>) {
+	use(handler: Handler<Context & any>) {
 		this.composer.caught(this.onError).use(handler);
 
 		return this;

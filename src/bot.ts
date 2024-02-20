@@ -12,13 +12,13 @@ import "reflect-metadata";
 import { fetch } from "undici";
 import { Plugin } from "#plugin";
 import { ErrorKind, TelegramError } from "./errors";
-import { BotOptions, ErrorDefinitions, Hooks } from "./types";
+import { BotOptions, ErrorDefinitions, Handler, Hooks } from "./types";
 import { Updates } from "./updates";
 
 @Inspectable<Bot>({
 	serialize: () => ({}),
 })
-export class Bot<Errors extends ErrorDefinitions = {}> {
+export class Bot<Errors extends ErrorDefinitions = {}, Derives = {}> {
 	readonly options: BotOptions = {};
 
 	readonly api = new Proxy({} as APIMethods, {
@@ -189,11 +189,35 @@ export class Bot<Errors extends ErrorDefinitions = {}> {
 		return this;
 	}
 
+	derive<Handler extends (context: Context) => object>(handler: Handler) {
+		this.updates.use((context, next) => {
+			for (const [key, value] of Object.entries(handler(context))) {
+				context[key] = value;
+			}
+			next();
+		});
+
+		return this as unknown as Bot<Errors, Derives & ReturnType<Handler>>;
+	}
+
+	use(handler: Handler<Context & Derives>) {
+		this.updates.use(handler);
+
+		return this;
+	}
+
 	extend<NewPlugin extends Plugin>(plugin: NewPlugin) {
 		for (const [key, value] of Object.entries(plugin.errorsDefinitions)) {
 			if (this.errorsDefinitions[key]) this.errorsDefinitions[key] = value;
 		}
 
-		return this as Bot<Errors & NewPlugin["Errors"]>;
+		for (const derive of plugin.derives) {
+			this.derive(derive);
+		}
+
+		return this as Bot<
+			Errors & NewPlugin["Errors"],
+			Derives & NewPlugin["Derives"]
+		>;
 	}
 }
