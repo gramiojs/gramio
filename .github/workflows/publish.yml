@@ -2,6 +2,9 @@ name: Publish package
 
 on: workflow_dispatch
 
+permissions:
+    contents: write
+
 jobs:
     publish_package:
         runs-on: ubuntu-latest
