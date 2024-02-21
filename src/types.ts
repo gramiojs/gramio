@@ -9,8 +9,8 @@ export interface BotOptions {
 
 export type Handler<T> = (context: T, next: NextMiddleware) => unknown;
 
-interface ErrorHandlerParams<Kind extends string, Err> {
-	context: Context;
+interface ErrorHandlerParams<Ctx extends Context, Kind extends string, Err> {
+	context: Ctx;
 	kind: Kind;
 	error: Err;
 }
@@ -34,16 +34,17 @@ export namespace Hooks {
 		ctx: PreRequestContext,
 	) => MaybePromise<PreRequestContext>;
 
-	export type OnErrorContext<T extends ErrorDefinitions> =
-		| ErrorHandlerParams<"TELEGRAM", AnyTelegramError>
-		| ErrorHandlerParams<"UNKNOWN", Error>
+	export type OnErrorContext<Ctx extends Context, T extends ErrorDefinitions> =
+		| ErrorHandlerParams<Ctx, "TELEGRAM", AnyTelegramError>
+		| ErrorHandlerParams<Ctx, "UNKNOWN", Error>
 		| {
 				// TODO: improve typings
-				[K in keyof T]: ErrorHandlerParams<K & string, T[K & string]>;
+				[K in keyof T]: ErrorHandlerParams<Ctx, K & string, T[K & string]>;
 		  }[keyof T];
-	export type OnError<T extends ErrorDefinitions> = (
-		options: OnErrorContext<T>,
-	) => unknown;
+	export type OnError<
+		T extends ErrorDefinitions,
+		Ctx extends Context = Context,
+	> = (options: OnErrorContext<Ctx, T>) => unknown;
 
 	export interface Store<T extends ErrorDefinitions> {
 		preRequest: PreRequest[];

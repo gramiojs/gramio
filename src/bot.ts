@@ -1,4 +1,9 @@
-import { Context } from "@gramio/contexts";
+import {
+	Context,
+	MaybeArray,
+	UpdateName,
+	contextsMappings,
+} from "@gramio/contexts";
 import { convertJsonToFormData, isMediaUpload } from "@gramio/files";
 import { FormattableMap } from "@gramio/format";
 import type {
@@ -183,8 +188,32 @@ export class Bot<Errors extends ErrorDefinitions = {}, Derives = {}> {
 	 * })
 	 * ```
 	 */
-	onError(handler: Hooks.OnError<Errors>) {
-		this.hooks.onError.push(handler);
+
+	onError<T extends UpdateName>(
+		updateName: MaybeArray<T>,
+		handler: Hooks.OnError<Errors, InstanceType<(typeof contextsMappings)[T]>>,
+	): this;
+
+	onError(handler: Hooks.OnError<Errors>): this;
+
+	onError<T extends UpdateName>(
+		updateNameOrHandler: T | Hooks.OnError<Errors>,
+		handler?: Hooks.OnError<Errors, InstanceType<(typeof contextsMappings)[T]>>,
+	): this {
+		if (typeof updateNameOrHandler === "function") {
+			this.hooks.onError.push(updateNameOrHandler);
+
+			return this;
+		}
+
+		if (handler) {
+			this.hooks.onError.push(async (errContext) => {
+				if (errContext.context.is(updateNameOrHandler))
+					// TODO:  Sorry... fix later
+					//@ts-expect-error
+					await handler(errContext);
+			});
+		}
 
 		return this;
 	}
