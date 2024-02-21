@@ -183,8 +183,8 @@ export class Bot<Errors extends ErrorDefinitions = {}, Derives = {}> {
 	 * Set error handler.
 	 * @example
 	 * ```ts
-	 * bot.updates.onError(({ context, kind, error }) => {
-	 * 	if(context.is("message")) return context.send(`${kind}: ${error.message}`);
+	 * bot.onError("message", ({ context, kind, error }) => {
+	 * 	return context.send(`${kind}: ${error.message}`);
 	 * })
 	 * ```
 	 */
@@ -227,6 +227,17 @@ export class Bot<Errors extends ErrorDefinitions = {}, Derives = {}> {
 		});
 
 		return this as unknown as Bot<Errors, Derives & ReturnType<Handler>>;
+	}
+
+	on<T extends UpdateName>(
+		updateName: MaybeArray<T>,
+		handler: Handler<InstanceType<(typeof contextsMappings)[T]> & Derives>,
+	) {
+		// TODO:  Sorry... fix later
+		//@ts-expect-error
+		this.updates.on(updateName, handler);
+
+		return this;
 	}
 
 	use(handler: Handler<Context & Derives>) {

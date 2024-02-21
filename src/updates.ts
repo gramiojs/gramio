@@ -1,4 +1,9 @@
-import { Context, UpdateName, contextsMappings } from "@gramio/contexts";
+import {
+	Context,
+	MaybeArray,
+	UpdateName,
+	contextsMappings,
+} from "@gramio/contexts";
 import type { TelegramUpdate } from "@gramio/types";
 import { CaughtMiddlewareHandler, Composer, noopNext } from "middleware-io";
 import type { Bot } from "./bot";
@@ -21,7 +26,7 @@ export class Updates {
 	}
 
 	on<T extends UpdateName>(
-		updateName: T,
+		updateName: MaybeArray<T>,
 		handler: Handler<InstanceType<(typeof contextsMappings)[T]>>,
 	) {
 		return this.use(async (context, next) => {
