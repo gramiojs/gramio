@@ -1,4 +1,4 @@
-import { Context } from "@gramio/contexts";
+import { BotLike, Context } from "@gramio/contexts";
 import { APIMethodParams, APIMethods } from "@gramio/types";
 import { NextMiddleware } from "middleware-io";
 import { TelegramError } from "./errors";
@@ -9,7 +9,11 @@ export interface BotOptions {
 
 export type Handler<T> = (context: T, next: NextMiddleware) => unknown;
 
-interface ErrorHandlerParams<Ctx extends Context, Kind extends string, Err> {
+interface ErrorHandlerParams<
+	Ctx extends Context<BotLike>,
+	Kind extends string,
+	Err,
+> {
 	context: Ctx;
 	kind: Kind;
 	error: Err;
@@ -34,7 +38,10 @@ export namespace Hooks {
 		ctx: PreRequestContext,
 	) => MaybePromise<PreRequestContext>;
 
-	export type OnErrorContext<Ctx extends Context, T extends ErrorDefinitions> =
+	export type OnErrorContext<
+		Ctx extends Context<BotLike>,
+		T extends ErrorDefinitions,
+	> =
 		| ErrorHandlerParams<Ctx, "TELEGRAM", AnyTelegramError>
 		| ErrorHandlerParams<Ctx, "UNKNOWN", Error>
 		| {
@@ -43,7 +50,7 @@ export namespace Hooks {
 		  }[keyof T];
 	export type OnError<
 		T extends ErrorDefinitions,
-		Ctx extends Context = Context,
+		Ctx extends Context<BotLike> = Context<BotLike>,
 	> = (options: OnErrorContext<Ctx, T>) => unknown;
 
 	export interface Store<T extends ErrorDefinitions> {

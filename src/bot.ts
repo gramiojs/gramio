@@ -1,9 +1,4 @@
-import {
-	Context,
-	MaybeArray,
-	UpdateName,
-	contextsMappings,
-} from "@gramio/contexts";
+import { Context, ContextType, MaybeArray, UpdateName } from "@gramio/contexts";
 import { convertJsonToFormData, isMediaUpload } from "@gramio/files";
 import { FormattableMap } from "@gramio/format";
 import type {
@@ -40,7 +35,7 @@ export class Bot<Errors extends ErrorDefinitions = {}, Derives = {}> {
 		TELEGRAM: TelegramError,
 	};
 
-	private errorHandler(context: Context, error: Error) {
+	private errorHandler(context: Context<typeof this>, error: Error) {
 		return this.runImmutableHooks("onError", {
 			context,
 			//@ts-expect-error ErrorKind exists if user register error-class with .error("kind", SomeError);
@@ -191,14 +186,14 @@ export class Bot<Errors extends ErrorDefinitions = {}, Derives = {}> {
 
 	onError<T extends UpdateName>(
 		updateName: MaybeArray<T>,
-		handler: Hooks.OnError<Errors, InstanceType<(typeof contextsMappings)[T]>>,
+		handler: Hooks.OnError<Errors, ContextType<typeof this, T>>,
 	): this;
 
 	onError(handler: Hooks.OnError<Errors>): this;
 
 	onError<T extends UpdateName>(
 		updateNameOrHandler: T | Hooks.OnError<Errors>,
-		handler?: Hooks.OnError<Errors, InstanceType<(typeof contextsMappings)[T]>>,
+		handler?: Hooks.OnError<Errors, ContextType<typeof this, T>>,
 	): this {
 		if (typeof updateNameOrHandler === "function") {
 			this.hooks.onError.push(updateNameOrHandler);
@@ -218,7 +213,9 @@ export class Bot<Errors extends ErrorDefinitions = {}, Derives = {}> {
 		return this;
 	}
 
-	derive<Handler extends (context: Context) => object>(handler: Handler) {
+	derive<Handler extends (context: Context<typeof this>) => object>(
+		handler: Handler,
+	) {
 		this.updates.use((context, next) => {
 			for (const [key, value] of Object.entries(handler(context))) {
 				context[key] = value;
@@ -231,16 +228,14 @@ export class Bot<Errors extends ErrorDefinitions = {}, Derives = {}> {
 
 	on<T extends UpdateName>(
 		updateName: MaybeArray<T>,
-		handler: Handler<InstanceType<(typeof contextsMappings)[T]> & Derives>,
+		handler: Handler<ContextType<typeof this, T> & Derives>,
 	) {
-		// TODO:  Sorry... fix later
-		//@ts-expect-error
 		this.updates.on(updateName, handler);
 
 		return this;
 	}
 
-	use(handler: Handler<Context & Derives>) {
+	use(handler: Handler<Context<typeof this> & Derives>) {
 		this.updates.use(handler);
 
 		return this;

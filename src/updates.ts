@@ -14,33 +14,30 @@ export class Updates {
 	private isStarted = false;
 	private offset = 0;
 	private composer = Composer.builder<
-		Context & {
+		Context<Bot> & {
 			[key: string]: unknown;
 		}
 	>();
-	private onError: CaughtMiddlewareHandler<Context>;
+	private onError: CaughtMiddlewareHandler<Context<Bot>>;
 
-	constructor(bot: Bot<any, any>, onError: CaughtMiddlewareHandler<Context>) {
+	constructor(
+		bot: Bot<any, any>,
+		onError: CaughtMiddlewareHandler<Context<any>>,
+	) {
 		this.bot = bot;
 		this.onError = onError;
 	}
 
-	on<T extends UpdateName>(
-		updateName: MaybeArray<T>,
-		handler: Handler<InstanceType<(typeof contextsMappings)[T]>>,
-	) {
+	//TODO: FIX
+	on<T extends UpdateName>(updateName: MaybeArray<T>, handler: Handler<any>) {
 		return this.use(async (context, next) => {
 			//TODO: fix typings
-			if (context.is(updateName))
-				await handler(
-					context as InstanceType<(typeof contextsMappings)[T]>,
-					next,
-				);
+			if (context.is(updateName)) await handler(context, next);
 			else await next();
 		});
 	}
 
-	use(handler: Handler<Context & any>) {
+	use(handler: Handler<any>) {
 		this.composer.caught(this.onError).use(handler);
 
 		return this;
@@ -56,7 +53,6 @@ export class Updates {
 
 		try {
 			let context = new UpdateContext({
-				//@ts-expect-error
 				bot: this.bot,
 				update: data,
 				//@ts-expect-error
@@ -67,7 +63,6 @@ export class Updates {
 
 			if ("isEvent" in context && context.isEvent() && context.eventType) {
 				context = new contextsMappings[context.eventType]({
-					//@ts-expect-error
 					bot: this.bot,
 					update: data,
 					//@ts-expect-error
@@ -83,7 +78,7 @@ export class Updates {
 
 			this.composer.compose()(
 				//TODO: fix typings
-				context as unknown as Context & {
+				context as unknown as Context<Bot> & {
 					[key: string]: unknown;
 				},
 				noopNext,

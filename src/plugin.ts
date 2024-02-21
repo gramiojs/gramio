@@ -1,4 +1,4 @@
-import { Context } from "@gramio/contexts";
+import { BotLike, Context } from "@gramio/contexts";
 import { ErrorDefinitions } from "types";
 import { ErrorKind } from "#errors";
 
@@ -7,7 +7,7 @@ export class Plugin<Errors extends ErrorDefinitions = {}, Derives = {}> {
 	Errors!: Errors;
 	Derives!: Derives;
 
-	derives: ((context: Context) => object)[] = [];
+	derives: ((context: Context<BotLike>) => object)[] = [];
 
 	name: string;
 	errorsDefinitions: Record<
@@ -36,7 +36,9 @@ export class Plugin<Errors extends ErrorDefinitions = {}, Derives = {}> {
 		>;
 	}
 
-	derive<Handler extends (context: Context) => object>(handler: Handler) {
+	derive<Handler extends (context: Context<BotLike>) => object>(
+		handler: Handler,
+	) {
 		this.derives.push(handler);
 
 		return this as unknown as Plugin<Errors, Derives & ReturnType<Handler>>;
