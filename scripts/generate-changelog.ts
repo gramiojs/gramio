@@ -1,5 +1,6 @@
 import { execSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { appendFileSync } from "node:fs";
 import { EOL } from "node:os";
 
 function getLatestTag() {
@@ -23,9 +24,13 @@ console.log(getLatestTag(), commits);
 
 const version = execSync("npm pkg get version").toString().replace(/"/gi, "");
 
+const delimiter = `---${randomUUID()}---${EOL}`;
+
 if (process.env.GITHUB_OUTPUT)
-	writeFileSync(
+	appendFileSync(
 		process.env.GITHUB_OUTPUT,
-		`changelog="${commits.join(EOL.repeat(2))}"${EOL}version=${version}${EOL}`,
+		`changelog<<${delimiter}${commits.join(
+			EOL.repeat(2),
+		)}${delimiter}version=${version}${EOL}`,
 	);
 else console.log("Not github actions");
