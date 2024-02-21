@@ -31,6 +31,6 @@ if (process.env.GITHUB_OUTPUT)
 		process.env.GITHUB_OUTPUT,
 		`changelog<<${delimiter}${commits.join(
 			EOL.repeat(2),
-		)}${delimiter}version=${version}${EOL}`,
+		)}${EOL}${delimiter}version=${version}${EOL}`,
 	);
 else console.log("Not github actions");
