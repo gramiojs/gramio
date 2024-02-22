@@ -1,4 +1,4 @@
-import { BotLike, Context } from "@gramio/contexts";
+import { BotLike, Context, UpdateName } from "@gramio/contexts";
 import { APIMethodParams, APIMethods } from "@gramio/types";
 import { NextMiddleware } from "middleware-io";
 import { TelegramError } from "./errors";
@@ -33,6 +33,8 @@ type AnyTelegramMethod = {
 type MaybePromise<T> = T | Promise<T>;
 
 export namespace Hooks {
+	export type Derive<Ctx> = (context: Ctx) => object;
+
 	export type PreRequestContext = AnyTelegramMethod;
 	export type PreRequest = (
 		ctx: PreRequestContext,
@@ -60,3 +62,5 @@ export namespace Hooks {
 }
 
 export type ErrorDefinitions = Record<string, Error>;
+
+export type DeriveDefinitions = Record<UpdateName | "global", {}>;

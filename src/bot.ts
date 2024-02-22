@@ -12,13 +12,22 @@ import "reflect-metadata";
 import { fetch } from "undici";
 import { Plugin } from "#plugin";
 import { ErrorKind, TelegramError } from "./errors";
-import { BotOptions, ErrorDefinitions, Handler, Hooks } from "./types";
+import {
+	BotOptions,
+	DeriveDefinitions,
+	ErrorDefinitions,
+	Handler,
+	Hooks,
+} from "./types";
 import { Updates } from "./updates";
 
 @Inspectable<Bot>({
 	serialize: () => ({}),
 })
-export class Bot<Errors extends ErrorDefinitions = {}, Derives = {}> {
+export class Bot<
+	Errors extends ErrorDefinitions = {},
+	Derives extends DeriveDefinitions = DeriveDefinitions,
+> {
 	readonly options: BotOptions = {};
 
 	readonly api = new Proxy({} as APIMethods, {
@@ -170,7 +179,8 @@ export class Bot<Errors extends ErrorDefinitions = {}, Derives = {}> {
 		this.errorsDefinitions[kind] = error;
 
 		return this as unknown as Bot<
-			Errors & { [name in Name]: InstanceType<NewError> }
+			Errors & { [name in Name]: InstanceType<NewError> },
+			Derives
 		>;
 	}
 
@@ -186,14 +196,22 @@ export class Bot<Errors extends ErrorDefinitions = {}, Derives = {}> {
 
 	onError<T extends UpdateName>(
 		updateName: MaybeArray<T>,
-		handler: Hooks.OnError<Errors, ContextType<typeof this, T>>,
+		handler: Hooks.OnError<
+			Errors,
+			ContextType<typeof this, T> & Derives["global"] & Derives[T]
+		>,
 	): this;
 
-	onError(handler: Hooks.OnError<Errors>): this;
+	onError(
+		handler: Hooks.OnError<Errors, Context<typeof this> & Derives["global"]>,
+	): this;
 
 	onError<T extends UpdateName>(
 		updateNameOrHandler: T | Hooks.OnError<Errors>,
-		handler?: Hooks.OnError<Errors, ContextType<typeof this, T>>,
+		handler?: Hooks.OnError<
+			Errors,
+			ContextType<typeof this, T> & Derives["global"] & Derives[T]
+		>,
 	): this {
 		if (typeof updateNameOrHandler === "function") {
 			this.hooks.onError.push(updateNameOrHandler);
@@ -213,29 +231,56 @@ export class Bot<Errors extends ErrorDefinitions = {}, Derives = {}> {
 		return this;
 	}
 
-	derive<Handler extends (context: Context<typeof this>) => object>(
+	derive<Handler extends Hooks.Derive<Context<typeof this>>>(
 		handler: Handler,
-	) {
-		this.updates.use((context, next) => {
-			for (const [key, value] of Object.entries(handler(context))) {
-				context[key] = value;
-			}
-			next();
-		});
+	): Bot<Errors, Derives & { global: ReturnType<Handler> }>;
 
-		return this as unknown as Bot<Errors, Derives & ReturnType<Handler>>;
+	derive<
+		Update extends UpdateName,
+		Handler extends Hooks.Derive<ContextType<typeof this, Update>>,
+	>(
+		updateName: Update,
+		handler: Handler,
+	): Bot<Errors, Derives & { [K in Update]: ReturnType<Handler> }>;
+
+	derive<
+		Update extends UpdateName,
+		Handler extends Hooks.Derive<ContextType<typeof this, Update>>,
+	>(updateNameOrHandler: Update | Handler, handler?: Handler) {
+		if (typeof updateNameOrHandler === "function")
+			this.updates.use((context, next) => {
+				for (const [key, value] of Object.entries(
+					updateNameOrHandler(context),
+				)) {
+					context[key] = value;
+				}
+
+				next();
+			});
+		else if (handler)
+			this.updates.on(updateNameOrHandler, (context, next) => {
+				for (const [key, value] of Object.entries(handler(context))) {
+					context[key] = value;
+				}
+
+				next();
+			});
+
+		return this;
 	}
 
 	on<T extends UpdateName>(
 		updateName: MaybeArray<T>,
-		handler: Handler<ContextType<typeof this, T> & Derives>,
+		handler: Handler<
+			ContextType<typeof this, T> & Derives["global"] & Derives[T]
+		>,
 	) {
 		this.updates.on(updateName, handler);
 
 		return this;
 	}
 
-	use(handler: Handler<Context<typeof this> & Derives>) {
+	use(handler: Handler<Context<typeof this> & Derives["global"]>) {
 		this.updates.use(handler);
 
 		return this;
@@ -246,8 +291,11 @@ export class Bot<Errors extends ErrorDefinitions = {}, Derives = {}> {
 			if (this.errorsDefinitions[key]) this.errorsDefinitions[key] = value;
 		}
 
-		for (const derive of plugin.derives) {
-			this.derive(derive);
+		for (const value of plugin.derives) {
+			const [derive, updateName] = value;
+
+			if (!updateName) this.derive(derive);
+			else this.derive(updateName, derive);
 		}
 
 		return this as Bot<
