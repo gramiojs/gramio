@@ -239,14 +239,14 @@ export class Bot<
 		Update extends UpdateName,
 		Handler extends Hooks.Derive<ContextType<typeof this, Update>>,
 	>(
-		updateName: Update,
+		updateName: MaybeArray<Update>,
 		handler: Handler,
 	): Bot<Errors, Derives & { [K in Update]: Awaited<ReturnType<Handler>> }>;
 
 	derive<
 		Update extends UpdateName,
 		Handler extends Hooks.Derive<ContextType<typeof this, Update>>,
-	>(updateNameOrHandler: Update | Handler, handler?: Handler) {
+	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
 		if (typeof updateNameOrHandler === "function")
 			this.updates.use(async (context, next) => {
 				for (const [key, value] of Object.entries(

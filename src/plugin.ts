@@ -1,4 +1,10 @@
-import { BotLike, Context, ContextType, UpdateName } from "@gramio/contexts";
+import {
+	BotLike,
+	Context,
+	ContextType,
+	MaybeArray,
+	UpdateName,
+} from "@gramio/contexts";
 import { DeriveDefinitions, ErrorDefinitions, Hooks } from "types";
 import { ErrorKind } from "#errors";
 
@@ -48,14 +54,14 @@ export class Plugin<
 		Update extends UpdateName,
 		Handler extends Hooks.Derive<ContextType<BotLike, Update>>,
 	>(
-		updateName: Update,
+		updateName: MaybeArray<Update>,
 		handler: Handler,
 	): Plugin<Errors, Derives & { [K in Update]: Awaited<ReturnType<Handler>> }>;
 
 	derive<
 		Update extends UpdateName,
 		Handler extends Hooks.Derive<ContextType<BotLike, Update>>,
-	>(updateNameOrHandler: Update | Handler, handler?: Handler) {
+	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
 		if (typeof updateNameOrHandler === "string" && handler)
 			this.derives.push([handler, updateNameOrHandler]);
 		else if (typeof updateNameOrHandler === "function")

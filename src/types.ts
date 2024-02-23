@@ -33,7 +33,9 @@ type AnyTelegramMethod = {
 export type MaybePromise<T> = Promise<T> | T;
 
 export namespace Hooks {
-	export type Derive<Ctx> = (context: Ctx) => MaybePromise<Record<string, any>>;
+	export type Derive<Ctx> = (
+		context: Ctx,
+	) => MaybePromise<Record<string, unknown>>;
 
 	export type PreRequestContext = AnyTelegramMethod;
 	export type PreRequest = (
