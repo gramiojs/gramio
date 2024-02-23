@@ -23,9 +23,14 @@ export class Plugin<
 		string,
 		{ new (...args: any): any; prototype: Error }
 	> = {};
+	dependencies: string[] = [];
 
-	constructor(name: string) {
+	constructor(
+		name: string,
+		{ dependencies }: { dependencies?: string[] } = {},
+	) {
 		this.name = name;
+		if (dependencies) this.dependencies = dependencies;
 	}
 
 	/**

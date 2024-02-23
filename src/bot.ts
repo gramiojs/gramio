@@ -37,6 +37,7 @@ export class Bot<
 				this._callApi(method, args),
 	});
 
+	private dependencies: string[] = [];
 	private errorsDefinitions: Record<
 		string,
 		{ new (...args: any): any; prototype: Error }
@@ -287,6 +288,15 @@ export class Bot<
 	}
 
 	extend<NewPlugin extends Plugin>(plugin: NewPlugin) {
+		if (plugin.dependencies.some((dep) => !this.dependencies.includes(dep)))
+			throw new Error(
+				`The «${
+					plugin.name
+				}» plugin needs dependencies registered before: ${plugin.dependencies
+					.filter((dep) => !this.dependencies.includes(dep))
+					.join(", ")}`,
+			);
+
 		for (const [key, value] of Object.entries(plugin.errorsDefinitions)) {
 			if (this.errorsDefinitions[key]) this.errorsDefinitions[key] = value;
 		}
@@ -297,6 +307,8 @@ export class Bot<
 			if (!updateName) this.derive(derive);
 			else this.derive(updateName, derive);
 		}
+
+		this.dependencies.push(plugin.name);
 
 		return this as Bot<
 			Errors & NewPlugin["Errors"],
