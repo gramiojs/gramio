@@ -19,7 +19,7 @@
         "type": "tsc --noEmit",
         "lint": "bun check ./src",
         "lint:fix": "bun lint --apply",
-        "prepublishOnly": "tsc"
+        "prepublishOnly": "tsc && bunx tsc-alias"
     },
     "author": "kravets",
     "license": "ISC",

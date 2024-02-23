@@ -233,7 +233,7 @@ export class Bot<
 
 	derive<Handler extends Hooks.Derive<Context<typeof this>>>(
 		handler: Handler,
-	): Bot<Errors, Derives & { global: ReturnType<Handler> }>;
+	): Bot<Errors, Derives & { global: Awaited<ReturnType<Handler>> }>;
 
 	derive<
 		Update extends UpdateName,
@@ -241,16 +241,16 @@ export class Bot<
 	>(
 		updateName: Update,
 		handler: Handler,
-	): Bot<Errors, Derives & { [K in Update]: ReturnType<Handler> }>;
+	): Bot<Errors, Derives & { [K in Update]: Awaited<ReturnType<Handler>> }>;
 
 	derive<
 		Update extends UpdateName,
 		Handler extends Hooks.Derive<ContextType<typeof this, Update>>,
 	>(updateNameOrHandler: Update | Handler, handler?: Handler) {
 		if (typeof updateNameOrHandler === "function")
-			this.updates.use((context, next) => {
+			this.updates.use(async (context, next) => {
 				for (const [key, value] of Object.entries(
-					updateNameOrHandler(context),
+					await updateNameOrHandler(context),
 				)) {
 					context[key] = value;
 				}
@@ -258,8 +258,8 @@ export class Bot<
 				next();
 			});
 		else if (handler)
-			this.updates.on(updateNameOrHandler, (context, next) => {
-				for (const [key, value] of Object.entries(handler(context))) {
+			this.updates.on(updateNameOrHandler, async (context, next) => {
+				for (const [key, value] of Object.entries(await handler(context))) {
 					context[key] = value;
 				}
 

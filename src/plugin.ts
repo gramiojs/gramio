@@ -35,13 +35,14 @@ export class Plugin<
 		this.errorsDefinitions[kind] = error;
 
 		return this as unknown as Plugin<
-			Errors & { [name in Name]: InstanceType<NewError> }
+			Errors & { [name in Name]: InstanceType<NewError> },
+			Derives
 		>;
 	}
 
 	derive<Handler extends Hooks.Derive<Context<BotLike>>>(
 		handler: Handler,
-	): Plugin<Errors, Derives & { global: ReturnType<Handler> }>;
+	): Plugin<Errors, Derives & { global: Awaited<ReturnType<Handler>> }>;
 
 	derive<
 		Update extends UpdateName,
@@ -49,7 +50,7 @@ export class Plugin<
 	>(
 		updateName: Update,
 		handler: Handler,
-	): Plugin<Errors, Derives & { [K in Update]: ReturnType<Handler> }>;
+	): Plugin<Errors, Derives & { [K in Update]: Awaited<ReturnType<Handler>> }>;
 
 	derive<
 		Update extends UpdateName,
@@ -60,6 +61,6 @@ export class Plugin<
 		else if (typeof updateNameOrHandler === "function")
 			this.derives.push([updateNameOrHandler, undefined]);
 
-		return this as unknown as Plugin<Errors, Derives & ReturnType<Handler>>;
+		return this;
 	}
 }

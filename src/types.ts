@@ -30,10 +30,10 @@ type AnyTelegramMethod = {
 	};
 }[keyof APIMethods];
 
-type MaybePromise<T> = T | Promise<T>;
+export type MaybePromise<T> = Promise<T> | T;
 
 export namespace Hooks {
-	export type Derive<Ctx> = (context: Ctx) => object;
+	export type Derive<Ctx> = (context: Ctx) => MaybePromise<Record<string, any>>;
 
 	export type PreRequestContext = AnyTelegramMethod;
 	export type PreRequest = (
