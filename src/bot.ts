@@ -315,4 +315,10 @@ export class Bot<
 			Derives & NewPlugin["Derives"]
 		>;
 	}
+
+	async start({ webhook }: { webhook?: APIMethodParams<"setWebhook"> }) {
+		if (!webhook) return this.updates.startPolling();
+
+		return this.api.setWebhook(webhook);
+	}
 }
