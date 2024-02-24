@@ -317,7 +317,11 @@ export class Bot<
 	}
 
 	async start({ webhook }: { webhook?: APIMethodParams<"setWebhook"> }) {
-		if (!webhook) return this.updates.startPolling();
+		if (!webhook) {
+			this.api.deleteWebhook();
+
+			return this.updates.startPolling();
+		}
 
 		return this.api.setWebhook(webhook);
 	}

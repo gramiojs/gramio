@@ -1,12 +1,12 @@
 import { Bot } from "#bot";
-import { frameworks } from "./adapters";
+import { FrameworkAdapter, frameworks } from "./adapters";
 
 export function webhookHandler(bot: Bot, framework: keyof typeof frameworks) {
-	const frameworkAdapter = frameworks[framework];
+	const frameworkAdapter = frameworks[framework] as FrameworkAdapter;
 
 	return async (...args: any[]) => {
 		const { update } = frameworkAdapter(...args);
 
-		await bot.updates.handleUpdate(await update);
+		await bot.updates.handleUpdate(update);
 	};
 }
