@@ -373,7 +373,7 @@ export class Bot<
 		this.runImmutableHooks("onStart", {
 			plugins: this.dependencies,
 			info: this.info,
-			updatesFrom: "long-polling",
+			updatesFrom: "webhook",
 		});
 
 		return this.info;
