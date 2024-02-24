@@ -5,6 +5,7 @@ import type {
 	APIMethodParams,
 	APIMethods,
 	TelegramAPIResponse,
+	TelegramUser,
 } from "@gramio/types";
 import { FormDataEncoder } from "form-data-encoder";
 import { Inspectable } from "inspectable";
@@ -29,6 +30,7 @@ export class Bot<
 	Derives extends DeriveDefinitions = DeriveDefinitions,
 > {
 	readonly options: BotOptions = {};
+	info: TelegramUser | undefined;
 
 	readonly api = new Proxy({} as APIMethods, {
 		get:
@@ -330,6 +332,9 @@ export class Bot<
 			APIMethodParams<"getUpdates">
 		>["allowed_updates"];
 	} = {}) {
+		//TODO: maybe it useless??
+		this.info = await this.api.getMe();
+
 		if (!webhook) {
 			await this.api.deleteWebhook({
 				drop_pending_updates: dropPendingUpdates,
