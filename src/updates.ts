@@ -87,7 +87,7 @@ export class Updates {
 			throw new Error(`[UPDATES] Update type ${updateType} not supported.`);
 		}
 	}
-
+	/**@deprecated use bot.start instead */
 	async startPolling(params: APIMethodParams<"getUpdates"> = {}) {
 		if (this.isStarted) throw new Error("[UPDATES] Polling already started!");
 
