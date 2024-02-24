@@ -316,13 +316,36 @@ export class Bot<
 		>;
 	}
 
-	async start({ webhook }: { webhook?: APIMethodParams<"setWebhook"> }) {
+	async start({
+		webhook,
+		dropPendingUpdates,
+		allowedUpdates,
+	}: {
+		webhook?: Omit<
+			APIMethodParams<"setWebhook">,
+			"drop_pending_updates" | "allowed_updates"
+		>;
+		dropPendingUpdates?: boolean;
+		allowedUpdates?: NonNullable<
+			APIMethodParams<"getUpdates">
+		>["allowed_updates"];
+	} = {}) {
 		if (!webhook) {
-			this.api.deleteWebhook();
+			await this.api.deleteWebhook({
+				drop_pending_updates: dropPendingUpdates,
+			});
 
-			return this.updates.startPolling();
+			return this.updates.startPolling({
+				allowed_updates: allowedUpdates,
+			});
 		}
 
-		return this.api.setWebhook(webhook);
+		if (this.updates.isStarted) this.updates.stopPolling();
+
+		return this.api.setWebhook({
+			...webhook,
+			drop_pending_updates: dropPendingUpdates,
+			allowed_updates: allowedUpdates,
+		});
 	}
 }

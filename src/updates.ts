@@ -4,14 +4,14 @@ import {
 	UpdateName,
 	contextsMappings,
 } from "@gramio/contexts";
-import type { TelegramUpdate } from "@gramio/types";
+import type { APIMethodParams, TelegramUpdate } from "@gramio/types";
 import { CaughtMiddlewareHandler, Composer, noopNext } from "middleware-io";
 import type { Bot } from "./bot";
 import { Handler } from "./types";
 
 export class Updates {
 	private readonly bot: Bot<any, any>;
-	private isStarted = false;
+	isStarted = false;
 	private offset = 0;
 	private composer = Composer.builder<
 		Context<Bot> & {
@@ -88,20 +88,21 @@ export class Updates {
 		}
 	}
 
-	async startPolling() {
+	async startPolling(params: APIMethodParams<"getUpdates"> = {}) {
 		if (this.isStarted) throw new Error("[UPDATES] Polling already started!");
 
 		this.isStarted = true;
 
-		this.startFetchLoop();
+		this.startFetchLoop(params);
 
 		return;
 	}
 
-	async startFetchLoop() {
+	async startFetchLoop(params: APIMethodParams<"getUpdates"> = {}) {
 		while (this.isStarted) {
 			const updates = await this.bot.api.getUpdates({
 				offset: this.offset,
+				...params,
 			});
 
 			for await (const update of updates) {
