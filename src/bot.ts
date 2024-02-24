@@ -71,6 +71,7 @@ export class Bot<
 			},
 		],
 		onError: [],
+		onStart: [],
 	};
 
 	constructor(token: string, options?: Omit<BotOptions, "token">) {
@@ -78,7 +79,7 @@ export class Bot<
 	}
 
 	private async runHooks<
-		T extends Exclude<keyof Hooks.Store<Errors>, "onError">,
+		T extends Exclude<keyof Hooks.Store<Errors>, "onError" | "onStart">,
 	>(type: T, context: Parameters<Hooks.Store<Errors>[T][0]>[0]) {
 		let data = context;
 
@@ -90,9 +91,11 @@ export class Bot<
 	}
 
 	private async runImmutableHooks<
-		T extends Extract<keyof Hooks.Store<Errors>, "onError">,
+		T extends Extract<keyof Hooks.Store<Errors>, "onError" | "onStart">,
 	>(type: T, context: Parameters<Hooks.Store<Errors>[T][0]>[0]) {
 		for await (const hook of this.hooks[type]) {
+			//TODO: solve that later
+			//@ts-expect-error
 			await hook(context);
 		}
 	}
@@ -272,6 +275,12 @@ export class Bot<
 		return this;
 	}
 
+	onStart(handler: Hooks.OnStart) {
+		this.hooks.onStart.push(handler);
+
+		return this;
+	}
+
 	on<T extends UpdateName>(
 		updateName: MaybeArray<T>,
 		handler: Handler<
@@ -340,17 +349,33 @@ export class Bot<
 				drop_pending_updates: dropPendingUpdates,
 			});
 
-			return this.updates.startPolling({
+			await this.updates.startPolling({
 				allowed_updates: allowedUpdates,
 			});
+
+			this.runImmutableHooks("onStart", {
+				plugins: this.dependencies,
+				info: this.info,
+				updatesFrom: "long-polling",
+			});
+
+			return this.info;
 		}
 
 		if (this.updates.isStarted) this.updates.stopPolling();
 
-		return this.api.setWebhook({
+		await this.api.setWebhook({
 			...webhook,
 			drop_pending_updates: dropPendingUpdates,
 			allowed_updates: allowedUpdates,
 		});
+
+		this.runImmutableHooks("onStart", {
+			plugins: this.dependencies,
+			info: this.info,
+			updatesFrom: "long-polling",
+		});
+
+		return this.info;
 	}
 }

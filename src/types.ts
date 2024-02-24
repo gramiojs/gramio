@@ -1,5 +1,5 @@
 import { BotLike, Context, UpdateName } from "@gramio/contexts";
-import { APIMethodParams, APIMethods } from "@gramio/types";
+import { APIMethodParams, APIMethods, TelegramUser } from "@gramio/types";
 import { NextMiddleware } from "middleware-io";
 import { TelegramError } from "./errors";
 
@@ -57,9 +57,16 @@ export namespace Hooks {
 		Ctx extends Context<BotLike> = Context<BotLike>,
 	> = (options: OnErrorContext<Ctx, T>) => unknown;
 
+	export type OnStart = (context: {
+		plugins: string[];
+		info: TelegramUser;
+		updatesFrom: "webhook" | "long-polling";
+	}) => unknown;
+
 	export interface Store<T extends ErrorDefinitions> {
 		preRequest: PreRequest[];
 		onError: OnError<T>[];
+		onStart: OnStart[];
 	}
 }
 
