@@ -1,46 +1,45 @@
 {
-    "name": "gramio",
-    "version": "0.0.17",
-    "description": "Powerful Telegram Bot API framework",
-    "main": "./dist/index.js",
-    "types": "./dist/index.d.ts",
-    "keywords": [
-        "telegram",
-        "telegram-bot",
-        "telegram-bot-api",
-        "bot",
-        "framework",
-        "types",
-        "client",
-        "webhook",
-        "long-polling"
-    ],
-    "scripts": {
-        "type": "tsc --noEmit",
-        "lint": "bun check ./src",
-        "lint:fix": "bun lint --apply",
-        "prepublishOnly": "tsc && bunx tsc-alias"
-    },
-    "author": "kravets",
-    "license": "ISC",
-    "devDependencies": {
-        "@biomejs/biome": "1.5.3",
-        "@gramio/types": "^7.1.4",
-        "@types/node": "^20.11.20",
-        "typescript": "^5.3.3"
-    },
-    "dependencies": {
-        "@gramio/contexts": "^0.0.5",
-        "@gramio/files": "^0.0.3",
-        "@gramio/format": "^0.0.8",
-        "@gramio/keyboards": "^0.1.6",
-        "form-data-encoder": "^4.0.2",
-        "inspectable": "^2.1.0",
-        "middleware-io": "^2.8.1",
-        "reflect-metadata": "^0.2.1",
-        "undici": "^6.6.2"
-    },
-    "files": [
-        "dist"
-    ]
+  "name": "gramio",
+  "version": "0.0.17",
+  "description": "Powerful Telegram Bot API framework",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "keywords": [
+    "telegram",
+    "telegram-bot",
+    "telegram-bot-api",
+    "bot",
+    "framework",
+    "types",
+    "client",
+    "webhook",
+    "long-polling"
+  ],
+  "scripts": {
+    "type": "tsc --noEmit",
+    "lint": "bun check ./src",
+    "lint:fix": "bun lint --apply",
+    "prepublishOnly": "tsc && bunx tsc-alias"
+  },
+  "author": "kravets",
+  "license": "ISC",
+  "devDependencies": {
+    "@biomejs/biome": "1.5.3",
+    "@gramio/types": "^7.1.4",
+    "@types/node": "^20.11.20",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@gramio/contexts": "^0.0.5",
+    "@gramio/files": "^0.0.3",
+    "@gramio/format": "^0.0.8",
+    "@gramio/keyboards": "^0.1.6",
+    "form-data-encoder": "^4.0.2",
+    "inspectable": "^3.0.0",
+    "middleware-io": "^2.8.1",
+    "undici": "^6.6.2"
+  },
+  "files": [
+    "dist"
+  ]
 }

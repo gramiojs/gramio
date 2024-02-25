@@ -9,7 +9,6 @@ import type {
 } from "@gramio/types";
 import { FormDataEncoder } from "form-data-encoder";
 import { Inspectable } from "inspectable";
-import "reflect-metadata";
 import { fetch } from "undici";
 import { Plugin } from "#plugin";
 import { ErrorKind, TelegramError } from "./errors";

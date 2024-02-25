@@ -1,3 +1,6 @@
+// INFO: Temp polyfill, more info https://github.com/microsoft/TypeScript/issues/55453#issuecomment-1687496648
+(Symbol as any).metadata ??= Symbol("Symbol.metadata");
+
 export * from "./bot";
 export * from "./errors";
 export * from "./types";

@@ -5,9 +5,16 @@ import {
 	MaybeArray,
 	UpdateName,
 } from "@gramio/contexts";
+import { Inspectable } from "inspectable";
 import { DeriveDefinitions, ErrorDefinitions, Hooks } from "types";
 import { ErrorKind } from "#errors";
 
+@Inspectable<Plugin>({
+	serialize: (plugin) => ({
+		name: plugin.name,
+		dependencies: plugin.dependencies,
+	}),
+})
 export class Plugin<
 	Errors extends ErrorDefinitions = {},
 	Derives extends DeriveDefinitions = DeriveDefinitions,
