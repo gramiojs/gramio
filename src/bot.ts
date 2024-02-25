@@ -28,6 +28,8 @@ export class Bot<
 	Errors extends ErrorDefinitions = {},
 	Derives extends DeriveDefinitions = DeriveDefinitions,
 > {
+	__Derives!: Derives;
+
 	readonly options: BotOptions = {};
 	info: TelegramUser | undefined;
 
