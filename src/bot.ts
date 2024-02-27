@@ -18,6 +18,7 @@ import {
 	ErrorDefinitions,
 	Handler,
 	Hooks,
+	MaybePromise,
 } from "./types";
 import { Updates } from "./updates";
 
@@ -39,7 +40,7 @@ export class Bot<
 			(args: APIMethodParams<T>) =>
 				this._callApi(method, args),
 	});
-
+	private lazyloadPlugins: Promise<Plugin>[] = [];
 	private dependencies: string[] = [];
 	private errorsDefinitions: Record<
 		string,
@@ -299,7 +300,13 @@ export class Bot<
 		return this;
 	}
 
-	extend<NewPlugin extends Plugin>(plugin: NewPlugin) {
+	extend<NewPlugin extends Plugin>(
+		plugin: MaybePromise<NewPlugin>,
+	): Bot<Errors & NewPlugin["Errors"], Derives & NewPlugin["Derives"]> {
+		if (plugin instanceof Promise) {
+			this.lazyloadPlugins.push(plugin);
+			return this;
+		}
 		if (plugin.dependencies.some((dep) => !this.dependencies.includes(dep)))
 			throw new Error(
 				`The «${
@@ -322,10 +329,7 @@ export class Bot<
 
 		this.dependencies.push(plugin.name);
 
-		return this as Bot<
-			Errors & NewPlugin["Errors"],
-			Derives & NewPlugin["Derives"]
-		>;
+		return this;
 	}
 
 	async start({
@@ -342,7 +346,10 @@ export class Bot<
 			APIMethodParams<"getUpdates">
 		>["allowed_updates"];
 	} = {}) {
-		//TODO: maybe it useless??
+		await Promise.all(
+			this.lazyloadPlugins.map(async (plugin) => this.extend(await plugin)),
+		);
+
 		this.info = await this.api.getMe();
 
 		if (!webhook) {
