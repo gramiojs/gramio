@@ -77,6 +77,9 @@ export class Bot<
 	};
 
 	constructor(token: string, options?: Omit<BotOptions, "token">) {
+		if (!token || typeof token !== "string")
+			throw new Error(`Token is ${typeof token} but it should be a string!`);
+
 		this.options = { ...options, token };
 	}
 
