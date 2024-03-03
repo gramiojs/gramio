@@ -285,6 +285,12 @@ export class Bot<
         return this;
     }
 
+    preRequest(handler: Hooks.PreRequest) {
+        this.hooks.preRequest.push(handler);
+
+        return this;
+    }
+
     on<T extends UpdateName>(
         updateName: MaybeArray<T>,
         handler: Handler<
