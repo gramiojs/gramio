@@ -7,6 +7,6 @@ export function webhookHandler(bot: Bot, framework: keyof typeof frameworks) {
 	return async (...args: any[]) => {
 		const { update } = frameworkAdapter(...args);
 
-		await bot.updates.handleUpdate(update);
+		await bot.updates.handleUpdate(await update);
 	};
 }
