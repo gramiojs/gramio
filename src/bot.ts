@@ -2,391 +2,395 @@ import { Context, ContextType, MaybeArray, UpdateName } from "@gramio/contexts";
 import { convertJsonToFormData, isMediaUpload } from "@gramio/files";
 import { FormattableMap } from "@gramio/format";
 import type {
-	APIMethodParams,
-	APIMethods,
-	TelegramAPIResponse,
-	TelegramUser,
+    APIMethodParams,
+    APIMethods,
+    TelegramAPIResponse,
+    TelegramUser,
 } from "@gramio/types";
-import { FormDataEncoder } from "form-data-encoder";
 import { Inspectable } from "inspectable";
-import { fetch } from "undici";
+import { request } from "undici";
 import { Plugin } from "#plugin";
 import { ErrorKind, TelegramError } from "./errors";
 import {
-	BotOptions,
-	DeriveDefinitions,
-	ErrorDefinitions,
-	Handler,
-	Hooks,
-	MaybePromise,
+    BotOptions,
+    DeriveDefinitions,
+    ErrorDefinitions,
+    Handler,
+    Hooks,
+    MaybePromise,
 } from "./types";
 import { Updates } from "./updates";
 
 @Inspectable<Bot>({
-	serialize: () => ({}),
+    serialize: () => ({}),
 })
 export class Bot<
-	Errors extends ErrorDefinitions = {},
-	Derives extends DeriveDefinitions = DeriveDefinitions,
+    Errors extends ErrorDefinitions = {},
+    Derives extends DeriveDefinitions = DeriveDefinitions
 > {
-	__Derives!: Derives;
+    __Derives!: Derives;
 
-	readonly options: BotOptions = {};
-	info: TelegramUser | undefined;
+    readonly options: BotOptions = {};
+    info: TelegramUser | undefined;
 
-	readonly api = new Proxy({} as APIMethods, {
-		get:
-			<T extends keyof APIMethods>(_target: APIMethods, method: T) =>
-			(args: APIMethodParams<T>) =>
-				this._callApi(method, args),
-	});
-	private lazyloadPlugins: Promise<Plugin>[] = [];
-	private dependencies: string[] = [];
-	private errorsDefinitions: Record<
-		string,
-		{ new (...args: any): any; prototype: Error }
-	> = {
-		TELEGRAM: TelegramError,
-	};
+    readonly api = new Proxy({} as APIMethods, {
+        get:
+            <T extends keyof APIMethods>(_target: APIMethods, method: T) =>
+            (args: APIMethodParams<T>) =>
+                this._callApi(method, args),
+    });
+    private lazyloadPlugins: Promise<Plugin>[] = [];
+    private dependencies: string[] = [];
+    private errorsDefinitions: Record<
+        string,
+        { new (...args: any): any; prototype: Error }
+    > = {
+        TELEGRAM: TelegramError,
+    };
 
-	private errorHandler(context: Context<typeof this>, error: Error) {
-		return this.runImmutableHooks("onError", {
-			context,
-			//@ts-expect-error ErrorKind exists if user register error-class with .error("kind", SomeError);
-			kind: error.constructor[ErrorKind] ?? "UNKNOWN",
-			error: error,
-		});
-	}
+    private errorHandler(context: Context<typeof this>, error: Error) {
+        return this.runImmutableHooks("onError", {
+            context,
+            //@ts-expect-error ErrorKind exists if user register error-class with .error("kind", SomeError);
+            kind: error.constructor[ErrorKind] ?? "UNKNOWN",
+            error: error,
+        });
+    }
 
-	updates = new Updates(this, this.errorHandler.bind(this));
+    updates = new Updates(this, this.errorHandler.bind(this));
 
-	private hooks: Hooks.Store<Errors> = {
-		preRequest: [
-			(ctx) => {
-				if (!ctx.params) return ctx;
+    private hooks: Hooks.Store<Errors> = {
+        preRequest: [
+            (ctx) => {
+                if (!ctx.params) return ctx;
 
-				const formattable = FormattableMap[ctx.method];
-				// @ts-ignore add AnyTelegramMethod to @gramio/format
-				if (formattable) ctx.params = formattable(ctx.params);
+                const formattable = FormattableMap[ctx.method];
+                // @ts-ignore add AnyTelegramMethod to @gramio/format
+                if (formattable) ctx.params = formattable(ctx.params);
 
-				return ctx;
-			},
-		],
-		onError: [],
-		onStart: [],
-	};
+                return ctx;
+            },
+        ],
+        onError: [],
+        onStart: [],
+    };
 
-	constructor(token: string, options?: Omit<BotOptions, "token">) {
-		if (!token || typeof token !== "string")
-			throw new Error(`Token is ${typeof token} but it should be a string!`);
+    constructor(token: string, options?: Omit<BotOptions, "token">) {
+        if (!token || typeof token !== "string")
+            throw new Error(
+                `Token is ${typeof token} but it should be a string!`
+            );
 
-		this.options = { ...options, token };
-	}
+        this.options = { ...options, token };
+    }
 
-	private async runHooks<
-		T extends Exclude<keyof Hooks.Store<Errors>, "onError" | "onStart">,
-	>(type: T, context: Parameters<Hooks.Store<Errors>[T][0]>[0]) {
-		let data = context;
+    private async runHooks<
+        T extends Exclude<keyof Hooks.Store<Errors>, "onError" | "onStart">
+    >(type: T, context: Parameters<Hooks.Store<Errors>[T][0]>[0]) {
+        let data = context;
 
-		for await (const hook of this.hooks[type]) {
-			data = await hook(data);
-		}
+        for await (const hook of this.hooks[type]) {
+            data = await hook(data);
+        }
 
-		return data;
-	}
+        return data;
+    }
 
-	private async runImmutableHooks<
-		T extends Extract<keyof Hooks.Store<Errors>, "onError" | "onStart">,
-	>(type: T, context: Parameters<Hooks.Store<Errors>[T][0]>[0]) {
-		for await (const hook of this.hooks[type]) {
-			//TODO: solve that later
-			//@ts-expect-error
-			await hook(context);
-		}
-	}
+    private async runImmutableHooks<
+        T extends Extract<keyof Hooks.Store<Errors>, "onError" | "onStart">
+    >(type: T, context: Parameters<Hooks.Store<Errors>[T][0]>[0]) {
+        for await (const hook of this.hooks[type]) {
+            //TODO: solve that later
+            //@ts-expect-error
+            await hook(context);
+        }
+    }
 
-	private async _callApi<T extends keyof APIMethods>(
-		method: T,
-		params: APIMethodParams<T> = {},
-	) {
-		const url = `https://api.telegram.org/bot${this.options.token}/${method}`;
+    private async _callApi<T extends keyof APIMethods>(
+        method: T,
+        params: APIMethodParams<T> = {}
+    ) {
+        const url = `https://api.telegram.org/bot${this.options.token}/${method}`;
 
-		const reqOptions: RequestInit = {
-			method: "POST",
-			duplex: "half",
-		};
+        const reqOptions: Parameters<typeof request>[1] = {
+            method: "POST",
+        };
 
-		const context = await this.runHooks(
-			"preRequest",
-			// TODO: fix type error
-			// @ts-expect-error
-			{
-				method,
-				params,
-			},
-		);
+        const context = await this.runHooks(
+            "preRequest",
+            // TODO: fix type error
+            // @ts-expect-error
+            {
+                method,
+                params,
+            }
+        );
 
-		// biome-ignore lint/style/noParameterAssign: mutate params
-		params = context.params;
+        // biome-ignore lint/style/noParameterAssign: mutate params
+        params = context.params;
 
-		if (params && isMediaUpload(method, params)) {
-			const formData = await convertJsonToFormData(method, params);
+        if (params && isMediaUpload(method, params)) {
+            const formData = await convertJsonToFormData(method, params);
 
-			const encoder = new FormDataEncoder(formData);
+            reqOptions.body = formData;
+        } else {
+            reqOptions.headers = {
+                "Content-Type": "application/json",
+            };
+            reqOptions.body = JSON.stringify(params);
+        }
 
-			reqOptions.body = encoder.encode();
-			reqOptions.headers = encoder.headers;
-		} else {
-			reqOptions.headers = {
-				"Content-Type": "application/json",
-			};
-			reqOptions.body = JSON.stringify(params);
-		}
+        const response = await request(url, reqOptions);
 
-		const response = await fetch(url, reqOptions);
+        const data = (await response.body.json()) as TelegramAPIResponse;
+        if (!data.ok) throw new TelegramError(data, method, params);
 
-		const data = (await response.json()) as TelegramAPIResponse;
-		if (!data.ok) throw new TelegramError(data, method, params);
+        return data.result;
+    }
 
-		return data.result;
-	}
+    /**
+     * Register custom class-error for type-safe catch in `onError` hook
+     *
+     * @example
+     * ```ts
+     * export class NoRights extends Error {
+     *     needRole: "admin" | "moderator";
+     *
+     *     constructor(role: "admin" | "moderator") {
+     *         super();
+     *         this.needRole = role;
+     *     }
+     * }
+     *
+     * const bot = new Bot(process.env.TOKEN!)
+     *     .error("NO_RIGHTS", NoRights)
+     *     .onError(({ context, kind, error }) => {
+     *         if (context.is("message") && kind === "NO_RIGHTS")
+     *             return context.send(
+     *                 format`You don't have enough rights! You need to have an «${bold(
+     *                     error.needRole
+     *                 )}» role.`
+     *             );
+     *     });
+     *
+     * bot.updates.on("message", (context) => {
+     *     if (context.text === "bun") throw new NoRights("admin");
+     * });
+     * ```
+     */
+    error<
+        Name extends string,
+        NewError extends { new (...args: any): any; prototype: Error }
+    >(kind: Name, error: NewError) {
+        //@ts-expect-error Set ErrorKind
+        error[ErrorKind] = kind;
+        this.errorsDefinitions[kind] = error;
 
-	/**
-	 * Register custom class-error for type-safe catch in `onError` hook
-	 *
-	 * @example
-	 * ```ts
-	 * export class NoRights extends Error {
-	 *     needRole: "admin" | "moderator";
-	 *
-	 *     constructor(role: "admin" | "moderator") {
-	 *         super();
-	 *         this.needRole = role;
-	 *     }
-	 * }
-	 *
-	 * const bot = new Bot(process.env.TOKEN!)
-	 *     .error("NO_RIGHTS", NoRights)
-	 *     .onError(({ context, kind, error }) => {
-	 *         if (context.is("message") && kind === "NO_RIGHTS")
-	 *             return context.send(
-	 *                 format`You don't have enough rights! You need to have an «${bold(
-	 *                     error.needRole
-	 *                 )}» role.`
-	 *             );
-	 *     });
-	 *
-	 * bot.updates.on("message", (context) => {
-	 *     if (context.text === "bun") throw new NoRights("admin");
-	 * });
-	 * ```
-	 */
-	error<
-		Name extends string,
-		NewError extends { new (...args: any): any; prototype: Error },
-	>(kind: Name, error: NewError) {
-		//@ts-expect-error Set ErrorKind
-		error[ErrorKind] = kind;
-		this.errorsDefinitions[kind] = error;
+        return this as unknown as Bot<
+            Errors & { [name in Name]: InstanceType<NewError> },
+            Derives
+        >;
+    }
 
-		return this as unknown as Bot<
-			Errors & { [name in Name]: InstanceType<NewError> },
-			Derives
-		>;
-	}
+    /**
+     * Set error handler.
+     * @example
+     * ```ts
+     * bot.onError("message", ({ context, kind, error }) => {
+     * 	return context.send(`${kind}: ${error.message}`);
+     * })
+     * ```
+     */
 
-	/**
-	 * Set error handler.
-	 * @example
-	 * ```ts
-	 * bot.onError("message", ({ context, kind, error }) => {
-	 * 	return context.send(`${kind}: ${error.message}`);
-	 * })
-	 * ```
-	 */
+    onError<T extends UpdateName>(
+        updateName: MaybeArray<T>,
+        handler: Hooks.OnError<
+            Errors,
+            ContextType<typeof this, T> & Derives["global"] & Derives[T]
+        >
+    ): this;
 
-	onError<T extends UpdateName>(
-		updateName: MaybeArray<T>,
-		handler: Hooks.OnError<
-			Errors,
-			ContextType<typeof this, T> & Derives["global"] & Derives[T]
-		>,
-	): this;
+    onError(
+        handler: Hooks.OnError<Errors, Context<typeof this> & Derives["global"]>
+    ): this;
 
-	onError(
-		handler: Hooks.OnError<Errors, Context<typeof this> & Derives["global"]>,
-	): this;
+    onError<T extends UpdateName>(
+        updateNameOrHandler: T | Hooks.OnError<Errors>,
+        handler?: Hooks.OnError<
+            Errors,
+            ContextType<typeof this, T> & Derives["global"] & Derives[T]
+        >
+    ): this {
+        if (typeof updateNameOrHandler === "function") {
+            this.hooks.onError.push(updateNameOrHandler);
 
-	onError<T extends UpdateName>(
-		updateNameOrHandler: T | Hooks.OnError<Errors>,
-		handler?: Hooks.OnError<
-			Errors,
-			ContextType<typeof this, T> & Derives["global"] & Derives[T]
-		>,
-	): this {
-		if (typeof updateNameOrHandler === "function") {
-			this.hooks.onError.push(updateNameOrHandler);
+            return this;
+        }
 
-			return this;
-		}
+        if (handler) {
+            this.hooks.onError.push(async (errContext) => {
+                if (errContext.context.is(updateNameOrHandler))
+                    // TODO:  Sorry... fix later
+                    //@ts-expect-error
+                    await handler(errContext);
+            });
+        }
 
-		if (handler) {
-			this.hooks.onError.push(async (errContext) => {
-				if (errContext.context.is(updateNameOrHandler))
-					// TODO:  Sorry... fix later
-					//@ts-expect-error
-					await handler(errContext);
-			});
-		}
+        return this;
+    }
 
-		return this;
-	}
+    derive<Handler extends Hooks.Derive<Context<typeof this>>>(
+        handler: Handler
+    ): Bot<Errors, Derives & { global: Awaited<ReturnType<Handler>> }>;
 
-	derive<Handler extends Hooks.Derive<Context<typeof this>>>(
-		handler: Handler,
-	): Bot<Errors, Derives & { global: Awaited<ReturnType<Handler>> }>;
+    derive<
+        Update extends UpdateName,
+        Handler extends Hooks.Derive<ContextType<typeof this, Update>>
+    >(
+        updateName: MaybeArray<Update>,
+        handler: Handler
+    ): Bot<Errors, Derives & { [K in Update]: Awaited<ReturnType<Handler>> }>;
 
-	derive<
-		Update extends UpdateName,
-		Handler extends Hooks.Derive<ContextType<typeof this, Update>>,
-	>(
-		updateName: MaybeArray<Update>,
-		handler: Handler,
-	): Bot<Errors, Derives & { [K in Update]: Awaited<ReturnType<Handler>> }>;
+    derive<
+        Update extends UpdateName,
+        Handler extends Hooks.Derive<ContextType<typeof this, Update>>
+    >(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
+        if (typeof updateNameOrHandler === "function")
+            this.updates.use(async (context, next) => {
+                for (const [key, value] of Object.entries(
+                    await updateNameOrHandler(context)
+                )) {
+                    context[key] = value;
+                }
 
-	derive<
-		Update extends UpdateName,
-		Handler extends Hooks.Derive<ContextType<typeof this, Update>>,
-	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
-		if (typeof updateNameOrHandler === "function")
-			this.updates.use(async (context, next) => {
-				for (const [key, value] of Object.entries(
-					await updateNameOrHandler(context),
-				)) {
-					context[key] = value;
-				}
+                next();
+            });
+        else if (handler)
+            this.updates.on(updateNameOrHandler, async (context, next) => {
+                for (const [key, value] of Object.entries(
+                    await handler(context)
+                )) {
+                    context[key] = value;
+                }
 
-				next();
-			});
-		else if (handler)
-			this.updates.on(updateNameOrHandler, async (context, next) => {
-				for (const [key, value] of Object.entries(await handler(context))) {
-					context[key] = value;
-				}
+                next();
+            });
 
-				next();
-			});
+        return this;
+    }
 
-		return this;
-	}
+    onStart(handler: Hooks.OnStart) {
+        this.hooks.onStart.push(handler);
 
-	onStart(handler: Hooks.OnStart) {
-		this.hooks.onStart.push(handler);
+        return this;
+    }
 
-		return this;
-	}
+    on<T extends UpdateName>(
+        updateName: MaybeArray<T>,
+        handler: Handler<
+            ContextType<typeof this, T> & Derives["global"] & Derives[T]
+        >
+    ) {
+        this.updates.on(updateName, handler);
 
-	on<T extends UpdateName>(
-		updateName: MaybeArray<T>,
-		handler: Handler<
-			ContextType<typeof this, T> & Derives["global"] & Derives[T]
-		>,
-	) {
-		this.updates.on(updateName, handler);
+        return this;
+    }
 
-		return this;
-	}
+    use(handler: Handler<Context<typeof this> & Derives["global"]>) {
+        this.updates.use(handler);
 
-	use(handler: Handler<Context<typeof this> & Derives["global"]>) {
-		this.updates.use(handler);
+        return this;
+    }
 
-		return this;
-	}
+    extend<NewPlugin extends Plugin>(
+        plugin: MaybePromise<NewPlugin>
+    ): Bot<Errors & NewPlugin["Errors"], Derives & NewPlugin["Derives"]> {
+        if (plugin instanceof Promise) {
+            this.lazyloadPlugins.push(plugin);
 
-	extend<NewPlugin extends Plugin>(
-		plugin: MaybePromise<NewPlugin>,
-	): Bot<Errors & NewPlugin["Errors"], Derives & NewPlugin["Derives"]> {
-		if (plugin instanceof Promise) {
-			this.lazyloadPlugins.push(plugin);
-			return this;
-		}
-		if (plugin.dependencies.some((dep) => !this.dependencies.includes(dep)))
-			throw new Error(
-				`The «${
-					plugin.name
-				}» plugin needs dependencies registered before: ${plugin.dependencies
-					.filter((dep) => !this.dependencies.includes(dep))
-					.join(", ")}`,
-			);
+            return this;
+        }
 
-		for (const [key, value] of Object.entries(plugin.errorsDefinitions)) {
-			if (this.errorsDefinitions[key]) this.errorsDefinitions[key] = value;
-		}
+        if (plugin.dependencies.some((dep) => !this.dependencies.includes(dep)))
+            throw new Error(
+                `The «${
+                    plugin.name
+                }» plugin needs dependencies registered before: ${plugin.dependencies
+                    .filter((dep) => !this.dependencies.includes(dep))
+                    .join(", ")}`
+            );
 
-		for (const value of plugin.derives) {
-			const [derive, updateName] = value;
+        for (const [key, value] of Object.entries(plugin.errorsDefinitions)) {
+            if (this.errorsDefinitions[key])
+                this.errorsDefinitions[key] = value;
+        }
 
-			if (!updateName) this.derive(derive);
-			else this.derive(updateName, derive);
-		}
+        for (const value of plugin.derives) {
+            const [derive, updateName] = value;
 
-		this.dependencies.push(plugin.name);
+            if (!updateName) this.derive(derive);
+            else this.derive(updateName, derive);
+        }
 
-		return this;
-	}
+        this.dependencies.push(plugin.name);
 
-	async start({
-		webhook,
-		dropPendingUpdates,
-		allowedUpdates,
-	}: {
-		webhook?: Omit<
-			APIMethodParams<"setWebhook">,
-			"drop_pending_updates" | "allowed_updates"
-		>;
-		dropPendingUpdates?: boolean;
-		allowedUpdates?: NonNullable<
-			APIMethodParams<"getUpdates">
-		>["allowed_updates"];
-	} = {}) {
-		await Promise.all(
-			this.lazyloadPlugins.map(async (plugin) => this.extend(await plugin)),
-		);
+        return this;
+    }
 
-		this.info = await this.api.getMe();
+    async start({
+        webhook,
+        dropPendingUpdates,
+        allowedUpdates,
+    }: {
+        webhook?: Omit<
+            APIMethodParams<"setWebhook">,
+            "drop_pending_updates" | "allowed_updates"
+        >;
+        dropPendingUpdates?: boolean;
+        allowedUpdates?: NonNullable<
+            APIMethodParams<"getUpdates">
+        >["allowed_updates"];
+    } = {}) {
+        await Promise.all(
+            this.lazyloadPlugins.map(async (plugin) =>
+                this.extend(await plugin)
+            )
+        );
 
-		if (!webhook) {
-			await this.api.deleteWebhook({
-				drop_pending_updates: dropPendingUpdates,
-			});
+        this.info = await this.api.getMe();
 
-			await this.updates.startPolling({
-				allowed_updates: allowedUpdates,
-			});
+        if (!webhook) {
+            await this.api.deleteWebhook({
+                drop_pending_updates: dropPendingUpdates,
+            });
 
-			this.runImmutableHooks("onStart", {
-				plugins: this.dependencies,
-				info: this.info,
-				updatesFrom: "long-polling",
-			});
+            await this.updates.startPolling({
+                allowed_updates: allowedUpdates,
+            });
 
-			return this.info;
-		}
+            this.runImmutableHooks("onStart", {
+                plugins: this.dependencies,
+                info: this.info,
+                updatesFrom: "long-polling",
+            });
 
-		if (this.updates.isStarted) this.updates.stopPolling();
+            return this.info;
+        }
 
-		await this.api.setWebhook({
-			...webhook,
-			drop_pending_updates: dropPendingUpdates,
-			allowed_updates: allowedUpdates,
-		});
+        if (this.updates.isStarted) this.updates.stopPolling();
 
-		this.runImmutableHooks("onStart", {
-			plugins: this.dependencies,
-			info: this.info,
-			updatesFrom: "webhook",
-		});
+        await this.api.setWebhook({
+            ...webhook,
+            drop_pending_updates: dropPendingUpdates,
+            allowed_updates: allowedUpdates,
+        });
 
-		return this.info;
-	}
+        this.runImmutableHooks("onStart", {
+            plugins: this.dependencies,
+            info: this.info,
+            updatesFrom: "webhook",
+        });
+
+        return this.info;
+    }
 }
