@@ -378,9 +378,9 @@ export class Bot<
 			Derives["message"],
 	>(
 		trigger: RegExp | string | ((context: Ctx) => boolean),
-		handler: (context: Ctx) => unknown,
+		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
 	) {
-		this.on("message", (context, next) => {
+		return this.on("message", (context, next) => {
 			if (
 				(typeof trigger === "string" && context.text === trigger) ||
 				// @ts-expect-error
@@ -389,6 +389,10 @@ export class Bot<
 					context.text &&
 					trigger.test(context.text))
 			) {
+				//@ts-expect-error
+				context.args =
+					trigger instanceof RegExp ? context.text?.match(trigger) : null;
+
 				// TODO: remove
 				//@ts-expect-error
 				return handler(context);
@@ -406,7 +410,10 @@ export class Bot<
 				Derives["message"],
 		) => unknown,
 	) {
-		this.on("message", (context, next) => {
+		if (command.startsWith("/"))
+			throw new Error("Do not use / in command name");
+
+		return this.on("message", (context, next) => {
 			if (
 				context.entities?.some((entity) => {
 					if (entity.type !== "bot_command" || entity.offset > 0) return false;
