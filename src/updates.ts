@@ -49,7 +49,7 @@ export class Updates {
 		this.offset = data.update_id + 1;
 
 		const UpdateContext = contextsMappings[updateType];
-		if (!UpdateContext) return;
+		if (!UpdateContext) throw new Error(updateType);
 
 		try {
 			let context = new UpdateContext({
@@ -101,8 +101,8 @@ export class Updates {
 	async startFetchLoop(params: APIMethodParams<"getUpdates"> = {}) {
 		while (this.isStarted) {
 			const updates = await this.bot.api.getUpdates({
-				offset: this.offset,
 				...params,
+				offset: this.offset,
 			});
 
 			for await (const update of updates) {

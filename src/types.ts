@@ -23,12 +23,12 @@ type AnyTelegramError = {
 	[APIMethod in keyof APIMethods]: TelegramError<APIMethod>;
 }[keyof APIMethods];
 
-type AnyTelegramMethod = {
-	[APIMethod in keyof APIMethods]: {
+type AnyTelegramMethod<Methods extends keyof APIMethods> = {
+	[APIMethod in Methods]: {
 		method: APIMethod;
 		params: APIMethodParams<APIMethod>;
 	};
-}[keyof APIMethods];
+}[Methods];
 
 export type MaybePromise<T> = Promise<T> | T;
 
@@ -37,10 +37,10 @@ export namespace Hooks {
 		context: Ctx,
 	) => MaybePromise<Record<string, unknown>>;
 
-	export type PreRequestContext = AnyTelegramMethod;
-	export type PreRequest = (
-		ctx: PreRequestContext,
-	) => MaybePromise<PreRequestContext>;
+	export type PreRequestContext<Methods extends keyof APIMethods> = AnyTelegramMethod<Methods>;
+	export type PreRequest<Methods extends keyof APIMethods = keyof APIMethods> = (
+		ctx: PreRequestContext<Methods>,
+	) => MaybePromise<PreRequestContext<Methods>>;
 
 	export type OnErrorContext<
 		Ctx extends Context<BotLike>,

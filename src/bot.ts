@@ -47,6 +47,9 @@ export class Bot<
     > = {
         TELEGRAM: TelegramError,
     };
+    // private handlers = {
+    //     hears: []
+    // };
 
     private errorHandler(context: Context<typeof this>, error: Error) {
         return this.runImmutableHooks("onError", {
@@ -61,14 +64,14 @@ export class Bot<
 
     private hooks: Hooks.Store<Errors> = {
         preRequest: [
-            (ctx) => {
-                if (!ctx.params) return ctx;
+            (context) => {
+                if (!context.params) return context;
 
-                const formattable = FormattableMap[ctx.method];
+                const formattable = FormattableMap[context.method];
                 // @ts-ignore add AnyTelegramMethod to @gramio/format
-                if (formattable) ctx.params = formattable(ctx.params);
+                if (formattable) context.params = formattable(context.params);
 
-                return ctx;
+                return context;
             },
         ],
         onError: [],
@@ -285,8 +288,28 @@ export class Bot<
         return this;
     }
 
-    preRequest(handler: Hooks.PreRequest) {
-        this.hooks.preRequest.push(handler);
+    preRequest<Methods extends keyof APIMethods, Handler extends Hooks.PreRequest<Methods>>
+    (methods: MaybeArray<Methods>, handler: Handler): this
+
+    preRequest(handler: Hooks.PreRequest): this
+
+    preRequest<Methods extends keyof APIMethods, Handler extends Hooks.PreRequest<Methods>>(methodsOrHandler: MaybeArray<Methods> | Hooks.PreRequest, handler?: Handler) {
+        if(typeof methodsOrHandler === "string" || Array.isArray(methodsOrHandler)) {
+            // TODO: error
+            if(!handler) throw new Error("TODO:");
+
+            const methods = typeof methodsOrHandler === "string" ? [methodsOrHandler] : methodsOrHandler;
+            
+            // TODO: remove error
+            // @ts-expect-error
+            this.hooks.preRequest.push(async (context) => {
+                // TODO: remove ts-ignore
+                // @ts-expect-error 
+                if(methods.includes(context.method)) return handler(context);
+                
+                return context;
+            });
+        } else this.hooks.preRequest.push(methodsOrHandler);
 
         return this;
     }
