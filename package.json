@@ -26,8 +26,8 @@
   "devDependencies": {
     "@biomejs/biome": "1.5.3",
     "@gramio/types": "^7.1.6",
-    "@types/node": "^20.11.24",
-    "typescript": "^5.3.3"
+    "@types/node": "^20.11.25",
+    "typescript": "^5.4.2"
   },
   "dependencies": {
     "@gramio/contexts": "^0.0.7",
@@ -36,7 +36,7 @@
     "@gramio/keyboards": "^0.2.0",
     "inspectable": "^3.0.0",
     "middleware-io": "^2.8.1",
-    "undici": "^6.6.2"
+    "undici": "^6.7.1"
   },
   "files": [
     "dist"
