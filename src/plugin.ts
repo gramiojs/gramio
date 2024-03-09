@@ -1,12 +1,13 @@
-import {
+import type {
 	BotLike,
 	Context,
 	ContextType,
 	MaybeArray,
 	UpdateName,
 } from "@gramio/contexts";
+import type { APIMethods } from "@gramio/types";
 import { Inspectable } from "inspectable";
-import { DeriveDefinitions, ErrorDefinitions, Hooks } from "types";
+import type { DeriveDefinitions, ErrorDefinitions, Hooks } from "types";
 import { ErrorKind } from "#errors";
 
 @Inspectable<Plugin>({
@@ -23,7 +24,11 @@ export class Plugin<
 	Errors!: Errors;
 	Derives!: Derives;
 
-	derives: [Hooks.Derive<any>, UpdateName | undefined][] = [];
+	derives: [Hooks.Derive<any>, MaybeArray<UpdateName> | undefined][] = [];
+	preRequests: [
+		Hooks.PreRequest<any>,
+		MaybeArray<keyof APIMethods> | undefined,
+	][] = [];
 
 	name: string;
 	errorsDefinitions: Record<
@@ -74,10 +79,40 @@ export class Plugin<
 		Update extends UpdateName,
 		Handler extends Hooks.Derive<ContextType<BotLike, Update>>,
 	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
-		if (typeof updateNameOrHandler === "string" && handler)
+		if (
+			(typeof updateNameOrHandler === "string" ||
+				Array.isArray(updateNameOrHandler)) &&
+			handler
+		)
 			this.derives.push([handler, updateNameOrHandler]);
 		else if (typeof updateNameOrHandler === "function")
 			this.derives.push([updateNameOrHandler, undefined]);
+
+		return this;
+	}
+
+	preRequest<
+		Methods extends keyof APIMethods,
+		Handler extends Hooks.PreRequest<Methods>,
+	>(methods: MaybeArray<Methods>, handler: Handler): this;
+
+	preRequest(handler: Hooks.PreRequest): this;
+
+	preRequest<
+		Methods extends keyof APIMethods,
+		Handler extends Hooks.PreRequest<Methods>,
+	>(
+		methodsOrHandler: MaybeArray<Methods> | Hooks.PreRequest,
+		handler?: Handler,
+	) {
+		if (
+			(typeof methodsOrHandler === "string" ||
+				Array.isArray(methodsOrHandler)) &&
+			handler
+		)
+			this.preRequests.push([handler, methodsOrHandler]);
+		else if (typeof methodsOrHandler === "function")
+			this.preRequests.push([methodsOrHandler, undefined]);
 
 		return this;
 	}
