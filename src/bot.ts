@@ -1,17 +1,24 @@
-import { Context, ContextType, MaybeArray, UpdateName } from "@gramio/contexts";
+import type {
+	Context,
+	ContextType,
+	MaybeArray,
+	UpdateName,
+} from "@gramio/contexts";
 import { convertJsonToFormData, isMediaUpload } from "@gramio/files";
 import { FormattableMap } from "@gramio/format";
 import type {
 	APIMethodParams,
 	APIMethods,
+	SetMyCommandsParams,
 	TelegramAPIResponse,
+	TelegramBotCommand,
 	TelegramUser,
 } from "@gramio/types";
 import { Inspectable } from "inspectable";
 import { request } from "undici";
 import { Plugin } from "#plugin";
 import { ErrorKind, TelegramError } from "./errors";
-import {
+import type {
 	BotOptions,
 	DeriveDefinitions,
 	ErrorDefinitions,
@@ -28,6 +35,7 @@ export class Bot<
 	Errors extends ErrorDefinitions = {},
 	Derives extends DeriveDefinitions = DeriveDefinitions,
 > {
+	/** @internal */
 	__Derives!: Derives;
 
 	readonly options: BotOptions = {};
@@ -60,17 +68,7 @@ export class Bot<
 	updates = new Updates(this, this.errorHandler.bind(this));
 
 	private hooks: Hooks.Store<Errors> = {
-		preRequest: [
-			(context) => {
-				if (!context.params) return context;
-
-				const formattable = FormattableMap[context.method];
-				// @ts-ignore add AnyTelegramMethod to @gramio/format
-				if (formattable) context.params = formattable(context.params);
-
-				return context;
-			},
-		],
+		preRequest: [],
 		onError: [],
 		onStart: [],
 	};
@@ -80,6 +78,25 @@ export class Bot<
 			throw new Error(`Token is ${typeof token} but it should be a string!`);
 
 		this.options = { ...options, token };
+
+		if (
+			!(
+				options?.plugins &&
+				"format" in options.plugins &&
+				!options.plugins.format
+			)
+		)
+			this.extend(
+				new Plugin("@gramio/format").preRequest((context) => {
+					if (!context.params) return context;
+
+					const formattable = FormattableMap[context.method];
+					// @ts-ignore add AnyTelegramMethod to @gramio/format
+					if (formattable) context.params = formattable(context.params);
+
+					return context;
+				}),
+			);
 	}
 
 	private async runHooks<
@@ -409,6 +426,8 @@ export class Bot<
 				Derives["global"] &
 				Derives["message"],
 		) => unknown,
+		options?: Omit<SetMyCommandsParams, "commands"> &
+			Omit<TelegramBotCommand, "command">,
 	) {
 		if (command.startsWith("/"))
 			throw new Error("Do not use / in command name");

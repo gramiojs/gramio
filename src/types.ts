@@ -1,10 +1,13 @@
-import { BotLike, Context, UpdateName } from "@gramio/contexts";
-import { APIMethodParams, APIMethods, TelegramUser } from "@gramio/types";
-import { NextMiddleware } from "middleware-io";
-import { TelegramError } from "./errors";
+import type { BotLike, Context, UpdateName } from "@gramio/contexts";
+import type { APIMethodParams, APIMethods, TelegramUser } from "@gramio/types";
+import type { NextMiddleware } from "middleware-io";
+import type { TelegramError } from "./errors";
 
 export interface BotOptions {
 	token?: string;
+	plugins?: {
+		format?: boolean;
+	};
 }
 
 export type Handler<T> = (context: T, next: NextMiddleware) => unknown;
@@ -37,10 +40,12 @@ export namespace Hooks {
 		context: Ctx,
 	) => MaybePromise<Record<string, unknown>>;
 
-	export type PreRequestContext<Methods extends keyof APIMethods> = AnyTelegramMethod<Methods>;
-	export type PreRequest<Methods extends keyof APIMethods = keyof APIMethods> = (
-		ctx: PreRequestContext<Methods>,
-	) => MaybePromise<PreRequestContext<Methods>>;
+	export type PreRequestContext<Methods extends keyof APIMethods> =
+		AnyTelegramMethod<Methods>;
+	export type PreRequest<Methods extends keyof APIMethods = keyof APIMethods> =
+		(
+			ctx: PreRequestContext<Methods>,
+		) => MaybePromise<PreRequestContext<Methods>>;
 
 	export type OnErrorContext<
 		Ctx extends Context<BotLike>,
