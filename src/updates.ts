@@ -1,13 +1,17 @@
 import {
-	Context,
-	MaybeArray,
-	UpdateName,
+	type Context,
+	type MaybeArray,
+	type UpdateName,
 	contextsMappings,
 } from "@gramio/contexts";
 import type { APIMethodParams, TelegramUpdate } from "@gramio/types";
-import { CaughtMiddlewareHandler, Composer, noopNext } from "middleware-io";
+import {
+	type CaughtMiddlewareHandler,
+	Composer,
+	noopNext,
+} from "middleware-io";
 import type { Bot } from "./bot";
-import { Handler } from "./types";
+import type { Handler } from "./types";
 
 export class Updates {
 	private readonly bot: Bot<any, any>;

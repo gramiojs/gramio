@@ -1,5 +1,5 @@
-import { TelegramUpdate } from "@gramio/types";
-import { MaybePromise } from "#types";
+import type { TelegramUpdate } from "@gramio/types";
+import type { MaybePromise } from "#types";
 
 const SECRET_TOKEN_HEADER = "X-Telegram-Bot-Api-Secret-Token";
 
@@ -20,10 +20,10 @@ export const frameworks = {
 	}),
 	hono: (c) => ({
 		update: c.req.json(),
-		header: c.req.header(SECRET_TOKEN_HEADER)
+		header: c.req.header(SECRET_TOKEN_HEADER),
 	}),
 	express: (req) => ({
 		update: req.body,
-		header: req.header(SECRET_TOKEN_HEADER)
-	})
+		header: req.header(SECRET_TOKEN_HEADER),
+	}),
 } satisfies Record<string, FrameworkAdapter>;

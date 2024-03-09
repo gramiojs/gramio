@@ -24,8 +24,8 @@
   "author": "kravets",
   "license": "ISC",
   "devDependencies": {
-    "@biomejs/biome": "1.5.3",
-    "@gramio/types": "^7.1.6",
+    "@biomejs/biome": "1.6.0",
+    "@gramio/types": "^7.1.7",
     "@types/node": "^20.11.25",
     "typescript": "^5.4.2"
   },
