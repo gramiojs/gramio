@@ -8,6 +8,7 @@ import type {
 import type { APIMethods } from "@gramio/types";
 import { Inspectable } from "inspectable";
 import type { DeriveDefinitions, ErrorDefinitions, Hooks } from "types";
+import type { Bot } from "#bot";
 import { ErrorKind } from "#errors";
 
 @Inspectable<Plugin>({
@@ -29,6 +30,7 @@ export class Plugin<
 		Hooks.PreRequest<any>,
 		MaybeArray<keyof APIMethods> | undefined,
 	][] = [];
+	groups: ((bot: Bot<any, any>) => Bot<any, any>)[] = [];
 
 	name: string;
 	errorsDefinitions: Record<
@@ -43,6 +45,13 @@ export class Plugin<
 	) {
 		this.name = name;
 		if (dependencies) this.dependencies = dependencies;
+	}
+
+	/** Currently not isolated!!! */
+	group(grouped: (bot: Bot<Errors, Derives>) => Bot<any, any>) {
+		this.groups.push(grouped);
+
+		return this;
 	}
 
 	/**

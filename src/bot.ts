@@ -391,6 +391,10 @@ export class Bot<
 			else this.preRequest(updateName, preRequest);
 		}
 
+		for (const handler of plugin.groups) {
+			this.group(handler);
+		}
+
 		this.dependencies.push(plugin.name);
 
 		return this;
@@ -460,6 +464,11 @@ export class Bot<
 
 			return next();
 		});
+	}
+
+	/** Currently not isolated!!! */
+	group(grouped: (bot: typeof this) => Bot<any, any>) {
+		return grouped(this);
 	}
 
 	async start({
