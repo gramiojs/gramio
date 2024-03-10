@@ -384,6 +384,13 @@ export class Bot<
 			else this.derive(updateName, derive);
 		}
 
+		for (const value of plugin.preRequests) {
+			const [preRequest, updateName] = value;
+
+			if (!updateName) this.preRequest(preRequest);
+			else this.preRequest(updateName, preRequest);
+		}
+
 		this.dependencies.push(plugin.name);
 
 		return this;
