@@ -424,7 +424,7 @@ export class Bot<
 		handler: (
 			context: ContextType<typeof this, "message"> &
 				Derives["global"] &
-				Derives["message"],
+				Derives["message"] & { args: string | null },
 		) => unknown,
 		options?: Omit<SetMyCommandsParams, "commands"> &
 			Omit<TelegramBotCommand, "command">,
@@ -433,6 +433,7 @@ export class Bot<
 			throw new Error("Do not use / in command name");
 
 		return this.on("message", (context, next) => {
+			// TODO: change to find
 			if (
 				context.entities?.some((entity) => {
 					if (entity.type !== "bot_command" || entity.offset > 0) return false;
@@ -441,10 +442,13 @@ export class Bot<
 						?.slice(1, entity.length)
 						// biome-ignore lint/style/noNonNullAssertion: <explanation>
 						?.replace(`@${this.info!.username!}`, "");
+					// @ts-expect-error
+					context.args = context.text?.slice(entity.length).trim() || null;
 
-					return cmd && cmd === command;
+					return cmd?.startsWith(command);
 				})
 			)
+				// @ts-expect-error
 				return handler(context);
 
 			return next();
