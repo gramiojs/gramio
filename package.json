@@ -24,20 +24,20 @@
   "author": "kravets",
   "license": "ISC",
   "devDependencies": {
-    "@biomejs/biome": "1.6.0",
+    "@biomejs/biome": "1.6.2",
     "@gramio/types": "^7.1.7",
-    "@types/node": "^20.11.25",
-    "typescript": "^5.4.2"
+    "@types/node": "^20.11.30",
+    "typescript": "^5.4.3"
   },
   "dependencies": {
     "@gramio/callback-data": "^0.0.1",
     "@gramio/contexts": "^0.0.7",
     "@gramio/files": "^0.0.3",
     "@gramio/format": "^0.0.8",
-    "@gramio/keyboards": "^0.2.0",
+    "@gramio/keyboards": "^0.2.2",
     "inspectable": "^3.0.0",
     "middleware-io": "^2.8.1",
-    "undici": "^6.7.1"
+    "undici": "^6.10.1"
   },
   "files": [
     "dist"
