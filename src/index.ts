@@ -12,3 +12,4 @@ export * from "@gramio/files";
 export * from "@gramio/keyboards";
 export * from "@gramio/types";
 export * from "@gramio/format";
+export * from "@gramio/callback-data";

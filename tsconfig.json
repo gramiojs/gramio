@@ -18,7 +18,7 @@
     "outDir": "./dist",
     "paths": {
       "#*": ["./*"],
-    }
+    },
   },
   "include": ["./src"],
   "exclude": ["./dist"]

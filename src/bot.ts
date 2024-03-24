@@ -1,3 +1,4 @@
+import { CallbackData } from "@gramio/callback-data";
 import type {
 	Context,
 	ContextType,
@@ -12,6 +13,8 @@ import type {
 	SetMyCommandsParams,
 	TelegramAPIResponse,
 	TelegramBotCommand,
+	TelegramReactionType,
+	TelegramReactionTypeEmojiEmoji,
 	TelegramUser,
 } from "@gramio/types";
 import { Inspectable } from "inspectable";
@@ -398,6 +401,78 @@ export class Bot<
 		this.dependencies.push(plugin.name);
 
 		return this;
+	}
+
+	reaction(
+		trigger: MaybeArray<TelegramReactionTypeEmojiEmoji>,
+		handler: (
+			context: ContextType<typeof this, "message_reaction"> &
+				Derives["global"] &
+				Derives["message_reaction"],
+		) => unknown,
+	) {
+		const reactions = Array.isArray(trigger) ? trigger : [trigger];
+
+		return this.on("message_reaction", (context, next) => {
+			const newReactions: TelegramReactionType[] = [];
+
+			for (const reaction of context.newReactions) {
+				if (reaction.type !== "emoji") continue;
+
+				const foundIndex = context.oldReactions.findIndex(
+					(oldReaction) =>
+						oldReaction.type === "emoji" &&
+						oldReaction.emoji === reaction.emoji,
+				);
+				if (foundIndex === -1) {
+					newReactions.push(reaction);
+				} else {
+					// TODO: REFACTOR
+					context.oldReactions.splice(foundIndex, 1);
+				}
+			}
+
+			if (
+				!newReactions.some(
+					(x) => x.type === "emoji" && reactions.includes(x.emoji),
+				)
+			)
+				return next();
+
+			return handler(context);
+		});
+	}
+
+	callbackQuery<Trigger extends CallbackData | string | RegExp>(
+		trigger: Trigger,
+		handler: (
+			context: Omit<ContextType<typeof this, "callback_query">, "data"> &
+				Derives["global"] &
+				Derives["callback_query"] & {
+					data: Trigger extends CallbackData
+						? ReturnType<Trigger["unpack"]>
+						: RegExpMatchArray | null;
+				},
+		) => unknown,
+	) {
+		return this.on("callback_query", (context, next) => {
+			if (!context.data) return next();
+			if (typeof trigger === "string" && context.data !== trigger)
+				return next();
+			if (
+				trigger instanceof CallbackData &&
+				!trigger.regexp().test(context.data)
+			)
+				return next();
+			if (trigger instanceof RegExp && !trigger.test(context.data))
+				return next();
+
+			// @ts-expect-error
+			context.data = trigger.unpack(context.data);
+
+			//@ts-expect-error
+			return handler(context);
+		});
 	}
 
 	hears<
