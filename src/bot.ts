@@ -358,7 +358,7 @@ export class Bot<
 		return this;
 	}
 
-	extend<NewPlugin extends Plugin>(
+	extend<NewPlugin extends Plugin<any, any>>(
 		plugin: MaybePromise<NewPlugin>,
 	): Bot<Errors & NewPlugin["Errors"], Derives & NewPlugin["Derives"]> {
 		if (plugin instanceof Promise) {
