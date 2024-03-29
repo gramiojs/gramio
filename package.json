@@ -30,7 +30,7 @@
     "typescript": "^5.4.3"
   },
   "dependencies": {
-    "@gramio/callback-data": "^0.0.1",
+    "@gramio/callback-data": "^0.0.2",
     "@gramio/contexts": "^0.0.7",
     "@gramio/files": "^0.0.3",
     "@gramio/format": "^0.0.8",
