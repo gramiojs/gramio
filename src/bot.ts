@@ -449,7 +449,7 @@ export class Bot<
 			context: Omit<ContextType<typeof this, "callback_query">, "data"> &
 				Derives["global"] &
 				Derives["callback_query"] & {
-					data: Trigger extends CallbackData
+					queryData: Trigger extends CallbackData
 						? ReturnType<Trigger["unpack"]>
 						: RegExpMatchArray | null;
 				},
@@ -468,7 +468,7 @@ export class Bot<
 				return next();
 
 			// @ts-expect-error
-			context.data = trigger.unpack(context.data);
+			context.queryData = trigger.unpack(context.data);
 
 			//@ts-expect-error
 			return handler(context);
@@ -546,6 +546,14 @@ export class Bot<
 		return grouped(this);
 	}
 
+	async init() {
+		await Promise.all(
+			this.lazyloadPlugins.map(async (plugin) => this.extend(await plugin)),
+		);
+
+		this.info = await this.api.getMe();
+	}
+
 	async start({
 		webhook,
 		dropPendingUpdates,
@@ -560,11 +568,7 @@ export class Bot<
 			APIMethodParams<"getUpdates">
 		>["allowed_updates"];
 	} = {}) {
-		await Promise.all(
-			this.lazyloadPlugins.map(async (plugin) => this.extend(await plugin)),
-		);
-
-		this.info = await this.api.getMe();
+		await this.init();
 
 		if (!webhook) {
 			await this.api.deleteWebhook({
@@ -577,7 +581,8 @@ export class Bot<
 
 			this.runImmutableHooks("onStart", {
 				plugins: this.dependencies,
-				info: this.info,
+				// biome-ignore lint/style/noNonNullAssertion: bot.init() guarantees this.info
+				info: this.info!,
 				updatesFrom: "long-polling",
 			});
 
@@ -594,10 +599,16 @@ export class Bot<
 
 		this.runImmutableHooks("onStart", {
 			plugins: this.dependencies,
-			info: this.info,
+			// biome-ignore lint/style/noNonNullAssertion: bot.init() guarantees this.info
+			info: this.info!,
 			updatesFrom: "webhook",
 		});
 
 		return this.info;
+	}
+
+	async stop() {
+		if (this.updates.isStarted) this.updates.stopPolling();
+		else await this.api.deleteWebhook();
 	}
 }
