@@ -68,10 +68,16 @@ export namespace Hooks {
 		updatesFrom: "webhook" | "long-polling";
 	}) => unknown;
 
+	export type OnStop = (context: {
+		plugins: string[];
+		info: TelegramUser;
+	}) => unknown;
+
 	export interface Store<T extends ErrorDefinitions> {
 		preRequest: PreRequest[];
 		onError: OnError<T>[];
 		onStart: OnStart[];
+		onStop: OnStop[];
 	}
 }
 

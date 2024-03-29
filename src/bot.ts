@@ -74,6 +74,7 @@ export class Bot<
 		preRequest: [],
 		onError: [],
 		onStart: [],
+		onStop: [],
 	};
 
 	constructor(token: string, options?: Omit<BotOptions, "token">) {
@@ -103,7 +104,10 @@ export class Bot<
 	}
 
 	private async runHooks<
-		T extends Exclude<keyof Hooks.Store<Errors>, "onError" | "onStart">,
+		T extends Exclude<
+			keyof Hooks.Store<Errors>,
+			"onError" | "onStart" | "onStop"
+		>,
 	>(type: T, context: Parameters<Hooks.Store<Errors>[T][0]>[0]) {
 		let data = context;
 
@@ -115,7 +119,10 @@ export class Bot<
 	}
 
 	private async runImmutableHooks<
-		T extends Extract<keyof Hooks.Store<Errors>, "onError" | "onStart">,
+		T extends Extract<
+			keyof Hooks.Store<Errors>,
+			"onError" | "onStart" | "onStop"
+		>,
 	>(type: T, context: Parameters<Hooks.Store<Errors>[T][0]>[0]) {
 		for await (const hook of this.hooks[type]) {
 			//TODO: solve that later
@@ -606,9 +613,15 @@ export class Bot<
 
 		return this.info;
 	}
-
+	/** Currently does not implement graceful shutdown */
 	async stop() {
 		if (this.updates.isStarted) this.updates.stopPolling();
 		else await this.api.deleteWebhook();
+
+		await this.runImmutableHooks("onStop", {
+			plugins: this.dependencies,
+			// biome-ignore lint/style/noNonNullAssertion: bot.init() guarantees this.info
+			info: this.info!,
+		});
 	}
 }
