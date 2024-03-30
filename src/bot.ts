@@ -72,6 +72,8 @@ export class Bot<
 
 	private hooks: Hooks.Store<Errors> = {
 		preRequest: [],
+		onResponse: [],
+		onResponseError: [],
 		onError: [],
 		onStart: [],
 		onStop: [],
@@ -106,7 +108,7 @@ export class Bot<
 	private async runHooks<
 		T extends Exclude<
 			keyof Hooks.Store<Errors>,
-			"onError" | "onStart" | "onStop"
+			"onError" | "onStart" | "onStop" | "onResponseError" | "onResponse"
 		>,
 	>(type: T, context: Parameters<Hooks.Store<Errors>[T][0]>[0]) {
 		let data = context;
@@ -121,7 +123,7 @@ export class Bot<
 	private async runImmutableHooks<
 		T extends Extract<
 			keyof Hooks.Store<Errors>,
-			"onError" | "onStart" | "onStop"
+			"onError" | "onStart" | "onStop" | "onResponseError" | "onResponse"
 		>,
 	>(type: T, context: Parameters<Hooks.Store<Errors>[T][0]>[0]) {
 		for await (const hook of this.hooks[type]) {
@@ -168,7 +170,26 @@ export class Bot<
 		const response = await request(url, reqOptions);
 
 		const data = (await response.body.json()) as TelegramAPIResponse;
-		if (!data.ok) throw new TelegramError(data, method, params);
+
+		if (!data.ok) {
+			const err = new TelegramError(data, method, params);
+
+			// @ts-expect-error
+			this.runImmutableHooks("onResponseError", err);
+
+			throw err;
+		}
+
+		this.runImmutableHooks(
+			"onResponse",
+			// TODO: fix type error
+			// @ts-expect-error
+			{
+				method,
+				params,
+				response: data.result as any,
+			},
+		);
 
 		return data.result;
 	}
@@ -308,6 +329,12 @@ export class Bot<
 		return this;
 	}
 
+	onStop(handler: Hooks.OnStop) {
+		this.hooks.onStop.push(handler);
+
+		return this;
+	}
+
 	preRequest<
 		Methods extends keyof APIMethods,
 		Handler extends Hooks.PreRequest<Methods>,
@@ -344,6 +371,82 @@ export class Bot<
 				return context;
 			});
 		} else this.hooks.preRequest.push(methodsOrHandler);
+
+		return this;
+	}
+
+	onResponse<
+		Methods extends keyof APIMethods,
+		Handler extends Hooks.OnResponse<Methods>,
+	>(methods: MaybeArray<Methods>, handler: Handler): this;
+
+	onResponse(handler: Hooks.OnResponse): this;
+
+	onResponse<
+		Methods extends keyof APIMethods,
+		Handler extends Hooks.OnResponse<Methods>,
+	>(
+		methodsOrHandler: MaybeArray<Methods> | Hooks.OnResponse,
+		handler?: Handler,
+	) {
+		if (
+			typeof methodsOrHandler === "string" ||
+			Array.isArray(methodsOrHandler)
+		) {
+			// TODO: error
+			if (!handler) throw new Error("TODO:");
+
+			const methods =
+				typeof methodsOrHandler === "string"
+					? [methodsOrHandler]
+					: methodsOrHandler;
+
+			this.hooks.onResponse.push(async (context) => {
+				// TODO: remove ts-ignore
+				// @ts-expect-error
+				if (methods.includes(context.method)) return handler(context);
+
+				return context;
+			});
+		} else this.hooks.onResponse.push(methodsOrHandler);
+
+		return this;
+	}
+
+	onResponseError<
+		Methods extends keyof APIMethods,
+		Handler extends Hooks.OnResponseError<Methods>,
+	>(methods: MaybeArray<Methods>, handler: Handler): this;
+
+	onResponseError(handler: Hooks.OnResponseError): this;
+
+	onResponseError<
+		Methods extends keyof APIMethods,
+		Handler extends Hooks.OnResponseError<Methods>,
+	>(
+		methodsOrHandler: MaybeArray<Methods> | Hooks.OnResponseError,
+		handler?: Handler,
+	) {
+		if (
+			typeof methodsOrHandler === "string" ||
+			Array.isArray(methodsOrHandler)
+		) {
+			// TODO: error
+			if (!handler) throw new Error("TODO:");
+
+			const methods =
+				typeof methodsOrHandler === "string"
+					? [methodsOrHandler]
+					: methodsOrHandler;
+
+			this.hooks.onResponseError.push(async (context) => {
+				// TODO: remove ts-ignore
+				// @ts-expect-error
+				if (methods.includes(context.method)) return handler(context);
+
+				return context;
+			});
+		} else this.hooks.onResponseError.push(methodsOrHandler);
 
 		return this;
 	}
@@ -399,6 +502,20 @@ export class Bot<
 
 			if (!updateName) this.preRequest(preRequest);
 			else this.preRequest(updateName, preRequest);
+		}
+
+		for (const value of plugin.onResponses) {
+			const [onResponse, updateName] = value;
+
+			if (!updateName) this.onResponse(onResponse);
+			else this.onResponse(updateName, onResponse);
+		}
+
+		for (const value of plugin.onResponseErrors) {
+			const [onResponseError, updateName] = value;
+
+			if (!updateName) this.onResponseError(onResponseError);
+			else this.onResponseError(updateName, onResponseError);
 		}
 
 		for (const handler of plugin.groups) {

@@ -1,5 +1,10 @@
 import type { BotLike, Context, UpdateName } from "@gramio/contexts";
-import type { APIMethodParams, APIMethods, TelegramUser } from "@gramio/types";
+import type {
+	APIMethodParams,
+	APIMethodReturn,
+	APIMethods,
+	TelegramUser,
+} from "@gramio/types";
 import type { NextMiddleware } from "middleware-io";
 import type { TelegramError } from "./errors";
 
@@ -22,14 +27,22 @@ interface ErrorHandlerParams<
 	error: Err;
 }
 
-type AnyTelegramError = {
-	[APIMethod in keyof APIMethods]: TelegramError<APIMethod>;
-}[keyof APIMethods];
+type AnyTelegramError<Methods extends keyof APIMethods = keyof APIMethods> = {
+	[APIMethod in Methods]: TelegramError<APIMethod>;
+}[Methods];
 
 type AnyTelegramMethod<Methods extends keyof APIMethods> = {
 	[APIMethod in Methods]: {
 		method: APIMethod;
 		params: APIMethodParams<APIMethod>;
+	};
+}[Methods];
+
+type AnyTelegramMethodWithReturn<Methods extends keyof APIMethods> = {
+	[APIMethod in Methods]: {
+		method: APIMethod;
+		params: APIMethodParams<APIMethod>;
+		response: APIMethodReturn<APIMethod>;
 	};
 }[Methods];
 
@@ -73,8 +86,17 @@ export namespace Hooks {
 		info: TelegramUser;
 	}) => unknown;
 
+	export type OnResponseError<
+		Methods extends keyof APIMethods = keyof APIMethods,
+	> = (context: AnyTelegramError<Methods>) => unknown;
+
+	export type OnResponse<Methods extends keyof APIMethods = keyof APIMethods> =
+		(context: AnyTelegramMethodWithReturn<Methods>) => unknown;
+
 	export interface Store<T extends ErrorDefinitions> {
 		preRequest: PreRequest[];
+		onResponse: OnResponse[];
+		onResponseError: OnResponseError[];
 		onError: OnError<T>[];
 		onStart: OnStart[];
 		onStop: OnStop[];

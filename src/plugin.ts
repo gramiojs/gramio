@@ -30,6 +30,15 @@ export class Plugin<
 		Hooks.PreRequest<any>,
 		MaybeArray<keyof APIMethods> | undefined,
 	][] = [];
+	onResponses: [
+		Hooks.OnResponse<any>,
+		MaybeArray<keyof APIMethods> | undefined,
+	][] = [];
+	onResponseErrors: [
+		Hooks.OnResponseError<any>,
+		MaybeArray<keyof APIMethods> | undefined,
+	][] = [];
+
 	groups: ((bot: Bot<any, any>) => Bot<any, any>)[] = [];
 
 	name: string;
@@ -122,6 +131,58 @@ export class Plugin<
 			this.preRequests.push([handler, methodsOrHandler]);
 		else if (typeof methodsOrHandler === "function")
 			this.preRequests.push([methodsOrHandler, undefined]);
+
+		return this;
+	}
+
+	onResponse<
+		Methods extends keyof APIMethods,
+		Handler extends Hooks.OnResponse<Methods>,
+	>(methods: MaybeArray<Methods>, handler: Handler): this;
+
+	onResponse(handler: Hooks.OnResponse): this;
+
+	onResponse<
+		Methods extends keyof APIMethods,
+		Handler extends Hooks.OnResponse<Methods>,
+	>(
+		methodsOrHandler: MaybeArray<Methods> | Hooks.OnResponse,
+		handler?: Handler,
+	) {
+		if (
+			(typeof methodsOrHandler === "string" ||
+				Array.isArray(methodsOrHandler)) &&
+			handler
+		)
+			this.onResponses.push([handler, methodsOrHandler]);
+		else if (typeof methodsOrHandler === "function")
+			this.onResponses.push([methodsOrHandler, undefined]);
+
+		return this;
+	}
+
+	onResponseError<
+		Methods extends keyof APIMethods,
+		Handler extends Hooks.OnResponseError<Methods>,
+	>(methods: MaybeArray<Methods>, handler: Handler): this;
+
+	onResponseError(handler: Hooks.OnResponseError): this;
+
+	onResponseError<
+		Methods extends keyof APIMethods,
+		Handler extends Hooks.OnResponseError<Methods>,
+	>(
+		methodsOrHandler: MaybeArray<Methods> | Hooks.OnResponseError,
+		handler?: Handler,
+	) {
+		if (
+			(typeof methodsOrHandler === "string" ||
+				Array.isArray(methodsOrHandler)) &&
+			handler
+		)
+			this.onResponseErrors.push([handler, methodsOrHandler]);
+		else if (typeof methodsOrHandler === "function")
+			this.onResponseErrors.push([methodsOrHandler, undefined]);
 
 		return this;
 	}
