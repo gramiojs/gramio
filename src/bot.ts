@@ -125,11 +125,11 @@ export class Bot<
 			keyof Hooks.Store<Errors>,
 			"onError" | "onStart" | "onStop" | "onResponseError" | "onResponse"
 		>,
-	>(type: T, context: Parameters<Hooks.Store<Errors>[T][0]>[0]) {
+	>(type: T, ...context: Parameters<Hooks.Store<Errors>[T][0]>) {
 		for await (const hook of this.hooks[type]) {
 			//TODO: solve that later
 			//@ts-expect-error
-			await hook(context);
+			await hook(...context);
 		}
 	}
 
@@ -175,7 +175,7 @@ export class Bot<
 			const err = new TelegramError(data, method, params);
 
 			// @ts-expect-error
-			this.runImmutableHooks("onResponseError", err);
+			this.runImmutableHooks("onResponseError", err, this.api);
 
 			throw err;
 		}

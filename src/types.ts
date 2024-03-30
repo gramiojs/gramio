@@ -88,7 +88,7 @@ export namespace Hooks {
 
 	export type OnResponseError<
 		Methods extends keyof APIMethods = keyof APIMethods,
-	> = (context: AnyTelegramError<Methods>) => unknown;
+	> = (context: AnyTelegramError<Methods>, api: BotLike["api"]) => unknown;
 
 	export type OnResponse<Methods extends keyof APIMethods = keyof APIMethods> =
 		(context: AnyTelegramMethodWithReturn<Methods>) => unknown;
