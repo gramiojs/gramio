@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@gramio/callback-data": "^0.0.2",
-    "@gramio/contexts": "^0.0.7",
+    "@gramio/contexts": "^0.0.8",
     "@gramio/files": "^0.0.4",
     "@gramio/format": "^0.0.8",
     "@gramio/keyboards": "^0.2.3",
