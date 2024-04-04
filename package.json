@@ -34,10 +34,10 @@
     "@gramio/files": "^0.0.4",
     "@gramio/format": "^0.0.8",
     "@gramio/keyboards": "^0.2.3",
+    "@gramio/types": "^7.2.1",
     "inspectable": "^3.0.0",
     "middleware-io": "^2.8.1",
-    "undici": "^6.11.1",
-    "@gramio/types": "^7.2.1"
+    "undici": "^6.11.1"
   },
   "files": [
     "dist"

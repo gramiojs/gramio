@@ -59,22 +59,22 @@ export class Updates {
 			let context = new UpdateContext({
 				bot: this.bot,
 				update: data,
-				//@ts-expect-error
 				payload: data[updateType as Exclude<keyof typeof data, "update_id">],
 				type: updateType,
 				updateId: data.update_id,
 			});
 
 			if ("isEvent" in context && context.isEvent() && context.eventType) {
+				// @ts-expect-error contextsMappings is any
 				context = new contextsMappings[context.eventType]({
 					bot: this.bot,
 					update: data,
-					//@ts-expect-error
 					payload:
 						data.message ??
 						data.edited_message ??
 						data.channel_post ??
-						data.edited_channel_post,
+						data.edited_channel_post ??
+						data.business_message,
 					type: context.eventType,
 					updateId: data.update_id,
 				});
