@@ -38,6 +38,15 @@ type AnyTelegramMethod<Methods extends keyof APIMethods> = {
 	};
 }[Methods];
 
+// TODO: maybe suppress api?
+// type Test<Methods extends keyof APIMethods = keyof APIMethods> = {
+// 	[APIMethod in Methods]: APIMethodParams<APIMethod> extends undefined
+// 		? () => APIMethodReturn<APIMethod>
+// 		: undefined extends APIMethodParams<APIMethod>
+// 		  ? (params?: APIMethodParams<APIMethod>) => APIMethodReturn<APIMethod>
+// 		  : (params: APIMethodParams<APIMethod>) => APIMethodReturn<APIMethod>;
+// };
+
 type AnyTelegramMethodWithReturn<Methods extends keyof APIMethods> = {
 	[APIMethod in Methods]: {
 		method: APIMethod;

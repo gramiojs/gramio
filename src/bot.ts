@@ -607,7 +607,7 @@ export class Bot<
 		trigger: RegExp | string | ((context: Ctx) => boolean),
 		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
 	) {
-		return this.on("message", (context, next) => {
+		return this.on(["message", "business_message"], (context, next) => {
 			if (
 				(typeof trigger === "string" && context.text === trigger) ||
 				// @ts-expect-error
@@ -642,7 +642,7 @@ export class Bot<
 		if (command.startsWith("/"))
 			throw new Error("Do not use / in command name");
 
-		return this.on("message", (context, next) => {
+		return this.on(["message", "business_message"], (context, next) => {
 			// TODO: change to find
 			if (
 				context.entities?.some((entity) => {
