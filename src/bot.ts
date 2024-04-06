@@ -65,8 +65,7 @@ export class Bot<
 		TELEGRAM: TelegramError,
 	};
 
-	private errorHandler(context: Context<typeof this>, error: Error) {
-		//@ts-expect-error
+	private errorHandler(context: Context<any>, error: Error) {
 		return this.runImmutableHooks("onError", {
 			context,
 			//@ts-expect-error ErrorKind exists if user register error-class with .error("kind", SomeError);
