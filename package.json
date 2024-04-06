@@ -25,15 +25,15 @@
   "license": "ISC",
   "devDependencies": {
     "@biomejs/biome": "1.6.4",
-    "@types/node": "^20.12.4",
-    "typescript": "^5.4.3"
+    "@types/node": "^20.12.5",
+    "typescript": "^5.4.4"
   },
   "dependencies": {
     "@gramio/callback-data": "^0.0.2",
-    "@gramio/contexts": "^0.0.8",
+    "@gramio/contexts": "^0.0.9",
     "@gramio/files": "^0.0.4",
     "@gramio/format": "^0.0.8",
-    "@gramio/keyboards": "^0.2.3",
+    "@gramio/keyboards": "^0.3.0",
     "@gramio/types": "^7.2.1",
     "inspectable": "^3.0.0",
     "middleware-io": "^2.8.1",

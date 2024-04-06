@@ -608,6 +608,76 @@ export class Bot<
 		});
 	}
 
+	chosenInlineResult<
+		Ctx = ContextType<typeof this, "chosen_inline_result"> &
+			Derives["global"] &
+			Derives["chosen_inline_result"],
+	>(
+		trigger: RegExp | string | ((context: Ctx) => boolean),
+		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
+	) {
+		return this.on("chosen_inline_result", (context, next) => {
+			if (
+				(typeof trigger === "string" && context.query === trigger) ||
+				// @ts-expect-error
+				(typeof trigger === "function" && trigger(context)) ||
+				(trigger instanceof RegExp &&
+					context.query &&
+					trigger.test(context.query))
+			) {
+				//@ts-expect-error
+				context.args =
+					trigger instanceof RegExp ? context.query?.match(trigger) : null;
+
+				// TODO: remove
+				//@ts-expect-error
+				return handler(context);
+			}
+
+			return next();
+		});
+	}
+
+	inlineQuery<
+		Ctx = ContextType<typeof this, "inline_query"> &
+			Derives["global"] &
+			Derives["inline_query"],
+	>(
+		trigger: RegExp | string | ((context: Ctx) => boolean),
+		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
+		options: {
+			onResult?: (
+				context: ContextType<Bot, "chosen_inline_result"> &
+					Derives["global"] &
+					Derives["chosen_inline_result"] & { args: RegExpMatchArray | null },
+			) => unknown;
+		} = {},
+	) {
+		// @ts-expect-error fix later...
+		if (options.onResult) this.chosenInlineResult(trigger, options.onResult);
+
+		return this.on("inline_query", (context, next) => {
+			if (
+				(typeof trigger === "string" && context.query === trigger) ||
+				// @ts-expect-error
+				(typeof trigger === "function" && trigger(context)) ||
+				(trigger instanceof RegExp &&
+					context.query &&
+					trigger.test(context.query))
+			) {
+				//@ts-expect-error
+				context.args =
+					trigger instanceof RegExp ? context.query?.match(trigger) : null;
+
+				// TODO: remove
+				//@ts-expect-error
+				return handler(context);
+			}
+
+			return next();
+		});
+	}
+
 	hears<
 		Ctx = ContextType<typeof this, "message"> &
 			Derives["global"] &
