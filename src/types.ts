@@ -1,4 +1,4 @@
-import type { BotLike, Context, UpdateName } from "@gramio/contexts";
+import type { Context, UpdateName } from "@gramio/contexts";
 import type {
 	APIMethodParams,
 	APIMethodReturn,
@@ -6,6 +6,7 @@ import type {
 	TelegramUser,
 } from "@gramio/types";
 import type { NextMiddleware } from "middleware-io";
+import type { Bot } from "#bot";
 import type { TelegramError } from "./errors";
 
 export interface BotOptions {
@@ -18,7 +19,7 @@ export interface BotOptions {
 export type Handler<T> = (context: T, next: NextMiddleware) => unknown;
 
 interface ErrorHandlerParams<
-	Ctx extends Context<BotLike>,
+	Ctx extends Context<Bot>,
 	Kind extends string,
 	Err,
 > {
@@ -34,18 +35,69 @@ type AnyTelegramError<Methods extends keyof APIMethods = keyof APIMethods> = {
 type AnyTelegramMethod<Methods extends keyof APIMethods> = {
 	[APIMethod in Methods]: {
 		method: APIMethod;
-		params: APIMethodParams<APIMethod>;
+		params: MaybeSuppressedParams<APIMethod>;
 	};
 }[Methods];
 
-// TODO: maybe suppress api?
-// type Test<Methods extends keyof APIMethods = keyof APIMethods> = {
-// 	[APIMethod in Methods]: APIMethodParams<APIMethod> extends undefined
-// 		? () => APIMethodReturn<APIMethod>
-// 		: undefined extends APIMethodParams<APIMethod>
-// 		  ? (params?: APIMethodParams<APIMethod>) => APIMethodReturn<APIMethod>
-// 		  : (params: APIMethodParams<APIMethod>) => APIMethodReturn<APIMethod>;
-// };
+export interface Suppress<
+	IsSuppressed extends boolean | undefined = undefined,
+> {
+	/**
+	 * Pass `true` if you want to suppress throwing errors of this method.
+	 *
+	 * **But this does not undo getting into the `onResponseError` hook**.
+	 *
+	 * @example
+	 * ```ts
+	 * const response = await bot.api.sendMessage({
+	 * 		suppress: true,
+	 * 		chat_id: "@not_found",
+	 * 		text: "Suppressed method"
+	 * });
+	 *
+	 * if(response instanceof TelegramError) console.error("sendMessage returns an error...")
+	 * else console.log("Message has been sent successfully");
+	 * ```
+	 *
+	 * */
+	suppress?: IsSuppressed;
+}
+
+export type MaybeSuppressedParams<
+	Method extends keyof APIMethods,
+	IsSuppressed extends boolean | undefined = undefined,
+> = APIMethodParams<Method> & Suppress<IsSuppressed>;
+
+export type SuppressedAPIMethodParams<Method extends keyof APIMethods> =
+	undefined extends APIMethodParams<Method>
+		? Suppress<true>
+		: MaybeSuppressedParams<Method, true>;
+
+type MaybeSuppressedReturn<
+	Method extends keyof APIMethods,
+	IsSuppressed extends boolean | undefined = undefined,
+> = true extends IsSuppressed
+	? TelegramError<Method> | APIMethodReturn<Method>
+	: APIMethodReturn<Method>;
+
+export type SuppressedAPIMethodReturn<Method extends keyof APIMethods> =
+	MaybeSuppressedReturn<Method, true>;
+
+export type SuppressedAPIMethods<
+	Methods extends keyof APIMethods = keyof APIMethods,
+> = {
+	[APIMethod in Methods]: APIMethodParams<APIMethod> extends undefined
+		? <IsSuppressed extends boolean | undefined = undefined>(
+				params?: Suppress<IsSuppressed>,
+		  ) => Promise<MaybeSuppressedReturn<APIMethod, IsSuppressed>>
+		: undefined extends APIMethodParams<APIMethod>
+		  ? <IsSuppressed extends boolean | undefined = undefined>(
+					params?: MaybeSuppressedParams<APIMethod, IsSuppressed>,
+			  ) => Promise<MaybeSuppressedReturn<APIMethod, IsSuppressed>>
+		  : <IsSuppressed extends boolean | undefined = undefined>(
+					params: MaybeSuppressedParams<APIMethod, IsSuppressed>,
+			  ) => Promise<MaybeSuppressedReturn<APIMethod, IsSuppressed>>;
+};
 
 type AnyTelegramMethodWithReturn<Methods extends keyof APIMethods> = {
 	[APIMethod in Methods]: {
@@ -70,7 +122,7 @@ export namespace Hooks {
 		) => MaybePromise<PreRequestContext<Methods>>;
 
 	export type OnErrorContext<
-		Ctx extends Context<BotLike>,
+		Ctx extends Context<Bot>,
 		T extends ErrorDefinitions,
 	> =
 		| ErrorHandlerParams<Ctx, "TELEGRAM", AnyTelegramError>
@@ -81,7 +133,7 @@ export namespace Hooks {
 		  }[keyof T];
 	export type OnError<
 		T extends ErrorDefinitions,
-		Ctx extends Context<BotLike> = Context<BotLike>,
+		Ctx extends Context<any> = Context<Bot>,
 	> = (options: OnErrorContext<Ctx, T>) => unknown;
 
 	export type OnStart = (context: {
@@ -97,7 +149,7 @@ export namespace Hooks {
 
 	export type OnResponseError<
 		Methods extends keyof APIMethods = keyof APIMethods,
-	> = (context: AnyTelegramError<Methods>, api: BotLike["api"]) => unknown;
+	> = (context: AnyTelegramError<Methods>, api: Bot["api"]) => unknown;
 
 	export type OnResponse<Methods extends keyof APIMethods = keyof APIMethods> =
 		(context: AnyTelegramMethodWithReturn<Methods>) => unknown;

@@ -1,5 +1,4 @@
 import type {
-	BotLike,
 	Context,
 	ContextType,
 	MaybeArray,
@@ -81,13 +80,13 @@ export class Plugin<
 		>;
 	}
 
-	derive<Handler extends Hooks.Derive<Context<BotLike>>>(
+	derive<Handler extends Hooks.Derive<Context<Bot>>>(
 		handler: Handler,
 	): Plugin<Errors, Derives & { global: Awaited<ReturnType<Handler>> }>;
 
 	derive<
 		Update extends UpdateName,
-		Handler extends Hooks.Derive<ContextType<BotLike, Update>>,
+		Handler extends Hooks.Derive<ContextType<Bot, Update>>,
 	>(
 		updateName: MaybeArray<Update>,
 		handler: Handler,
@@ -95,7 +94,7 @@ export class Plugin<
 
 	derive<
 		Update extends UpdateName,
-		Handler extends Hooks.Derive<ContextType<BotLike, Update>>,
+		Handler extends Hooks.Derive<ContextType<Bot, Update>>,
 	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
 		if (
 			(typeof updateNameOrHandler === "string" ||

@@ -28,6 +28,9 @@ import type {
 	Handler,
 	Hooks,
 	MaybePromise,
+	MaybeSuppressedParams,
+	SuppressedAPIMethodParams,
+	SuppressedAPIMethods,
 } from "./types";
 import { Updates } from "./updates";
 
@@ -44,9 +47,12 @@ export class Bot<
 	readonly options: BotOptions = {};
 	info: TelegramUser | undefined;
 
-	readonly api = new Proxy({} as APIMethods, {
+	readonly api = new Proxy({} as SuppressedAPIMethods, {
 		get:
-			<T extends keyof APIMethods>(_target: APIMethods, method: T) =>
+			<T extends keyof SuppressedAPIMethods>(
+				_target: SuppressedAPIMethods,
+				method: T,
+			) =>
 			(args: APIMethodParams<T>) =>
 				this._callApi(method, args),
 	});
@@ -60,6 +66,7 @@ export class Bot<
 	};
 
 	private errorHandler(context: Context<typeof this>, error: Error) {
+		//@ts-expect-error
 		return this.runImmutableHooks("onError", {
 			context,
 			//@ts-expect-error ErrorKind exists if user register error-class with .error("kind", SomeError);
@@ -135,7 +142,7 @@ export class Bot<
 
 	private async _callApi<T extends keyof APIMethods>(
 		method: T,
-		params: APIMethodParams<T> = {},
+		params: MaybeSuppressedParams<T> = {},
 	) {
 		const url = `https://api.telegram.org/bot${this.options.token}/${method}`;
 
@@ -177,7 +184,9 @@ export class Bot<
 			// @ts-expect-error
 			this.runImmutableHooks("onResponseError", err, this.api);
 
-			throw err;
+			if (!params?.suppress) throw err;
+
+			return err;
 		}
 
 		this.runImmutableHooks(
@@ -607,7 +616,7 @@ export class Bot<
 		trigger: RegExp | string | ((context: Ctx) => boolean),
 		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
 	) {
-		return this.on(["message", "business_message"], (context, next) => {
+		return this.on("message", (context, next) => {
 			if (
 				(typeof trigger === "string" && context.text === trigger) ||
 				// @ts-expect-error

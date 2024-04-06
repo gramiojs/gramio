@@ -55,26 +55,33 @@ export class Updates {
 		const UpdateContext = contextsMappings[updateType];
 		if (!UpdateContext) throw new Error(updateType);
 
+		const updatePayload =
+			data[updateType as Exclude<keyof typeof data, "update_id">];
+		if (!updatePayload) throw new Error("");
 		try {
 			let context = new UpdateContext({
 				bot: this.bot,
 				update: data,
-				payload: data[updateType as Exclude<keyof typeof data, "update_id">],
+				// @ts-expect-error
+				payload: updatePayload,
 				type: updateType,
 				updateId: data.update_id,
 			});
 
 			if ("isEvent" in context && context.isEvent() && context.eventType) {
-				// @ts-expect-error contextsMappings is any
+				const payload =
+					data.message ??
+					data.edited_message ??
+					data.channel_post ??
+					data.edited_channel_post ??
+					data.business_message;
+				if (!payload) throw new Error("Unsupported event??");
+
 				context = new contextsMappings[context.eventType]({
 					bot: this.bot,
 					update: data,
-					payload:
-						data.message ??
-						data.edited_message ??
-						data.channel_post ??
-						data.edited_channel_post ??
-						data.business_message,
+					payload,
+					// @ts-expect-error
 					type: context.eventType,
 					updateId: data.update_id,
 				});

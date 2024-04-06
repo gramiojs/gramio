@@ -4,19 +4,20 @@ import type {
 	TelegramAPIResponseError,
 	TelegramResponseParameters,
 } from "@gramio/types";
+import type { MaybeSuppressedParams } from "#types";
 
 export const ErrorKind = Symbol("ErrorKind");
 
 export class TelegramError<T extends keyof APIMethods> extends Error {
 	method: T;
-	params: APIMethodParams<T>;
+	params: MaybeSuppressedParams<T>;
 	code: number;
 	payload?: TelegramResponseParameters;
 
 	constructor(
 		error: TelegramAPIResponseError,
 		method: T,
-		params: APIMethodParams<T>,
+		params: MaybeSuppressedParams<T>,
 	) {
 		super(error.description);
 
