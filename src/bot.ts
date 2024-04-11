@@ -202,6 +202,18 @@ export class Bot<
 		return data.result;
 	}
 
+	async downloadFile(fileId: string) {
+		const file = await this.api.getFile({ file_id: fileId });
+
+		const url = `https://api.telegram.org/file/bot${this.options.token}/${file.file_path}`;
+
+		const res = await fetch(url);
+
+		const buffer = await res.arrayBuffer();
+
+		return buffer;
+	}
+
 	/**
 	 * Register custom class-error for type-safe catch in `onError` hook
 	 *
