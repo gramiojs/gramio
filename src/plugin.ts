@@ -39,7 +39,9 @@ export class Plugin<
 	][] = [];
 
 	groups: ((bot: Bot<any, any>) => Bot<any, any>)[] = [];
-
+	onStarts: Hooks.OnStart[] = [];
+	onStops: Hooks.OnStop[] = [];
+	onErrors: Hooks.OnError<any, any>[] = [];
 	name: string;
 	errorsDefinitions: Record<
 		string,
@@ -182,6 +184,53 @@ export class Plugin<
 			this.onResponseErrors.push([handler, methodsOrHandler]);
 		else if (typeof methodsOrHandler === "function")
 			this.onResponseErrors.push([methodsOrHandler, undefined]);
+
+		return this;
+	}
+
+	onStart(handler: Hooks.OnStart) {
+		this.onStarts.push(handler);
+
+		return this;
+	}
+
+	onStop(handler: Hooks.OnStop) {
+		this.onStops.push(handler);
+
+		return this;
+	}
+
+	onError<T extends UpdateName>(
+		updateName: MaybeArray<T>,
+		handler: Hooks.OnError<
+			Errors,
+			ContextType<Bot, T> & Derives["global"] & Derives[T]
+		>,
+	): this;
+
+	onError(
+		handler: Hooks.OnError<Errors, Context<Bot> & Derives["global"]>,
+	): this;
+
+	onError<T extends UpdateName>(
+		updateNameOrHandler: T | Hooks.OnError<Errors>,
+		handler?: Hooks.OnError<
+			Errors,
+			ContextType<Bot, T> & Derives["global"] & Derives[T]
+		>,
+	): this {
+		if (typeof updateNameOrHandler === "function") {
+			this.onErrors.push(updateNameOrHandler);
+
+			return this;
+		}
+
+		if (handler) {
+			this.onErrors.push(async (errContext) => {
+				if (errContext.context.is(updateNameOrHandler))
+					await handler(errContext);
+			});
+		}
 
 		return this;
 	}
