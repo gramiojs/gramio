@@ -1,9 +1,12 @@
+import fs from "node:fs/promises";
 import { CallbackData } from "@gramio/callback-data";
-import type {
-	Context,
-	ContextType,
-	MaybeArray,
-	UpdateName,
+import {
+	type Attachment,
+	type Context,
+	type ContextType,
+	type MaybeArray,
+	PhotoAttachment,
+	type UpdateName,
 } from "@gramio/contexts";
 import { convertJsonToFormData, isMediaUpload } from "@gramio/files";
 import { FormattableMap } from "@gramio/format";
@@ -29,7 +32,6 @@ import type {
 	Hooks,
 	MaybePromise,
 	MaybeSuppressedParams,
-	SuppressedAPIMethodParams,
 	SuppressedAPIMethods,
 } from "./types";
 import { Updates } from "./updates";
@@ -202,7 +204,32 @@ export class Bot<
 		return data.result;
 	}
 
-	async downloadFile(fileId: string) {
+	async downloadFile(
+		attachment: Attachment | { file_id: string } | string,
+	): Promise<ArrayBuffer>;
+	async downloadFile(
+		attachment: Attachment | { file_id: string } | string,
+		path: string,
+	): Promise<string>;
+
+	async downloadFile(
+		attachment: Attachment | { file_id: string } | string,
+		path?: string,
+	): Promise<ArrayBuffer | string> {
+		function getFileId(attachment: Attachment | { file_id: string }) {
+			if (attachment instanceof PhotoAttachment) {
+				return attachment.bigSize.fileId;
+			}
+			if ("fileId" in attachment && typeof attachment.fileId === "string")
+				return attachment.fileId;
+			if ("file_id" in attachment) return attachment.file_id;
+
+			throw new Error("Invalid attachment");
+		}
+
+		const fileId =
+			typeof attachment === "string" ? attachment : getFileId(attachment);
+
 		const file = await this.api.getFile({ file_id: fileId });
 
 		const url = `https://api.telegram.org/file/bot${this.options.token}/${file.file_path}`;
@@ -210,6 +237,12 @@ export class Bot<
 		const res = await fetch(url);
 
 		const buffer = await res.arrayBuffer();
+
+		if (path) {
+			await fs.writeFile(path, Buffer.from(buffer));
+
+			return path;
+		}
 
 		return buffer;
 	}
