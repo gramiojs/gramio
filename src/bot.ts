@@ -756,8 +756,8 @@ export class Bot<
 	}
 
 	/** Currently not isolated!!! */
-	group(grouped: (bot: typeof this) => Bot<any, any>) {
-		return grouped(this);
+	group(grouped: (bot: typeof this) => Bot<any, any>): typeof this {
+		return grouped(this) as any;
 	}
 
 	async init() {
