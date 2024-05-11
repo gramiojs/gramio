@@ -1,0 +1,24 @@
+{
+    "name": "@gramio/core",
+    "version": "0.0.1",
+    "exports": "./src/index.ts",
+    "publish": {
+        "include": [
+            "deno.json",
+            "src",
+            "README.md",
+            "tsconfig.json"
+        ]
+    },
+    "imports": {
+        "@gramio/types": "jsr:@gramio/types@^7.3.4",
+        "@gramio/callback-data": "jsr:@gramio/callback-data@^0.0.2",
+    "@gramio/contexts": "jsr:@gramio/contexts@^0.0.13",
+    "@gramio/files": "jsr:@gramio/files@^0.0.5",
+    "@gramio/format": "jsr:@gramio/format@^0.0.9",
+    "@gramio/keyboards": "jsr:@gramio/keyboards@^0.3.0",
+    "inspectable": "npm:inspectable@^3.0.0",
+    "middleware-io": "npm:middleware-io@^2.8.1",
+    "undici": "npm:undici@^6.15.0"
+    }
+}

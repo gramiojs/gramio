@@ -4,6 +4,7 @@ on: workflow_dispatch
 
 permissions:
     contents: write
+    id-token: write
 
 jobs:
     publish_package:
@@ -25,6 +26,15 @@ jobs:
             - name: Install modules
               run: bun install
 
+            - name: Prepare to JSR publish
+              run: bun jsr
+
+            - name: Type-check
+              run: tsc --noEmit
+
+            - name: Publish package to JSR
+              run: bunx jsr publish --allow-dirty
+
             - name: Install Node
               uses: actions/setup-node@v4
               with:
@@ -32,8 +42,8 @@ jobs:
                   registry-url: "https://registry.npmjs.org"
                   scope: "@gramio"
 
-            - name: Publish package
-              run: npm publish
+            - name: Publish package to NPM
+              run: npm publish --access public
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
