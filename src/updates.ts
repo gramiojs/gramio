@@ -18,7 +18,7 @@ export class Updates {
 	isStarted = false;
 	private offset = 0;
 	private composer = Composer.builder<
-		Context<Bot> & {
+		Context<Bot<any, any>> & {
 			[key: string]: unknown;
 		}
 	>();

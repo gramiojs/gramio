@@ -7,7 +7,7 @@ import type {
 import type { MaybeSuppressedParams } from "./types";
 
 /** Symbol to determine which error kind is it */
-export const ErrorKind = Symbol("ErrorKind");
+export const ErrorKind: symbol = Symbol("ErrorKind");
 
 /** Represent {@link TelegramAPIResponseError} and thrown in API calls */
 export class TelegramError<T extends keyof APIMethods> extends Error {
