@@ -36,6 +36,19 @@ import type {
 } from "./types";
 import { Updates } from "./updates";
 
+/** Bot instance
+ *
+ * @example
+ * ```ts
+ * import { Bot } from "gramio";
+ *
+ * const bot = new Bot("") // put you token here
+ *     .command("start", (context) => context.send("Hi!"))
+ *     .onStart(console.log);
+ *
+ * bot.start();
+ * ```
+ */
 @Inspectable<Bot>({
 	serialize: () => ({}),
 })
@@ -43,12 +56,26 @@ export class Bot<
 	Errors extends ErrorDefinitions = {},
 	Derives extends DeriveDefinitions = DeriveDefinitions,
 > {
-	/** @internal */
+	/** @internal. Remap generic */
 	__Derives!: Derives;
 
+	/** Options provided to instance */
 	readonly options: BotOptions = {};
+	/** Bot data (filled in when calling bot.init/bot.start) */
 	info: TelegramUser | undefined;
-
+	/**
+	 * Send API Request to Telegram Bot API
+	 *
+	 * @example
+	 * ```ts
+	 * const response = await bot.api.sendMessage({
+	 *     chat_id: "@gramio_forum",
+	 *     text: "some text",
+	 * });
+	 * ```
+	 *
+	 * [Documentation](https://gramio.netlify.app/bot-api.html)
+	 */
 	readonly api = new Proxy({} as SuppressedAPIMethods, {
 		get:
 			<T extends keyof SuppressedAPIMethods>(
@@ -76,6 +103,7 @@ export class Bot<
 		});
 	}
 
+	/** This instance handle updates */
 	updates = new Updates(this, this.errorHandler.bind(this));
 
 	private hooks: Hooks.Store<Errors> = {
@@ -87,6 +115,7 @@ export class Bot<
 		onStop: [],
 	};
 
+	/** Create new Bot instance */
 	constructor(token: string, options?: Omit<BotOptions, "token">) {
 		if (!token || typeof token !== "string")
 			throw new Error(`Token is ${typeof token} but it should be a string!`);
@@ -204,6 +233,23 @@ export class Bot<
 		return data.result;
 	}
 
+	/**
+	 * Download file
+	 *
+	 * @example
+	 * ```ts
+	 * bot.on("message", async (context) => {
+	 *     if (!context.document) return;
+	 *     // download to ./file-name
+	 *     await context.download(context.document.fileName || "file-name");
+	 *     // get ArrayBuffer
+	 *     const buffer = await context.download();
+	 *
+	 *     return context.send("Thank you!");
+	 * });
+	 * ```
+	 * [Documentation](https://gramio.netlify.app/files/download.html)
+	 */
 	async downloadFile(
 		attachment: Attachment | { file_id: string } | string,
 	): Promise<ArrayBuffer>;
@@ -338,6 +384,18 @@ export class Bot<
 		return this;
 	}
 
+	/**
+	 * Derive some data to handlers
+	 *
+	 * @example
+	 * ```ts
+	 * new Bot("token").derive((context) => {
+	 * 		return {
+	 * 			superSend: () => context.send("Derived method")
+	 * 		}
+	 * })
+	 * ```
+	 */
 	derive<Handler extends Hooks.Derive<Context<typeof this>>>(
 		handler: Handler,
 	): Bot<Errors, Derives & { global: Awaited<ReturnType<Handler>> }>;
@@ -376,18 +434,78 @@ export class Bot<
 		return this;
 	}
 
+	/**
+	 * This hook called when the bot is `started`.
+	 *
+	 * @example
+	 * ```typescript
+	 * import { Bot } from "gramio";
+	 *
+	 * const bot = new Bot(process.env.TOKEN!).onStart(
+	 *     ({ plugins, info, updatesFrom }) => {
+	 *         console.log(`plugin list - ${plugins.join(", ")}`);
+	 *         console.log(`bot username is @${info.username}`);
+	 * 		   console.log(`updates from ${updatesFrom}`);
+	 *     }
+	 * );
+	 *
+	 * bot.start();
+	 * ```
+	 *
+	 * [Documentation](https://gramio.netlify.app/hooks/on-start.html)
+	 *  */
 	onStart(handler: Hooks.OnStart) {
 		this.hooks.onStart.push(handler);
 
 		return this;
 	}
 
+	/**
+	 * This hook called when the bot stops.
+	 *
+	 * @example
+	 * ```typescript
+	 * import { Bot } from "gramio";
+	 *
+	 * const bot = new Bot(process.env.TOKEN!).onStop(
+	 *     ({ plugins, info, updatesFrom }) => {
+	 *         console.log(`plugin list - ${plugins.join(", ")}`);
+	 *         console.log(`bot username is @${info.username}`);
+	 *     }
+	 * );
+	 *
+	 * bot.start();
+	 * bot.stop();
+	 * ```
+	 *
+	 * [Documentation](https://gramio.netlify.app/hooks/on-stop.html)
+	 *  */
 	onStop(handler: Hooks.OnStop) {
 		this.hooks.onStop.push(handler);
 
 		return this;
 	}
 
+	/**
+	 * This hook called before sending a request to Telegram Bot API (allows us to impact the sent parameters).
+	 *
+	 * @example
+	 * ```typescript
+	 * import { Bot } from "gramio";
+	 *
+	 * const bot = new Bot(process.env.TOKEN!).preRequest((context) => {
+	 *     if (context.method === "sendMessage") {
+	 *         context.params.text = "mutate params";
+	 *     }
+	 *
+	 *     return context;
+	 * });
+	 *
+	 * bot.start();
+	 * ```
+	 *
+	 * [Documentation](https://gramio.netlify.app/hooks/pre-request.html)
+	 *  */
 	preRequest<
 		Methods extends keyof APIMethods,
 		Handler extends Hooks.PreRequest<Methods>,
@@ -428,6 +546,11 @@ export class Bot<
 		return this;
 	}
 
+	/**
+	 * This hook called when API return successful response
+	 *
+	 * [Documentation](https://gramio.netlify.app/hooks/on-response.html)
+	 * */
 	onResponse<
 		Methods extends keyof APIMethods,
 		Handler extends Hooks.OnResponse<Methods>,
@@ -466,6 +589,11 @@ export class Bot<
 		return this;
 	}
 
+	/**
+	 * This hook called when API return an error
+	 *
+	 * [Documentation](https://gramio.netlify.app/hooks/on-response-error.html)
+	 * */
 	onResponseError<
 		Methods extends keyof APIMethods,
 		Handler extends Hooks.OnResponseError<Methods>,
@@ -504,6 +632,7 @@ export class Bot<
 		return this;
 	}
 
+	/** Register handler to one or many Updates */
 	on<T extends UpdateName>(
 		updateName: MaybeArray<T>,
 		handler: Handler<
@@ -515,12 +644,44 @@ export class Bot<
 		return this;
 	}
 
+	/** Register handler to any Updates */
 	use(handler: Handler<Context<typeof this> & Derives["global"]>) {
 		this.updates.use(handler);
 
 		return this;
 	}
 
+	/**
+	 * Extend {@link Plugin} logic and types
+	 *
+	 * @example
+	 * ```ts
+	 * import { Plugin, Bot } from "gramio";
+	 *
+	 * export class PluginError extends Error {
+	 *     wow: "type" | "safe" = "type";
+	 * }
+	 *
+	 * const plugin = new Plugin("gramio-example")
+	 *     .error("PLUGIN", PluginError)
+	 *     .derive(() => {
+	 *         return {
+	 *             some: ["derived", "props"] as const,
+	 *         };
+	 *     });
+	 *
+	 * const bot = new Bot(process.env.TOKEN!)
+	 *     .extend(plugin)
+	 *     .onError(({ context, kind, error }) => {
+	 *         if (context.is("message") && kind === "PLUGIN") {
+	 *             console.log(error.wow);
+	 *         }
+	 *     })
+	 *     .use((context) => {
+	 *         console.log(context.some);
+	 *     });
+	 * ```
+	 */
 	extend<NewPlugin extends Plugin<any, any>>(
 		plugin: MaybePromise<NewPlugin>,
 	): Bot<Errors & NewPlugin["Errors"], Derives & NewPlugin["Derives"]> {
@@ -580,6 +741,16 @@ export class Bot<
 		return this;
 	}
 
+	/**
+	 * Register handler to reaction (`message_reaction` update)
+	 *
+	 * @example
+	 * ```ts
+	 * new Bot().reaction("👍", async (context) => {
+	 *     await context.reply(`Thank you!`);
+	 * });
+	 * ```
+	 * */
 	reaction(
 		trigger: MaybeArray<TelegramReactionTypeEmojiEmoji>,
 		handler: (
@@ -620,6 +791,29 @@ export class Bot<
 		});
 	}
 
+	/**
+	 * Register handler to `callback_query` event
+	 *
+	 * @example
+	 * ```ts
+	 * const someData = new CallbackData("example").number("id");
+	 *
+	 * new Bot()
+	 *     .command("start", (context) =>
+	 *         context.send("some", {
+	 *             reply_markup: new InlineKeyboard().text(
+	 *                 "example",
+	 *                 someData.pack({
+	 *                     id: 1,
+	 *                 })
+	 *             ),
+	 *         })
+	 *     )
+	 *     .callbackQuery(someData, (context) => {
+	 *         context.queryData; // is type-safe
+	 *     });
+	 * ```
+	 */
 	callbackQuery<Trigger extends CallbackData | string | RegExp>(
 		trigger: Trigger,
 		handler: (
@@ -652,6 +846,7 @@ export class Bot<
 		});
 	}
 
+	/** Register handler to `chosen_inline_result` update */
 	chosenInlineResult<
 		Ctx = ContextType<typeof this, "chosen_inline_result"> &
 			Derives["global"] &
@@ -682,6 +877,41 @@ export class Bot<
 		});
 	}
 
+	/**
+	 * Register handler to `inline_query` update
+	 *
+	 * @example
+	 * ```ts
+	 * new Bot().inlineQuery(
+	 *     /regular expression with (.*)/i,
+	 *     async (context) => {
+	 *         if (context.args) {
+	 *             await context.answer(
+	 *                 [
+	 *                     InlineQueryResult.article(
+	 *                         "id-1",
+	 *                         context.args[1],
+	 *                         InputMessageContent.text("some"),
+	 *                         {
+	 *                             reply_markup: new InlineKeyboard().text(
+	 *                                 "some",
+	 *                                 "callback-data"
+	 *                             ),
+	 *                         }
+	 *                     ),
+	 *                 ],
+	 *                 {
+	 *                     cache_time: 0,
+	 *                 }
+	 *             );
+	 *         }
+	 *     },
+	 *     {
+	 *         onResult: (context) => context.editText("Message edited!"),
+	 *     }
+	 * );
+	 * ```
+	 * */
 	inlineQuery<
 		Ctx = ContextType<typeof this, "inline_query"> &
 			Derives["global"] &
@@ -722,6 +952,13 @@ export class Bot<
 		});
 	}
 
+	/**
+	 * Register handler to `message` and `business_message` event
+	 *
+	 * new Bot().hears(/regular expression with (.*)/i, async (context) => {
+	 *     if (context.args) await context.send(`Params ${context.args[1]}`);
+	 * });
+	 */
 	hears<
 		Ctx = ContextType<typeof this, "message"> &
 			Derives["global"] &
@@ -793,6 +1030,9 @@ export class Bot<
 		return grouped(this) as any;
 	}
 
+	/**
+	 * Init bot. Call it manually only if you doesn't use {@link Bot.start}
+	 */
 	async init() {
 		await Promise.all(
 			this.lazyloadPlugins.map(async (plugin) => this.extend(await plugin)),
@@ -801,6 +1041,20 @@ export class Bot<
 		this.info = await this.api.getMe();
 	}
 
+	/**
+	 * Start receive updates via long-polling or webhook
+	 *
+	 * @example
+	 * ```ts
+	 * import { Bot } from "gramio";
+	 *
+	 * const bot = new Bot("") // put you token here
+	 *     .command("start", (context) => context.send("Hi!"))
+	 *     .onStart(console.log);
+	 *
+	 * bot.start();
+	 * ```
+	 */
 	async start({
 		webhook,
 		dropPendingUpdates,
@@ -853,7 +1107,11 @@ export class Bot<
 
 		return this.info;
 	}
-	/** Currently does not implement graceful shutdown */
+
+	/**
+	 * Stops receiving events via long-polling or webhook
+	 * Currently does not implement graceful shutdown
+	 * */
 	async stop() {
 		if (this.updates.isStarted) this.updates.stopPolling();
 		else await this.api.deleteWebhook();
