@@ -6,9 +6,9 @@ import type {
 } from "@gramio/contexts";
 import type { APIMethods } from "@gramio/types";
 import { Inspectable } from "inspectable";
-import type { DeriveDefinitions, ErrorDefinitions, Hooks } from "types";
-import type { Bot } from "#bot";
-import { ErrorKind } from "#errors";
+import type { Bot } from "./bot";
+import { ErrorKind } from "./errors";
+import type { DeriveDefinitions, ErrorDefinitions, Hooks } from "./types";
 
 /**
  * `Plugin` is an object  from which you can extends in Bot instance and adopt types

@@ -22,8 +22,8 @@ import type {
 } from "@gramio/types";
 import { Inspectable } from "inspectable";
 import { request } from "undici";
-import { Plugin } from "#plugin";
 import { ErrorKind, TelegramError } from "./errors";
+import { Plugin } from "./plugin";
 import type {
 	BotOptions,
 	DeriveDefinitions,

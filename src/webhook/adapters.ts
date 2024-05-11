@@ -1,5 +1,5 @@
 import type { TelegramUpdate } from "@gramio/types";
-import type { MaybePromise } from "#types";
+import type { MaybePromise } from "../types";
 
 const SECRET_TOKEN_HEADER = "X-Telegram-Bot-Api-Secret-Token";
 

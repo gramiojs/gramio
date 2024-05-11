@@ -1,4 +1,4 @@
-import type { Bot } from "#bot";
+import type { Bot } from "../bot";
 import { type FrameworkAdapter, frameworks } from "./adapters";
 
 /** Union type of webhook handlers name */

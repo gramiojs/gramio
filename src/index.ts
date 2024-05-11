@@ -11,7 +11,7 @@ export * from "./bot";
 export * from "./errors";
 export * from "./types";
 export * from "./plugin";
-export * from "./webhook";
+export * from "./webhook/index";
 
 export * from "@gramio/contexts";
 export * from "@gramio/files";

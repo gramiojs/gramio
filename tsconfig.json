@@ -16,9 +16,6 @@
     "baseUrl": "./src",
     "rootDir": "./src",
     "outDir": "./dist",
-    "paths": {
-      "#*": ["./*"],
-    },
   },
   "include": ["./src"],
   "exclude": ["./dist"]
