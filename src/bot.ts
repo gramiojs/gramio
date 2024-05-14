@@ -74,7 +74,7 @@ export class Bot<
 	 * });
 	 * ```
 	 *
-	 * [Documentation](https://gramio.netlify.app/bot-api.html)
+	 * [Documentation](https://gramio.dev/bot-api.html)
 	 */
 	readonly api = new Proxy({} as SuppressedAPIMethods, {
 		get:
@@ -248,7 +248,7 @@ export class Bot<
 	 *     return context.send("Thank you!");
 	 * });
 	 * ```
-	 * [Documentation](https://gramio.netlify.app/files/download.html)
+	 * [Documentation](https://gramio.dev/files/download.html)
 	 */
 	async downloadFile(
 		attachment: Attachment | { file_id: string } | string,
@@ -452,7 +452,7 @@ export class Bot<
 	 * bot.start();
 	 * ```
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/on-start.html)
+	 * [Documentation](https://gramio.dev/hooks/on-start.html)
 	 *  */
 	onStart(handler: Hooks.OnStart) {
 		this.hooks.onStart.push(handler);
@@ -478,7 +478,7 @@ export class Bot<
 	 * bot.stop();
 	 * ```
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/on-stop.html)
+	 * [Documentation](https://gramio.dev/hooks/on-stop.html)
 	 *  */
 	onStop(handler: Hooks.OnStop) {
 		this.hooks.onStop.push(handler);
@@ -504,7 +504,7 @@ export class Bot<
 	 * bot.start();
 	 * ```
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/pre-request.html)
+	 * [Documentation](https://gramio.dev/hooks/pre-request.html)
 	 *  */
 	preRequest<
 		Methods extends keyof APIMethods,
@@ -549,7 +549,7 @@ export class Bot<
 	/**
 	 * This hook called when API return successful response
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/on-response.html)
+	 * [Documentation](https://gramio.dev/hooks/on-response.html)
 	 * */
 	onResponse<
 		Methods extends keyof APIMethods,
@@ -592,7 +592,7 @@ export class Bot<
 	/**
 	 * This hook called when API return an error
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/on-response-error.html)
+	 * [Documentation](https://gramio.dev/hooks/on-response-error.html)
 	 * */
 	onResponseError<
 		Methods extends keyof APIMethods,

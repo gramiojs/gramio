@@ -185,7 +185,7 @@ export class Plugin<
 	 * bot.start();
 	 * ```
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/pre-request.html)
+	 * [Documentation](https://gramio.dev/hooks/pre-request.html)
 	 *  */
 	preRequest<
 		Methods extends keyof APIMethods,
@@ -216,7 +216,7 @@ export class Plugin<
 	/**
 	 * This hook called when API return sucesfull response
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/on-response.html)
+	 * [Documentation](https://gramio.dev/hooks/on-response.html)
 	 * */
 	onResponse<
 		Methods extends keyof APIMethods,
@@ -247,7 +247,7 @@ export class Plugin<
 	/**
 	 * This hook called when API return an error
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/on-response-error.html)
+	 * [Documentation](https://gramio.dev/hooks/on-response-error.html)
 	 * */
 	onResponseError<
 		Methods extends keyof APIMethods,
@@ -293,7 +293,7 @@ export class Plugin<
 	 * bot.start();
 	 * ```
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/on-start.html)
+	 * [Documentation](https://gramio.dev/hooks/on-start.html)
 	 *  */
 	onStart(handler: Hooks.OnStart) {
 		this.onStarts.push(handler);
@@ -319,7 +319,7 @@ export class Plugin<
 	 * bot.stop();
 	 * ```
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/on-stop.html)
+	 * [Documentation](https://gramio.dev/hooks/on-stop.html)
 	 *  */
 	onStop(handler: Hooks.OnStop) {
 		this.onStops.push(handler);

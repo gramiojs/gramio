@@ -132,7 +132,7 @@ export type MaybePromise<T> = Promise<T> | T;
 /**
  * Namespace with GramIO hooks types
  *
- * [Documentation](https://gramio.netlify.app/hooks/overview.html)
+ * [Documentation](https://gramio.dev/hooks/overview.html)
  * */
 export namespace Hooks {
 	/** Derive */
@@ -162,7 +162,7 @@ export namespace Hooks {
 	 * bot.start();
 	 * ```
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/pre-request.html)
+	 * [Documentation](https://gramio.dev/hooks/pre-request.html)
 	 *  */
 	export type PreRequest<Methods extends keyof APIMethods = keyof APIMethods> =
 		(
@@ -198,7 +198,7 @@ export namespace Hooks {
 	 * });
 	 * ```
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/on-error.html)
+	 * [Documentation](https://gramio.dev/hooks/on-error.html)
 	 *  */
 	export type OnError<
 		T extends ErrorDefinitions,
@@ -223,7 +223,7 @@ export namespace Hooks {
 	 * bot.start();
 	 * ```
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/on-start.html)
+	 * [Documentation](https://gramio.dev/hooks/on-start.html)
 	 *  */
 	export type OnStart = (context: {
 		plugins: string[];
@@ -249,7 +249,7 @@ export namespace Hooks {
 	 * bot.stop();
 	 * ```
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/on-stop.html)
+	 * [Documentation](https://gramio.dev/hooks/on-stop.html)
 	 *  */
 	export type OnStop = (context: {
 		plugins: string[];
@@ -259,7 +259,7 @@ export namespace Hooks {
 	/**
 	 * Type for `onResponseError` hook
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/on-response-error.html)
+	 * [Documentation](https://gramio.dev/hooks/on-response-error.html)
 	 * */
 	export type OnResponseError<
 		Methods extends keyof APIMethods = keyof APIMethods,
@@ -268,7 +268,7 @@ export namespace Hooks {
 	/**
 	 * Type for `onResponse` hook
 	 *
-	 * [Documentation](https://gramio.netlify.app/hooks/on-response.html)
+	 * [Documentation](https://gramio.dev/hooks/on-response.html)
 	 *  */
 	export type OnResponse<Methods extends keyof APIMethods = keyof APIMethods> =
 		(context: AnyTelegramMethodWithReturn<Methods>) => unknown;
