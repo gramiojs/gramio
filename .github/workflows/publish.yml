@@ -36,7 +36,7 @@ jobs:
               uses: denoland/setup-deno@v1
 
             - name: Publish package to JSR
-              run: deno publish --allow-dirty --unstable-sloppy-imports
+              run: deno publish --allow-dirty --unstable-sloppy-imports --allow-slow-types
 
             - name: Install Node
               uses: actions/setup-node@v4
