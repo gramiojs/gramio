@@ -5,9 +5,9 @@ import type {
 	UpdateName,
 } from "@gramio/contexts";
 import type { APIMethods } from "@gramio/types";
-import { Composer } from "composer";
 import { Inspectable } from "inspectable";
 import type { Bot } from "./bot";
+import { Composer } from "./composer";
 import { ErrorKind } from "./errors";
 import type {
 	AnyBot,
