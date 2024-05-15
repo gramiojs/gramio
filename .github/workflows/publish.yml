@@ -32,8 +32,11 @@ jobs:
             - name: Type-check
               run: tsc --noEmit
 
+            - name: Setup Deno
+              uses: denoland/setup-deno@v1
+
             - name: Publish package to JSR
-              run: bunx jsr publish --allow-dirty
+              run: deno publish --allow-dirty --unstable-sloppy-imports
 
             - name: Install Node
               uses: actions/setup-node@v4
