@@ -1,5 +1,6 @@
 import type { Buffer } from "node:buffer";
 import type { TelegramUpdate } from "@gramio/types";
+import { Response } from "undici";
 import type { MaybePromise } from "../types";
 
 const SECRET_TOKEN_HEADER = "X-Telegram-Bot-Api-Secret-Token";
@@ -7,6 +8,7 @@ const SECRET_TOKEN_HEADER = "X-Telegram-Bot-Api-Secret-Token";
 export interface FrameworkHandler {
 	update: MaybePromise<TelegramUpdate>;
 	header?: string;
+	response?: () => unknown;
 }
 export type FrameworkAdapter = (...args: any[]) => FrameworkHandler;
 
@@ -42,5 +44,10 @@ export const frameworks = {
 			req.on("end", () => resolve(JSON.parse(body)));
 		}),
 		header: req.headers[SECRET_TOKEN_HEADER.toLowerCase()],
+	}),
+	stdHTTP: (req) => ({
+		update: req.json(),
+		header: req.headers.get(SECRET_TOKEN_HEADER),
+		response: () => new Response(null, { status: 200 }),
 	}),
 } satisfies Record<string, FrameworkAdapter>;
