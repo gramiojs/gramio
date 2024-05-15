@@ -5,10 +5,17 @@ import type {
 	UpdateName,
 } from "@gramio/contexts";
 import type { APIMethods } from "@gramio/types";
+import { Composer } from "composer";
 import { Inspectable } from "inspectable";
 import type { Bot } from "./bot";
 import { ErrorKind } from "./errors";
-import type { DeriveDefinitions, ErrorDefinitions, Hooks } from "./types";
+import type {
+	AnyBot,
+	DeriveDefinitions,
+	ErrorDefinitions,
+	Handler,
+	Hooks,
+} from "./types";
 
 /**
  * `Plugin` is an object  from which you can extends in Bot instance and adopt types
@@ -43,68 +50,81 @@ import type { DeriveDefinitions, ErrorDefinitions, Hooks } from "./types";
  */
 @Inspectable<Plugin>({
 	serialize: (plugin) => ({
-		name: plugin.name,
-		dependencies: plugin.dependencies,
+		name: plugin._.name,
+		dependencies: plugin._.dependencies,
 	}),
 })
 export class Plugin<
 	Errors extends ErrorDefinitions = {},
 	Derives extends DeriveDefinitions = DeriveDefinitions,
 > {
-	// TODO: fix that dump error. https://www.typescriptlang.org/play?#code/KYDwDg9gTgLgBDAnmYcCiUrQCLAGYCWAdgTAREQM5wC8cASsAMbQAmAPAFACQlMUxAOYAaHhixROAPgDcnTqEiw4TADYBDStQAKqgK6Di7cdGqgYwIq2omouQiTIVqdAN4BfKXFc8i6gLbAAFxwfAJEgnI8wJim9sSk5FQhjCxQHDy8-EKi3NyucETAAO5wABQAdFXqUIKUIepEiACUDU0ycGBYMBBIKCG2cO48Xm7uUdwsVPx6TD1QZX6BIWFCzd6ZMAAWBJQVS6h0B3LcwzwA9ABUlzxwlwzAhnwxKnp8EP4qGloAtDEScGInX0hiIt2u52isSgXDyADkAqhzJZrKFshFctw4SVBsirNQCkVSpVqrV6nBGi02ogOl1er1kMF0NChrkpGUANbEVghBGBYRwf7QXk46HrHx5c7nAACMEof3AzBgfxZAGVgPBbABpbmZIVQADa2u5AF1aHAuVYTtxNjs9vrKPFHElKAbLawzXR9RNuFANXooEQEHaKdQ9EQOUQIMUg5o4LoDEZMtxbNQAGTeOAGg6AoN84AmkIASWmjSYwAAKoz2NjirYvMM8rIeMMzgpwNB4GpNNQAEK9YzQswgCz45kSJ2JZzmjxeHzybh4ji1hOgwUjlE6EFGSlSdmZMDbogi4qr4i5VpwFdH9ej1FnojsYh4F4P1NeAD8cH7MEHEnT8ZHu+cAhNsuwbHkfowAGQZgdQcaUicrbyO2Shdt81BwhA9AEIIWxyrem7jtAEFFMArD0BAqhMgAROorD+MQNFwAAPnANH+BArAxOo8w0RMUxhLM8xlFg1EhHRDFMax7GcdxUC8dANHipklB6CgCzNNacH7MA5GUdR5picASGcGcgnwBYfDmkSgGJkQZQ0TAykVPqjlwgA8gA+vQRYAOIABIVqqNEClhOF4XKWnyBZcAAEa9DZJTfr0ZTNDwrkblYZRWTAzRAA
-	/** @internal. remap generic */
-	Errors!: Errors;
-	/** @internal. remap generic */
-	Derives!: Derives;
+	/**
+	 * 	@internal
+	 * 	Set of Plugin data
+	 *
+	 *
+	 */
+	_ = {
+		/** Name of plugin */
+		name: "",
 
-	/** Store derives */
-	derives: [Hooks.Derive<any>, MaybeArray<UpdateName> | undefined][] = [];
-	/** Store plugin preRequests hooks */
-	preRequests: [
-		Hooks.PreRequest<any>,
-		MaybeArray<keyof APIMethods> | undefined,
-	][] = [];
-	/** Store plugin onResponses hooks */
-	onResponses: [
-		Hooks.OnResponse<any>,
-		MaybeArray<keyof APIMethods> | undefined,
-	][] = [];
-	/** Store plugin onResponseErrors hooks */
-	onResponseErrors: [
-		Hooks.OnResponseError<any>,
-		MaybeArray<keyof APIMethods> | undefined,
-	][] = [];
-
-	/** Store plugin groups hooks */
-	groups: ((bot: Bot<any, any>) => Bot<any, any>)[] = [];
-	/** Store plugin onStarts hooks */
-	onStarts: Hooks.OnStart[] = [];
-	/** Store plugin onStops hooks */
-	onStops: Hooks.OnStop[] = [];
-	/** Store plugin onErrors hooks */
-	onErrors: Hooks.OnError<any, any>[] = [];
-	/** Name of plugin */
-	name: string;
-	/** Map of plugin errors */
-	errorsDefinitions: Record<
-		string,
-		{ new (...args: any): any; prototype: Error }
-	> = {};
-	/** List of plugin dependencies. If user does't extend from listed there dependencies it throw a error */
-	dependencies: string[] = [];
+		/** List of plugin dependencies. If user does't extend from listed there dependencies it throw a error */
+		dependencies: [] as string[],
+		/** remap generic type. {} in runtime */
+		Errors: {} as Errors,
+		/** remap generic type. {} in runtime */
+		Derives: {} as Derives,
+		/**	Composer */
+		composer: new Composer(),
+		/** Store plugin preRequests hooks */
+		preRequests: [] as [
+			Hooks.PreRequest<any>,
+			MaybeArray<keyof APIMethods> | undefined,
+		][],
+		/** Store plugin onResponses hooks */
+		onResponses: [] as [
+			Hooks.OnResponse<any>,
+			MaybeArray<keyof APIMethods> | undefined,
+		][],
+		/** Store plugin onResponseErrors hooks */
+		onResponseErrors: [] as [
+			Hooks.OnResponseError<any>,
+			MaybeArray<keyof APIMethods> | undefined,
+		][],
+		/**
+		 * Store plugin groups
+		 *
+		 * If you use `on` or `use` in group and on plugin-level groups handlers are registered after plugin-level handlers
+		 *  */
+		groups: [] as ((bot: AnyBot) => AnyBot)[],
+		/** Store plugin onStarts hooks */
+		onStarts: [] as Hooks.OnStart[],
+		/** Store plugin onStops hooks */
+		onStops: [] as Hooks.OnStop[],
+		/** Store plugin onErrors hooks */
+		onErrors: [] as Hooks.OnError<any, any>[],
+		/** Map of plugin errors */
+		errorsDefinitions: {} as Record<
+			string,
+			{ new (...args: any): any; prototype: Error }
+		>,
+	};
 
 	/** Create new Plugin. Please provide `name` */
 	constructor(
 		name: string,
 		{ dependencies }: { dependencies?: string[] } = {},
 	) {
-		this.name = name;
-		if (dependencies) this.dependencies = dependencies;
+		this._.name = name;
+		if (dependencies) this._.dependencies = dependencies;
 	}
 
-	/** Currently not isolated!!! */
-	group(grouped: (bot: Bot<Errors, Derives>) => Bot<any, any>) {
-		this.groups.push(grouped);
+	/** Currently not isolated!!!
+	 *
+	 * If you use `on` or `use` in group and on plugin-level groups handlers are registered after plugin-level handlers
+	 */
+	group(grouped: (bot: Bot<Errors, Derives>) => AnyBot) {
+		this._.groups.push(grouped);
 
 		return this;
 	}
@@ -119,7 +139,7 @@ export class Plugin<
 		//@ts-expect-error Set ErrorKind
 		error[ErrorKind] = kind;
 
-		this.errorsDefinitions[kind] = error;
+		this._.errorsDefinitions[kind] = error;
 
 		return this as unknown as Plugin<
 			Errors & { [name in Name]: InstanceType<NewError> },
@@ -139,13 +159,13 @@ export class Plugin<
 	 * })
 	 * ```
 	 */
-	derive<Handler extends Hooks.Derive<Context<Bot>>>(
+	derive<Handler extends Hooks.Derive<Context<AnyBot>>>(
 		handler: Handler,
 	): Plugin<Errors, Derives & { global: Awaited<ReturnType<Handler>> }>;
 
 	derive<
 		Update extends UpdateName,
-		Handler extends Hooks.Derive<ContextType<Bot, Update>>,
+		Handler extends Hooks.Derive<ContextType<AnyBot, Update>>,
 	>(
 		updateName: MaybeArray<Update>,
 		handler: Handler,
@@ -155,14 +175,24 @@ export class Plugin<
 		Update extends UpdateName,
 		Handler extends Hooks.Derive<ContextType<Bot, Update>>,
 	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
-		if (
-			(typeof updateNameOrHandler === "string" ||
-				Array.isArray(updateNameOrHandler)) &&
-			handler
-		)
-			this.derives.push([handler, updateNameOrHandler]);
-		else if (typeof updateNameOrHandler === "function")
-			this.derives.push([updateNameOrHandler, undefined]);
+		this._.composer.derive(updateNameOrHandler, handler);
+
+		return this;
+	}
+
+	/** Register handler to one or many Updates */
+	on<T extends UpdateName>(
+		updateName: MaybeArray<T>,
+		handler: Handler<ContextType<AnyBot, T> & Derives["global"] & Derives[T]>,
+	) {
+		this.on(updateName, handler);
+
+		return this;
+	}
+
+	/** Register handler to any Updates */
+	use(handler: Handler<Context<AnyBot> & Derives["global"]>) {
+		this._.composer.use(handler);
 
 		return this;
 	}
@@ -206,9 +236,9 @@ export class Plugin<
 				Array.isArray(methodsOrHandler)) &&
 			handler
 		)
-			this.preRequests.push([handler, methodsOrHandler]);
+			this._.preRequests.push([handler, methodsOrHandler]);
 		else if (typeof methodsOrHandler === "function")
-			this.preRequests.push([methodsOrHandler, undefined]);
+			this._.preRequests.push([methodsOrHandler, undefined]);
 
 		return this;
 	}
@@ -237,9 +267,9 @@ export class Plugin<
 				Array.isArray(methodsOrHandler)) &&
 			handler
 		)
-			this.onResponses.push([handler, methodsOrHandler]);
+			this._.onResponses.push([handler, methodsOrHandler]);
 		else if (typeof methodsOrHandler === "function")
-			this.onResponses.push([methodsOrHandler, undefined]);
+			this._.onResponses.push([methodsOrHandler, undefined]);
 
 		return this;
 	}
@@ -268,9 +298,9 @@ export class Plugin<
 				Array.isArray(methodsOrHandler)) &&
 			handler
 		)
-			this.onResponseErrors.push([handler, methodsOrHandler]);
+			this._.onResponseErrors.push([handler, methodsOrHandler]);
 		else if (typeof methodsOrHandler === "function")
-			this.onResponseErrors.push([methodsOrHandler, undefined]);
+			this._.onResponseErrors.push([methodsOrHandler, undefined]);
 
 		return this;
 	}
@@ -296,7 +326,7 @@ export class Plugin<
 	 * [Documentation](https://gramio.dev/hooks/on-start.html)
 	 *  */
 	onStart(handler: Hooks.OnStart) {
-		this.onStarts.push(handler);
+		this._.onStarts.push(handler);
 
 		return this;
 	}
@@ -322,7 +352,7 @@ export class Plugin<
 	 * [Documentation](https://gramio.dev/hooks/on-stop.html)
 	 *  */
 	onStop(handler: Hooks.OnStop) {
-		this.onStops.push(handler);
+		this._.onStops.push(handler);
 
 		return this;
 	}
@@ -345,7 +375,7 @@ export class Plugin<
 	): this;
 
 	onError(
-		handler: Hooks.OnError<Errors, Context<Bot> & Derives["global"]>,
+		handler: Hooks.OnError<Errors, Context<AnyBot> & Derives["global"]>,
 	): this;
 
 	onError<T extends UpdateName>(
@@ -356,13 +386,13 @@ export class Plugin<
 		>,
 	): this {
 		if (typeof updateNameOrHandler === "function") {
-			this.onErrors.push(updateNameOrHandler);
+			this._.onErrors.push(updateNameOrHandler);
 
 			return this;
 		}
 
 		if (handler) {
-			this.onErrors.push(async (errContext) => {
+			this._.onErrors.push(async (errContext) => {
 				if (errContext.context.is(updateNameOrHandler))
 					await handler(errContext);
 			});
