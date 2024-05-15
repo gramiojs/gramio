@@ -32,12 +32,23 @@ export type WebhookHandlers = keyof typeof frameworks;
  * });
  * ```
  */
-export function webhookHandler(bot: Bot, framework: keyof typeof frameworks) {
-	const frameworkAdapter = frameworks[framework] as FrameworkAdapter;
+export function webhookHandler<Framework extends keyof typeof frameworks>(
+	bot: Bot,
+	framework: Framework,
+) {
+	const frameworkAdapter = frameworks[framework];
 
-	return async (...args: any[]) => {
-		const { update } = frameworkAdapter(...args);
+	return (async (...args: any[]) => {
+		// @ts-expect-error
+		const { update, response } = frameworkAdapter(...args);
 
 		await bot.updates.handleUpdate(await update);
-	};
+		if (response) return response();
+	}) as ReturnType<(typeof frameworks)[Framework]> extends {
+		response: () => any;
+	}
+		? (
+				...args: Parameters<(typeof frameworks)[Framework]>
+			) => ReturnType<ReturnType<(typeof frameworks)[Framework]>["response"]>
+		: (...args: Parameters<(typeof frameworks)[Framework]>) => void;
 }
