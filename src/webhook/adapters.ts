@@ -1,3 +1,4 @@
+import type { Buffer } from "node:buffer";
 import type { TelegramUpdate } from "@gramio/types";
 import type { MaybePromise } from "../types";
 
@@ -25,5 +26,21 @@ export const frameworks = {
 	express: (req) => ({
 		update: req.body,
 		header: req.header(SECRET_TOKEN_HEADER),
+	}),
+	koa: (ctx) => ({
+		update: ctx.request.body,
+		header: ctx.get(SECRET_TOKEN_HEADER),
+	}),
+	http: (req) => ({
+		update: new Promise((resolve) => {
+			let body = "";
+
+			req.on("data", (chunk: Buffer) => {
+				body += chunk.toString();
+			});
+
+			req.on("end", () => resolve(JSON.parse(body)));
+		}),
+		header: req.headers[SECRET_TOKEN_HEADER.toLowerCase()],
 	}),
 } satisfies Record<string, FrameworkAdapter>;
