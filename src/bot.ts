@@ -624,7 +624,7 @@ export class Bot<
 			ContextType<typeof this, T> & Derives["global"] & Derives[T]
 		>,
 	) {
-		this.on(updateName, handler);
+		this.updates.composer.on(updateName, handler);
 
 		return this;
 	}
@@ -669,59 +669,59 @@ export class Bot<
 	 */
 	extend<NewPlugin extends AnyPlugin>(
 		plugin: MaybePromise<NewPlugin>,
-	): Bot<Errors & NewPlugin["Errors"], Derives & NewPlugin["Derives"]> {
+	): Bot<
+		Errors & NewPlugin["_"]["Errors"],
+		Derives & NewPlugin["_"]["Derives"]
+	> {
 		if (plugin instanceof Promise) {
 			this.lazyloadPlugins.push(plugin);
 
 			return this;
 		}
 
-		if (plugin.dependencies.some((dep) => !this.dependencies.includes(dep)))
+		if (plugin._.dependencies.some((dep) => !this.dependencies.includes(dep)))
 			throw new Error(
 				`The «${
-					plugin.name
-				}» plugin needs dependencies registered before: ${plugin.dependencies
+					plugin._.name
+				}» plugin needs dependencies registered before: ${plugin._.dependencies
 					.filter((dep) => !this.dependencies.includes(dep))
 					.join(", ")}`,
 			);
 
-		for (const [key, value] of Object.entries(plugin.errorsDefinitions)) {
+		if (plugin._.composer.length) {
+			this.use(plugin._.composer.composed);
+		}
+
+		for (const [key, value] of Object.entries(plugin._.errorsDefinitions)) {
 			if (this.errorsDefinitions[key]) this.errorsDefinitions[key] = value;
 		}
 
-		for (const value of plugin.derives) {
-			const [derive, updateName] = value;
-
-			if (!updateName) this.derive(derive);
-			else this.derive(updateName, derive);
-		}
-
-		for (const value of plugin.preRequests) {
+		for (const value of plugin._.preRequests) {
 			const [preRequest, updateName] = value;
 
 			if (!updateName) this.preRequest(preRequest);
 			else this.preRequest(updateName, preRequest);
 		}
 
-		for (const value of plugin.onResponses) {
+		for (const value of plugin._.onResponses) {
 			const [onResponse, updateName] = value;
 
 			if (!updateName) this.onResponse(onResponse);
 			else this.onResponse(updateName, onResponse);
 		}
 
-		for (const value of plugin.onResponseErrors) {
+		for (const value of plugin._.onResponseErrors) {
 			const [onResponseError, updateName] = value;
 
 			if (!updateName) this.onResponseError(onResponseError);
 			else this.onResponseError(updateName, onResponseError);
 		}
 
-		for (const handler of plugin.groups) {
+		for (const handler of plugin._.groups) {
 			this.group(handler);
 		}
 
-		this.dependencies.push(plugin.name);
+		this.dependencies.push(plugin._.name);
 
 		return this;
 	}

@@ -19,6 +19,7 @@ export class Composer {
 			[key: string]: unknown;
 		}
 	>();
+	length = 0;
 	composed!: Middleware<Context<AnyBot>>;
 	protected onError: CaughtMiddlewareHandler<Context<AnyBot>>;
 
@@ -92,6 +93,7 @@ export class Composer {
 		// @ts-expect-error middleware-io moment
 
 		this.composed = this.composer.compose();
+		this.length = this.composer.length;
 
 		return this;
 	}

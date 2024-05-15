@@ -121,7 +121,8 @@ export class Plugin<
 
 	/** Currently not isolated!!!
 	 *
-	 * If you use `on` or `use` in group and on plugin-level groups handlers are registered after plugin-level handlers
+	 * > [!WARNING]
+	 * > If you use `on` or `use` in a `group` and at the plugin level, the group handlers are registered **after** the handlers at the plugin level
 	 */
 	group(grouped: (bot: Bot<Errors, Derives>) => AnyBot) {
 		this._.groups.push(grouped);
