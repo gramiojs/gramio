@@ -284,9 +284,9 @@ export class Bot<
 
 		const url = `https://api.telegram.org/file/bot${this.options.token}/${file.file_path}`;
 
-		const res = await fetch(url);
+		const res = await request(url);
 
-		const buffer = await res.arrayBuffer();
+		const buffer = await res.body.arrayBuffer();
 
 		if (path) {
 			await fs.writeFile(path, Buffer.from(buffer));
