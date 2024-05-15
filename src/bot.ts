@@ -25,6 +25,7 @@ import { request } from "undici";
 import { ErrorKind, TelegramError } from "./errors";
 import { Plugin } from "./plugin";
 import type {
+	AnyBot,
 	BotOptions,
 	DeriveDefinitions,
 	ErrorDefinitions,
@@ -412,24 +413,7 @@ export class Bot<
 		Update extends UpdateName,
 		Handler extends Hooks.Derive<ContextType<typeof this, Update>>,
 	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
-		if (typeof updateNameOrHandler === "function")
-			this.updates.use(async (context, next) => {
-				for (const [key, value] of Object.entries(
-					await updateNameOrHandler(context),
-				)) {
-					context[key] = value;
-				}
-
-				next();
-			});
-		else if (handler)
-			this.updates.on(updateNameOrHandler, async (context, next) => {
-				for (const [key, value] of Object.entries(await handler(context))) {
-					context[key] = value;
-				}
-
-				next();
-			});
+		this.updates.composer.derive(updateNameOrHandler, handler);
 
 		return this;
 	}
@@ -639,14 +623,14 @@ export class Bot<
 			ContextType<typeof this, T> & Derives["global"] & Derives[T]
 		>,
 	) {
-		this.updates.on(updateName, handler);
+		this.on(updateName, handler);
 
 		return this;
 	}
 
 	/** Register handler to any Updates */
 	use(handler: Handler<Context<typeof this> & Derives["global"]>) {
-		this.updates.use(handler);
+		this.updates.composer.use(handler);
 
 		return this;
 	}
@@ -989,6 +973,13 @@ export class Bot<
 		});
 	}
 
+	/**
+	 * Register handler to `message` and `business_message` event when entities contains a command
+	 *
+	 * new Bot().command("start", async (context) => {
+	 *     return context.send(`You message is /start ${context.args}`);
+	 * });
+	 */
 	command(
 		command: string,
 		handler: (
@@ -1026,7 +1017,7 @@ export class Bot<
 	}
 
 	/** Currently not isolated!!! */
-	group(grouped: (bot: typeof this) => Bot<any, any>): typeof this {
+	group(grouped: (bot: typeof this) => AnyBot): typeof this {
 		return grouped(this) as any;
 	}
 

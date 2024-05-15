@@ -5,46 +5,20 @@ import {
 	contextsMappings,
 } from "@gramio/contexts";
 import type { APIMethodParams, TelegramUpdate } from "@gramio/types";
-import {
-	type CaughtMiddlewareHandler,
-	Composer,
-	noopNext,
-} from "middleware-io";
+import { type CaughtMiddlewareHandler, noopNext } from "middleware-io";
 import type { Bot } from "./bot";
-import type { Handler } from "./types";
+import { Composer } from "./composer";
+import type { AnyBot } from "./types";
 
 export class Updates {
-	private readonly bot: Bot<any, any>;
+	private readonly bot: AnyBot;
 	isStarted = false;
 	private offset = 0;
-	private composer = Composer.builder<
-		Context<Bot<any, any>> & {
-			[key: string]: unknown;
-		}
-	>();
-	private onError: CaughtMiddlewareHandler<Context<Bot>>;
+	composer: Composer;
 
-	constructor(
-		bot: Bot<any, any>,
-		onError: CaughtMiddlewareHandler<Context<any>>,
-	) {
+	constructor(bot: AnyBot, onError: CaughtMiddlewareHandler<Context<any>>) {
 		this.bot = bot;
-		this.onError = onError;
-	}
-
-	//TODO: FIX
-	on<T extends UpdateName>(updateName: MaybeArray<T>, handler: Handler<any>) {
-		return this.use(async (context, next) => {
-			//TODO: fix typings
-			if (context.is(updateName)) await handler(context, next);
-			else await next();
-		});
-	}
-
-	use(handler: Handler<any>) {
-		this.composer.caught(this.onError).use(handler);
-
-		return this;
+		this.composer = new Composer(onError);
 	}
 
 	async handleUpdate(data: TelegramUpdate) {
@@ -87,18 +61,12 @@ export class Updates {
 				});
 			}
 
-			this.composer.compose()(
-				//TODO: fix typings
-				context as unknown as Context<Bot> & {
-					[key: string]: unknown;
-				},
-				noopNext,
-			);
+			this.composer.compose(context as unknown as Context<AnyBot>);
 		} catch (error) {
 			throw new Error(`[UPDATES] Update type ${updateType} not supported.`);
 		}
 	}
-	/**@deprecated use bot.start instead */
+	/** @deprecated use bot.start instead @internal */
 	async startPolling(params: APIMethodParams<"getUpdates"> = {}) {
 		if (this.isStarted) throw new Error("[UPDATES] Polling already started!");
 
