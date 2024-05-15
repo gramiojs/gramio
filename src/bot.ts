@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import fs from "node:fs/promises";
 import { CallbackData } from "@gramio/callback-data";
 import {
@@ -22,6 +23,7 @@ import type {
 } from "@gramio/types";
 import { Inspectable } from "inspectable";
 import { request } from "undici";
+import type { FormData } from "undici";
 import { ErrorKind, TelegramError } from "./errors";
 import { Plugin } from "./plugin";
 import type {
@@ -198,7 +200,7 @@ export class Bot<
 		if (params && isMediaUpload(method, params)) {
 			const formData = await convertJsonToFormData(method, params);
 
-			reqOptions.body = formData;
+			reqOptions.body = formData as FormData;
 		} else {
 			reqOptions.headers = {
 				"Content-Type": "application/json",
