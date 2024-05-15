@@ -26,9 +26,7 @@ export class Composer {
 	constructor(onError?: CaughtMiddlewareHandler<Context<any>>) {
 		this.onError =
 			onError ||
-			((context, error) => {
-				// @ts-expect-error
-				error.context = context;
+			((_, error) => {
 				throw error;
 			});
 

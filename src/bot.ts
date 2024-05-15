@@ -99,6 +99,8 @@ export class Bot<
 	};
 
 	private errorHandler(context: Context<any>, error: Error) {
+		if (!this.hooks.onError.length) throw error;
+
 		return this.runImmutableHooks("onError", {
 			context,
 			//@ts-expect-error ErrorKind exists if user register error-class with .error("kind", SomeError);
