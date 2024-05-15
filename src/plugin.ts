@@ -186,7 +186,7 @@ export class Plugin<
 		updateName: MaybeArray<T>,
 		handler: Handler<ContextType<AnyBot, T> & Derives["global"] & Derives[T]>,
 	) {
-		this.on(updateName, handler);
+		this._.composer.on(updateName, handler);
 
 		return this;
 	}
