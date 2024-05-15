@@ -26,6 +26,7 @@ import { ErrorKind, TelegramError } from "./errors";
 import { Plugin } from "./plugin";
 import type {
 	AnyBot,
+	AnyPlugin,
 	BotOptions,
 	DeriveDefinitions,
 	ErrorDefinitions,
@@ -666,7 +667,7 @@ export class Bot<
 	 *     });
 	 * ```
 	 */
-	extend<NewPlugin extends Plugin<any, any>>(
+	extend<NewPlugin extends AnyPlugin>(
 		plugin: MaybePromise<NewPlugin>,
 	): Bot<Errors & NewPlugin["Errors"], Derives & NewPlugin["Derives"]> {
 		if (plugin instanceof Promise) {

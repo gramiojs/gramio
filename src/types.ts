@@ -8,6 +8,7 @@ import type {
 import type { NextMiddleware } from "middleware-io";
 import type { Bot } from "./bot";
 import type { TelegramError } from "./errors";
+import type { Plugin } from "./plugin";
 
 /** Bot options that you can provide to {@link Bot} constructor */
 export interface BotOptions {
@@ -30,7 +31,7 @@ export interface BotOptions {
 export type Handler<T> = (context: T, next: NextMiddleware) => unknown;
 
 interface ErrorHandlerParams<
-	Ctx extends Context<Bot>,
+	Ctx extends Context<AnyBot>,
 	Kind extends string,
 	Err,
 > {
@@ -171,7 +172,7 @@ export namespace Hooks {
 
 	/** Argument type for {@link OnError} */
 	export type OnErrorContext<
-		Ctx extends Context<Bot>,
+		Ctx extends Context<AnyBot>,
 		T extends ErrorDefinitions,
 	> =
 		| ErrorHandlerParams<Ctx, "TELEGRAM", AnyTelegramError>
@@ -202,7 +203,7 @@ export namespace Hooks {
 	 *  */
 	export type OnError<
 		T extends ErrorDefinitions,
-		Ctx extends Context<any> = Context<Bot>,
+		Ctx extends Context<any> = Context<AnyBot>,
 	> = (options: OnErrorContext<Ctx, T>) => unknown;
 
 	/**
@@ -289,3 +290,9 @@ export type ErrorDefinitions = Record<string, Error>;
 
 /** Map of derives */
 export type DeriveDefinitions = Record<UpdateName | "global", {}>;
+
+/** Type of Bot that accepts any generics */
+export type AnyBot = Bot<any, any>;
+
+/** Type of Bot that accepts any generics */
+export type AnyPlugin = Plugin<any, any>;

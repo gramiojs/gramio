@@ -17,7 +17,7 @@
   ],
   "scripts": {
     "type": "tsc --noEmit",
-    "lint": "bun check ./src",
+    "lint": "bunx @biomejs/biome check ./src",
     "lint:fix": "bun lint --apply",
     "prepublishOnly": "tsc && bunx tsc-alias",
     "jsr": "bun scripts/release-jsr.ts"
