@@ -11,6 +11,10 @@ jsrConfig.version = version;
 
 fs.writeFileSync("deno.json", JSON.stringify(jsrConfig, null, 4));
 
-execSync("bun x @teidesu/slow-types-compiler@latest fix --entry deno.json");
+try {
+	execSync("bun x @teidesu/slow-types-compiler@latest fix --entry deno.json");
+} catch (error) {
+	console.error(error);
+}
 
 console.log("Prepared to release on JSR!");
