@@ -1,12 +1,10 @@
 import {
 	type Context,
-	type MaybeArray,
 	type UpdateName,
 	contextsMappings,
 } from "@gramio/contexts";
 import type { APIMethodParams, TelegramUpdate } from "@gramio/types";
-import { type CaughtMiddlewareHandler, noopNext } from "middleware-io";
-import type { Bot } from "./bot";
+import type { CaughtMiddlewareHandler } from "middleware-io";
 import { Composer } from "./composer";
 import type { AnyBot } from "./types";
 

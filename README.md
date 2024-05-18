@@ -36,7 +36,7 @@ and GramIO customize your project the way you want it!
 ```typescript
 import { Bot } from "gramio";
 
-const bot = new Bot()
+const bot = new Bot(process.env.TOKEN as string)
     .command("start", (context) => context.send("Hello!"))
     .onStart(({ info }) => console.log(`✨ Bot ${info.username} was started!`));
 

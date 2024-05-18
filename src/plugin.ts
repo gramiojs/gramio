@@ -245,7 +245,7 @@ export class Plugin<
 	}
 
 	/**
-	 * This hook called when API return sucesfull response
+	 * This hook called when API return successful response
 	 *
 	 * [Documentation](https://gramio.dev/hooks/on-response.html)
 	 * */
