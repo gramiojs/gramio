@@ -827,8 +827,9 @@ export class Bot<
 			if (trigger instanceof RegExp && !trigger.test(context.data))
 				return next();
 
-			// @ts-expect-error
-			context.queryData = trigger.unpack(context.data);
+			if (trigger instanceof CallbackData)
+				// @ts-expect-error
+				context.queryData = trigger.unpack(context.data);
 
 			//@ts-expect-error
 			return handler(context);
