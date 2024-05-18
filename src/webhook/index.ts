@@ -35,14 +35,21 @@ export type WebhookHandlers = keyof typeof frameworks;
 export function webhookHandler<Framework extends keyof typeof frameworks>(
 	bot: Bot,
 	framework: Framework,
+	secretToken?: string,
 ) {
 	const frameworkAdapter = frameworks[framework];
 
 	return (async (...args: any[]) => {
 		// @ts-expect-error
-		const { update, response } = frameworkAdapter(...args);
+		const { update, response, header, unauthorized } = frameworkAdapter(
+			// @ts-expect-error
+			...args,
+		);
+
+		if (secretToken && header !== secretToken) return unauthorized();
 
 		await bot.updates.handleUpdate(await update);
+
 		if (response) return response();
 	}) as ReturnType<(typeof frameworks)[Framework]> extends {
 		response: () => any;
