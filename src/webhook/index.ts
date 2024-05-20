@@ -51,7 +51,7 @@ export function webhookHandler<Framework extends keyof typeof frameworks>(
 		await bot.updates.handleUpdate(await update);
 
 		if (response) return response();
-	}) as ReturnType<(typeof frameworks)[Framework]> extends {
+	}) as unknown as ReturnType<(typeof frameworks)[Framework]> extends {
 		response: () => any;
 	}
 		? (
