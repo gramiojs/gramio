@@ -121,16 +121,31 @@ export class Bot<
 		onStop: [],
 	};
 
-	/** Create new Bot instance */
 	constructor(
 		token: string,
-		options?: Omit<BotOptions, "token"> & { api: Partial<BotOptions["api"]> },
+		options?: Omit<BotOptions, "token" | "api"> & {
+			api?: Partial<BotOptions["api"]>;
+		},
+	);
+	constructor(
+		options: Omit<BotOptions, "api"> & { api?: Partial<BotOptions["api"]> },
+	);
+	constructor(
+		tokenOrOptions: string | (BotOptions & { api: Partial<BotOptions["api"]> }),
+		options?: Omit<BotOptions, "token" | "api"> & {
+			api?: Partial<BotOptions["api"]>;
+		},
 	) {
+		const token =
+			typeof tokenOrOptions === "string"
+				? tokenOrOptions
+				: tokenOrOptions.token;
+
 		if (!token || typeof token !== "string")
 			throw new Error(`Token is ${typeof token} but it should be a string!`);
 
 		this.options = {
-			...options,
+			...(typeof tokenOrOptions === "object" ? tokenOrOptions : options),
 			token,
 			api: { ...options?.api, baseURL: "https://api.telegram.org/bot" },
 		};
@@ -187,7 +202,7 @@ export class Bot<
 		method: T,
 		params: MaybeSuppressedParams<T> = {},
 	) {
-		const url = `${this.options.api}${this.options.token}/${method}`;
+		const url = `${this.options.api.baseURL}${this.options.token}/${method}`;
 
 		const reqOptions: Parameters<typeof request>[1] = {
 			method: "POST",

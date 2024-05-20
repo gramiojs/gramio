@@ -13,7 +13,7 @@ import type { Plugin } from "./plugin";
 /** Bot options that you can provide to {@link Bot} constructor */
 export interface BotOptions {
 	/** Bot token */
-	token?: string;
+	token: string;
 	/** List of plugins enabled by default */
 	plugins?: {
 		/** Pass `false` to disable plugin. @default true */
