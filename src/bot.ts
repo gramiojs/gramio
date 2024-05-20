@@ -64,7 +64,7 @@ export class Bot<
 	__Derives!: Derives;
 
 	/** Options provided to instance */
-	readonly options: BotOptions = {};
+	readonly options: BotOptions;
 	/** Bot data (filled in when calling bot.init/bot.start) */
 	info: TelegramUser | undefined;
 	/**
@@ -122,11 +122,18 @@ export class Bot<
 	};
 
 	/** Create new Bot instance */
-	constructor(token: string, options?: Omit<BotOptions, "token">) {
+	constructor(
+		token: string,
+		options?: Omit<BotOptions, "token"> & { api: Partial<BotOptions["api"]> },
+	) {
 		if (!token || typeof token !== "string")
 			throw new Error(`Token is ${typeof token} but it should be a string!`);
 
-		this.options = { ...options, token };
+		this.options = {
+			...options,
+			token,
+			api: { ...options?.api, baseURL: "https://api.telegram.org/bot" },
+		};
 
 		if (
 			!(
@@ -180,7 +187,7 @@ export class Bot<
 		method: T,
 		params: MaybeSuppressedParams<T> = {},
 	) {
-		const url = `https://api.telegram.org/bot${this.options.token}/${method}`;
+		const url = `${this.options.api}${this.options.token}/${method}`;
 
 		const reqOptions: Parameters<typeof request>[1] = {
 			method: "POST",
@@ -284,7 +291,9 @@ export class Bot<
 
 		const file = await this.api.getFile({ file_id: fileId });
 
-		const url = `https://api.telegram.org/file/bot${this.options.token}/${file.file_path}`;
+		const url = `${this.options.api.baseURL.replace("/bot", "/file/bot")}${
+			this.options.token
+		}/${file.file_path}`;
 
 		const res = await request(url);
 

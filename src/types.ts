@@ -12,11 +12,25 @@ import type { Plugin } from "./plugin";
 
 /** Bot options that you can provide to {@link Bot} constructor */
 export interface BotOptions {
+	/** Bot token */
 	token?: string;
 	/** List of plugins enabled by default */
 	plugins?: {
 		/** Pass `false` to disable plugin. @default true */
 		format?: boolean;
+	};
+	/** Options to configure how to send requests to the Telegram Bot API */
+	api: {
+		/** URL which will be used to send requests to. @default "https://api.telegram.org/bot" */
+		baseURL: string;
+		/**
+		 * 	Should we send requests to `test` data center?
+		 * 	The test environment is completely separate from the main environment, so you will need to create a new user account and a new bot with `@BotFather`.
+		 *
+		 * 	[Documentation](https://core.telegram.org/bots/webapps#using-bots-in-the-test-environment)
+		 * 	@default false
+		 * */
+		useTest?: boolean;
 	};
 }
 
