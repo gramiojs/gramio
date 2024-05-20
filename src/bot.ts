@@ -131,7 +131,9 @@ export class Bot<
 		options: Omit<BotOptions, "api"> & { api?: Partial<BotOptions["api"]> },
 	);
 	constructor(
-		tokenOrOptions: string | (BotOptions & { api: Partial<BotOptions["api"]> }),
+		tokenOrOptions:
+			| string
+			| (Omit<BotOptions, "api"> & { api?: Partial<BotOptions["api"]> }),
 		options?: Omit<BotOptions, "token" | "api"> & {
 			api?: Partial<BotOptions["api"]>;
 		},
