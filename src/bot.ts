@@ -141,7 +141,7 @@ export class Bot<
 		const token =
 			typeof tokenOrOptions === "string"
 				? tokenOrOptions
-				: tokenOrOptions.token;
+				: tokenOrOptions?.token;
 
 		if (!token || typeof token !== "string")
 			throw new Error(`Token is ${typeof token} but it should be a string!`);
