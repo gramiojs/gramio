@@ -1,6 +1,6 @@
 {
   "name": "gramio",
-  "version": "0.0.37",
+  "version": "0.0.38",
   "description": "Powerful Telegram Bot API framework",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -32,14 +32,14 @@
   },
   "dependencies": {
     "@gramio/callback-data": "^0.0.3",
-    "@gramio/contexts": "^0.0.15",
+    "@gramio/contexts": "^0.0.16",
     "@gramio/files": "^0.0.8",
     "@gramio/format": "^0.1.2",
     "@gramio/keyboards": "^0.3.2",
     "@gramio/types": "^7.3.4",
     "inspectable": "^3.0.1",
     "middleware-io": "^2.8.1",
-    "undici": "^6.17.0"
+    "undici": "^6.18.1"
   },
   "files": [
     "dist"
