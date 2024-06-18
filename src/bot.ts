@@ -163,7 +163,7 @@ export class Bot<
 				new Plugin("@gramio/format").preRequest((context) => {
 					if (!context.params) return context;
 
-					// @ts-expect-error
+					// @ts-ignore
 					const formattable = FormattableMap[context.method];
 					// @ts-ignore add AnyTelegramMethod to @gramio/format
 					if (formattable) context.params = formattable(context.params);
@@ -224,9 +224,9 @@ export class Bot<
 		// biome-ignore lint/style/noParameterAssign: mutate params
 		params = context.params;
 
-		// @ts-expect-error
+		// @ts-ignore
 		if (params && isMediaUpload(method, params)) {
-			// @ts-expect-error
+			// @ts-ignore
 			const formData = await convertJsonToFormData(method, params);
 
 			reqOptions.body = formData as FormData;
