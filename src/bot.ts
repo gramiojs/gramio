@@ -1041,11 +1041,12 @@ export class Bot<
 					// @ts-expect-error
 					context.args = context.text?.slice(entity.length).trim() || null;
 
-					return cmd?.startsWith(command);
+					return cmd === command;
 				})
-			)
+			) {
 				// @ts-expect-error
 				return handler(context);
+			}
 
 			return next();
 		});
