@@ -21,6 +21,7 @@ import type {
 	TelegramReactionTypeEmojiEmoji,
 	TelegramUser,
 } from "@gramio/types";
+import debug from "debug";
 import { Inspectable } from "inspectable";
 import { request } from "undici";
 import type { FormData } from "undici";
@@ -39,6 +40,9 @@ import type {
 	SuppressedAPIMethods,
 } from "./types";
 import { Updates } from "./updates";
+
+const $debugger = debug("gramio");
+const debug$api = $debugger.extend("api");
 
 /** Bot instance
  *
@@ -209,6 +213,7 @@ export class Bot<
 		method: T,
 		params: MaybeSuppressedParams<T> = {},
 	) {
+		const debug$api$method = debug$api.extend(method);
 		const url = `${this.options.api.baseURL}${this.options.token}/${method}`;
 
 		const reqOptions: Parameters<typeof request>[1] = {
@@ -241,10 +246,12 @@ export class Bot<
 			};
 			reqOptions.body = JSON.stringify(params);
 		}
+		debug$api$method("options: %j", reqOptions);
 
 		const response = await request(url, reqOptions);
 
 		const data = (await response.body.json()) as TelegramAPIResponse;
+		debug$api$method("response: %j", data);
 
 		if (!data.ok) {
 			const err = new TelegramError(data, method, params);
