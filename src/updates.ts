@@ -5,9 +5,9 @@ import {
 	contextsMappings,
 } from "@gramio/contexts";
 import type { APIMethodParams, TelegramUpdate } from "@gramio/types";
-import { TelegramError } from "errors";
 import type { CaughtMiddlewareHandler } from "middleware-io";
 import { Composer } from "./composer";
+import { TelegramError } from "./errors";
 import type { AnyBot } from "./types";
 
 export class Updates {

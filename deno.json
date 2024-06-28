@@ -19,6 +19,7 @@
         "@gramio/keyboards": "jsr:@gramio/keyboards@^0.3.3",
         "inspectable": "npm:inspectable@^3.0.2",
         "middleware-io": "npm:middleware-io@^2.8.1",
-        "undici": "npm:undici@^6.19.2"
+        "undici": "npm:undici@^6.19.2",
+        "debug": "npm:debug@^4.3.5"
     }
 }
