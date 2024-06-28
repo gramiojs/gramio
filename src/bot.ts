@@ -149,7 +149,11 @@ export class Bot<
 		this.options = {
 			...(typeof tokenOrOptions === "object" ? tokenOrOptions : options),
 			token,
-			api: { ...options?.api, baseURL: "https://api.telegram.org/bot" },
+			api: {
+				baseURL: "https://api.telegram.org/bot",
+				retryGetUpdatesWait: 1000,
+				...options?.api,
+			},
 		};
 
 		if (

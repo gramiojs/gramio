@@ -1,9 +1,11 @@
+import { scheduler } from "node:timers/promises";
 import {
 	type Context,
 	type UpdateName,
 	contextsMappings,
 } from "@gramio/contexts";
 import type { APIMethodParams, TelegramUpdate } from "@gramio/types";
+import { TelegramError } from "errors";
 import type { CaughtMiddlewareHandler } from "middleware-io";
 import { Composer } from "./composer";
 import type { AnyBot } from "./types";
@@ -80,11 +82,16 @@ export class Updates {
 			const updates = await this.bot.api.getUpdates({
 				...params,
 				offset: this.offset,
+				suppress: true,
 			});
 
-			for await (const update of updates) {
-				//TODO: update errors
-				await this.handleUpdate(update).catch(console.error);
+			if (updates instanceof TelegramError || typeof updates === "undefined") {
+				await scheduler.wait(this.bot.options.api.retryGetUpdatesWait);
+			} else {
+				for await (const update of updates) {
+					//TODO: update errors
+					await this.handleUpdate(update).catch(console.error);
+				}
 			}
 		}
 	}

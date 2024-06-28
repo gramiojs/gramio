@@ -31,6 +31,12 @@ export interface BotOptions {
 		 * 	@default false
 		 * */
 		useTest?: boolean;
+
+		/**
+		 * Time in milliseconds before calling {@link APIMethods.getUpdates | getUpdates} again
+		 * @default 1000
+		 */
+		retryGetUpdatesWait?: number;
 	};
 }
 
