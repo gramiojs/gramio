@@ -11,10 +11,10 @@
         ]
     },
     "imports": {
-        "@gramio/types": "jsr:@gramio/types@^7.5.0",
+        "@gramio/types": "jsr:@gramio/types@^7.6.0",
         "@gramio/callback-data": "jsr:@gramio/callback-data@^0.0.3",
-        "@gramio/contexts": "jsr:@gramio/contexts@^0.0.16",
-        "@gramio/files": "jsr:@gramio/files@^0.0.8",
+        "@gramio/contexts": "jsr:@gramio/contexts@^0.0.18",
+        "@gramio/files": "jsr:@gramio/files@^0.0.9",
         "@gramio/format": "jsr:@gramio/format@^0.1.3",
         "@gramio/keyboards": "jsr:@gramio/keyboards@^0.3.3",
         "inspectable": "npm:inspectable@^3.0.2",
