@@ -108,6 +108,7 @@ export class Plugin<
 			string,
 			{ new (...args: any): any; prototype: Error }
 		>,
+		decorators: {} as Record<string, unknown>,
 	};
 
 	/** Create new Plugin. Please provide `name` */
@@ -179,6 +180,19 @@ export class Plugin<
 		this._.composer.derive(updateNameOrHandler, handler);
 
 		return this;
+	}
+
+	decorate<Name extends string, Value>(name: Name, value: Value) {
+		this._.decorators[name] = value;
+
+		return this as unknown as Plugin<
+			Errors,
+			Derives & {
+				global: {
+					[K in Name]: Value;
+				};
+			}
+		>;
 	}
 
 	/** Register handler to one or many Updates */

@@ -8,6 +8,7 @@ import {
 	type MaybeArray,
 	PhotoAttachment,
 	type UpdateName,
+	contextsMappings,
 } from "@gramio/contexts";
 import { convertJsonToFormData, isMediaUpload } from "@gramio/files";
 import { FormattableMap } from "@gramio/format";
@@ -464,6 +465,23 @@ export class Bot<
 		return this;
 	}
 
+	decorate<Name extends string, Value>(name: Name, value: Value) {
+		for (const contextName of Object.keys(contextsMappings)) {
+			// @ts-expect-error
+			Object.defineProperty(contextsMappings[contextName].prototype, name, {
+				value,
+			});
+		}
+
+		return this as unknown as Bot<
+			Errors,
+			Derives & {
+				global: {
+					[K in Name]: Value;
+				};
+			}
+		>;
+	}
 	/**
 	 * This hook called when the bot is `started`.
 	 *
@@ -735,6 +753,10 @@ export class Bot<
 
 		if (plugin._.composer.length) {
 			this.use(plugin._.composer.composed);
+		}
+
+		for (const [key, value] of Object.entries(plugin._.decorators)) {
+			this.decorate(key, value);
 		}
 
 		for (const [key, value] of Object.entries(plugin._.errorsDefinitions)) {
