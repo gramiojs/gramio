@@ -1,6 +1,18 @@
 name: Publish package
 
-on: workflow_dispatch
+on: 
+  workflow_dispatch:
+    inputs:
+      publish_to_npm:
+        description: 'Publish package to NPM'
+        required: false
+        type: boolean
+        default: true
+      publish_to_jsr:
+        description: 'Publish package to JSR'
+        required: false
+        type: boolean
+        default: true
 
 permissions:
     contents: write
@@ -36,6 +48,7 @@ jobs:
               uses: denoland/setup-deno@v1
 
             - name: Publish package to JSR
+              if: ${{ github.event.inputs.publish_to_jsr }}
               run: deno publish --allow-dirty --unstable-sloppy-imports --allow-slow-types
 
             - name: Install Node
@@ -46,6 +59,7 @@ jobs:
                   scope: "@gramio"
 
             - name: Publish package to NPM
+              if: ${{ github.event.inputs.publish_to_npm }}
               run: npm publish --access public
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
