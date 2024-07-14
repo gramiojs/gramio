@@ -465,22 +465,53 @@ export class Bot<
 		return this;
 	}
 
-	decorate<Name extends string, Value>(name: Name, value: Value) {
+	decorate<Value extends Record<string, any>>(
+		value: Value,
+	): Bot<
+		Errors,
+		Derives & {
+			global: {
+				[K in keyof Value]: Value[K];
+			};
+		}
+	>;
+
+	decorate<Name extends string, Value>(
+		name: Name,
+		value: Value,
+	): Bot<
+		Errors,
+		Derives & {
+			global: {
+				[K in Name]: Value;
+			};
+		}
+	>;
+	decorate<Name extends string, Value>(
+		nameOrRecordValue: Name | Record<string, any>,
+		value?: Value,
+	) {
 		for (const contextName of Object.keys(contextsMappings)) {
-			// @ts-expect-error
-			Object.defineProperty(contextsMappings[contextName].prototype, name, {
-				value,
-			});
+			if (typeof nameOrRecordValue === "string")
+				// @ts-expect-error
+				Object.defineProperty(contextsMappings[contextName].prototype, name, {
+					value,
+				});
+			else
+				Object.defineProperties(
+					// @ts-expect-error
+					contextsMappings[contextName].prototype,
+					Object.keys(nameOrRecordValue).reduce<Record<string, any>>(
+						(acc, key) => {
+							acc[key] = { value: nameOrRecordValue[key] };
+							return acc;
+						},
+						{},
+					),
+				);
 		}
 
-		return this as unknown as Bot<
-			Errors,
-			Derives & {
-				global: {
-					[K in Name]: Value;
-				};
-			}
-		>;
+		return this;
 	}
 	/**
 	 * This hook called when the bot is `started`.
@@ -755,9 +786,7 @@ export class Bot<
 			this.use(plugin._.composer.composed);
 		}
 
-		for (const [key, value] of Object.entries(plugin._.decorators)) {
-			this.decorate(key, value);
-		}
+		this.decorate(plugin._.decorators);
 
 		for (const [key, value] of Object.entries(plugin._.errorsDefinitions)) {
 			if (this.errorsDefinitions[key]) this.errorsDefinitions[key] = value;

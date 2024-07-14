@@ -182,17 +182,40 @@ export class Plugin<
 		return this;
 	}
 
-	decorate<Name extends string, Value>(name: Name, value: Value) {
-		this._.decorators[name] = value;
+	decorate<Value extends Record<string, any>>(
+		value: Value,
+	): Plugin<
+		Errors,
+		Derives & {
+			global: {
+				[K in keyof Value]: Value[K];
+			};
+		}
+	>;
 
-		return this as unknown as Plugin<
-			Errors,
-			Derives & {
-				global: {
-					[K in Name]: Value;
-				};
+	decorate<Name extends string, Value>(
+		name: Name,
+		value: Value,
+	): Plugin<
+		Errors,
+		Derives & {
+			global: {
+				[K in Name]: Value;
+			};
+		}
+	>;
+	decorate<Name extends string, Value>(
+		nameOrValue: Name | Record<string, any>,
+		value?: Value,
+	) {
+		if (typeof nameOrValue === "string") this._.decorators[nameOrValue] = value;
+		else {
+			for (const [name, value] of Object.entries(nameOrValue)) {
+				this._.decorators[name] = value;
 			}
-		>;
+		}
+
+		return this;
 	}
 
 	/** Register handler to one or many Updates */
