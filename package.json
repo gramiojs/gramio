@@ -2,7 +2,7 @@
   "name": "gramio",
   "type": "commonjs",
   "version": "0.0.46",
-  "description": "Powerful Telegram Bot API framework",
+  "description": "Powerful, extensible and really type-safe Telegram Bot API framework",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "keywords": [
