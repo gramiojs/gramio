@@ -15,11 +15,10 @@ TypeScript/JavaScript Telegram Bot API Framework for create your bots with conve
 
 🛡️ **Type-safe** - Written in TypeScript with love ❤️
 
-🌐 **Multi-runtime** - Works on [Node.js](https://nodejs.org/), [Bun](https://bun.sh/) and [Deno](https://deno.com/)\*
+🌐 **Multi-runtime** - Works on [Node.js](https://nodejs.org/), [Bun](https://bun.sh/) and [Deno](https://deno.com/)
 
 ⚙️ **Code-generated** - Many parts are code-generated (for example, [code-generated and auto-published Telegram Bot API types](https://github.com/gramiojs/types))
 
-**Deno\*** [windows-specific issue with undici](https://github.com/denoland/deno/issues/19532)
 
 ## [Get started](https://gramio.dev/get-started)
 
