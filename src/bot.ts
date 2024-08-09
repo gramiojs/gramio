@@ -6,6 +6,7 @@ import {
 	type Context,
 	type ContextType,
 	type MaybeArray,
+	type MessageContext,
 	PhotoAttachment,
 	type UpdateName,
 	contextsMappings,
@@ -27,6 +28,7 @@ import { Inspectable } from "inspectable";
 import { request } from "undici";
 import type { FormData } from "undici";
 import { ErrorKind, TelegramError } from "./errors";
+import type { Filters } from "./filters";
 import { Plugin } from "./plugin";
 import type {
 	AnyBot,
@@ -34,6 +36,7 @@ import type {
 	BotOptions,
 	DeriveDefinitions,
 	ErrorDefinitions,
+	FilterDefinitions,
 	Handler,
 	Hooks,
 	MaybePromise,
@@ -45,6 +48,11 @@ import { Updates } from "./updates";
 const $debugger = debug("gramio");
 const debug$api = $debugger.extend("api");
 
+const defaultFilters = {
+	context: (name: string) => (context: Context<Bot>) => context.is(name),
+} satisfies FilterDefinitions;
+
+type A = typeof defaultFilters;
 /** Bot instance
  *
  * @example
@@ -64,9 +72,18 @@ const debug$api = $debugger.extend("api");
 export class Bot<
 	Errors extends ErrorDefinitions = {},
 	Derives extends DeriveDefinitions = DeriveDefinitions,
+	FiltersT extends FilterDefinitions = Filters,
 > {
+	_ = {
+		/** @internal. Remap generic */
+		derives: {} as Derives,
+	};
 	/** @internal. Remap generic */
 	__Derives!: Derives;
+
+	private filters: FilterDefinitions = {
+		context: (name: string) => (context: Context<Bot>) => context.is(name),
+	};
 
 	/** Options provided to instance */
 	readonly options: BotOptions;
@@ -710,6 +727,17 @@ export class Bot<
 
 		return this;
 	}
+
+	onExperimental(
+		// filter: Filters,
+		filter: (
+			f: Filters<
+				Context<typeof this> & Derives["global"],
+				[{ equal: { prop: number }; addition: { some: () => 2 } }]
+			>,
+		) => Filters,
+		handler: Handler<Context<typeof this> & Derives["global"]>,
+	) {}
 
 	/** Register handler to one or many Updates */
 	on<T extends UpdateName>(
