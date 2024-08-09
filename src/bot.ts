@@ -25,8 +25,6 @@ import type {
 } from "@gramio/types";
 import debug from "debug";
 import { Inspectable } from "inspectable";
-import { request } from "undici";
-import type { FormData } from "undici";
 import { ErrorKind, TelegramError } from "./errors";
 import type { Filters } from "./filters";
 import { Plugin } from "./plugin";
@@ -48,11 +46,6 @@ import { Updates } from "./updates";
 const $debugger = debug("gramio");
 const debug$api = $debugger.extend("api");
 
-const defaultFilters = {
-	context: (name: string) => (context: Context<Bot>) => context.is(name),
-} satisfies FilterDefinitions;
-
-type A = typeof defaultFilters;
 /** Bot instance
  *
  * @example
@@ -72,7 +65,7 @@ type A = typeof defaultFilters;
 export class Bot<
 	Errors extends ErrorDefinitions = {},
 	Derives extends DeriveDefinitions = DeriveDefinitions,
-	FiltersT extends FilterDefinitions = Filters,
+	// FiltersT extends FilterDefinitions = Filters<typeof this>,
 > {
 	_ = {
 		/** @internal. Remap generic */
@@ -103,13 +96,14 @@ export class Bot<
 	 * [Documentation](https://gramio.dev/bot-api.html)
 	 */
 	readonly api = new Proxy({} as SuppressedAPIMethods, {
-		get:
-			<T extends keyof SuppressedAPIMethods>(
-				_target: SuppressedAPIMethods,
-				method: T,
-			) =>
-			(args: APIMethodParams<T>) =>
-				this._callApi(method, args),
+		get: <T extends keyof SuppressedAPIMethods>(
+			_target: SuppressedAPIMethods,
+			method: T,
+		) =>
+			// @ts-expect-error
+			// biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
+			(_target[method] ??= (args: APIMethodParams<T>) =>
+				this._callApi(method, args)),
 	});
 	private lazyloadPlugins: Promise<Plugin>[] = [];
 	private dependencies: string[] = [];
@@ -234,7 +228,7 @@ export class Bot<
 		const debug$api$method = debug$api.extend(method);
 		const url = `${this.options.api.baseURL}${this.options.token}/${method}`;
 
-		const reqOptions: Parameters<typeof request>[1] = {
+		const reqOptions: Parameters<typeof fetch>[1] = {
 			method: "POST",
 		};
 
@@ -266,9 +260,9 @@ export class Bot<
 		}
 		debug$api$method("options: %j", reqOptions);
 
-		const response = await request(url, reqOptions);
+		const response = await fetch(url, reqOptions);
 
-		const data = (await response.body.json()) as TelegramAPIResponse;
+		const data = (await response.json()) as TelegramAPIResponse;
 		debug$api$method("response: %j", data);
 
 		if (!data.ok) {
@@ -345,9 +339,9 @@ export class Bot<
 			this.options.token
 		}/${file.file_path}`;
 
-		const res = await request(url);
+		const res = await fetch(url);
 
-		const buffer = await res.body.arrayBuffer();
+		const buffer = await res.arrayBuffer();
 
 		if (path) {
 			await fs.writeFile(path, Buffer.from(buffer));
@@ -728,16 +722,16 @@ export class Bot<
 		return this;
 	}
 
-	onExperimental(
-		// filter: Filters,
-		filter: (
-			f: Filters<
-				Context<typeof this> & Derives["global"],
-				[{ equal: { prop: number }; addition: { some: () => 2 } }]
-			>,
-		) => Filters,
-		handler: Handler<Context<typeof this> & Derives["global"]>,
-	) {}
+	// onExperimental(
+	// 	// filter: Filters,
+	// 	filter: (
+	// 		f: Filters<
+	// 			Context<typeof this> & Derives["global"],
+	// 			[{ equal: { prop: number }; addition: { some: () => 2 } }]
+	// 		>,
+	// 	) => Filters,
+	// 	handler: Handler<Context<typeof this> & Derives["global"]>,
+	// ) {}
 
 	/** Register handler to one or many Updates */
 	on<T extends UpdateName>(

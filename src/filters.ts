@@ -16,16 +16,17 @@ export interface AdditionDefinitions {
 type ReturnIfNonNever<T> = [T] extends [never] ? {} : T;
 
 export type Filters<
-	Base = Context<Bot>,
+	BotType extends Bot = Bot,
+	Base = Context<BotType>,
 	ConditionalAdditions extends AdditionDefinitions[] = [],
 > = {
 	_s: Base;
 	_ad: ConditionalAdditions;
-	__filters: ((context: Context<Bot>) => boolean)[];
+	__filters: ((context: Context<BotType>) => boolean)[];
 	context<T extends UpdateName>(
 		updateName: MaybeArray<T>,
-	): Filters<ContextType<Bot, T>, ConditionalAdditions>;
-	is2(): Filters<2, ConditionalAdditions>;
+	): Filters<BotType, ContextType<BotType, T>, ConditionalAdditions>;
+	is2(): Filters<BotType, 2, ConditionalAdditions>;
 } & ReturnIfNonNever<
 	{
 		[K in keyof ConditionalAdditions &
@@ -61,11 +62,11 @@ export type Filters<
 
 // type A = Context<Bot> & {prop: 2} extends SA ? true : false;
 
-export const filters: Filters = {
-	__filters: [],
-	context(updateName) {
-		this.__filters.push((context) => context.is(updateName));
+// export const filters: Filters = {
+// 	__filters: [],
+// 	context(updateName) {
+// 		this.__filters.push((context) => context.is(updateName));
 
-		return this;
-	},
-};
+// 		return this;
+// 	},
+// };
