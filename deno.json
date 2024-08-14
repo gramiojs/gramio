@@ -1,6 +1,6 @@
 {
 	"name": "@gramio/core",
-	"version": "0.0.33",
+	"version": "0.0.48",
 	"exports": "./src/index.ts",
 	"publish": {
 		"include": ["deno.json", "src", "README.md", "tsconfig.json"]

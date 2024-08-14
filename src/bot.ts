@@ -227,12 +227,15 @@ export class Bot<
 		const debug$api$method = debug$api.extend(method);
 		const url = `${this.options.api.baseURL}${this.options.token}/${method}`;
 
-		const reqOptions: Omit<
-			NonNullable<Parameters<typeof fetch>[1]>,
-			"headers"
-		> & {
-			headers: Headers;
-		} = {
+		// Omit<
+		// 	NonNullable<Parameters<typeof fetch>[1]>,
+		// 	"headers"
+		// > & {
+		// 	headers: Headers;
+		// }
+		// idk why it cause https://github.com/gramiojs/gramio/actions/runs/10388006206/job/28762703484
+		// also in logs types differs
+		const reqOptions: any = {
 			method: "POST",
 			...this.options.api.fetchOptions,
 			// @ts-ignore types node/bun and global missmatch
