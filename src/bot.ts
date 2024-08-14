@@ -6,7 +6,6 @@ import {
 	type Context,
 	type ContextType,
 	type MaybeArray,
-	type MessageContext,
 	PhotoAttachment,
 	type UpdateName,
 	contextsMappings,
@@ -228,8 +227,16 @@ export class Bot<
 		const debug$api$method = debug$api.extend(method);
 		const url = `${this.options.api.baseURL}${this.options.token}/${method}`;
 
-		const reqOptions: Parameters<typeof fetch>[1] = {
+		const reqOptions: Omit<
+			NonNullable<Parameters<typeof fetch>[1]>,
+			"headers"
+		> & {
+			headers: Headers;
+		} = {
 			method: "POST",
+			...this.options.api.fetchOptions,
+			// @ts-expect-error types node/bun and global missmatch
+			headers: new Headers(this.options.api.fetchOptions?.headers),
 		};
 
 		const context = await this.runHooks(
@@ -250,12 +257,10 @@ export class Bot<
 			// @ts-ignore
 
 			const formData = await convertJsonToFormData(method, params);
-
 			reqOptions.body = formData as FormData;
 		} else {
-			reqOptions.headers = {
-				"Content-Type": "application/json",
-			};
+			reqOptions.headers.set("Content-Type", "application/json");
+
 			reqOptions.body = JSON.stringify(params);
 		}
 		debug$api$method("options: %j", reqOptions);

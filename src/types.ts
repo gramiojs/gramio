@@ -21,6 +21,8 @@ export interface BotOptions {
 	};
 	/** Options to configure how to send requests to the Telegram Bot API */
 	api: {
+		/** Configure {@link fetch} parameters */
+		fetchOptions?: Parameters<typeof fetch>[1];
 		/** URL which will be used to send requests to. @default "https://api.telegram.org/bot" */
 		baseURL: string;
 		/**
