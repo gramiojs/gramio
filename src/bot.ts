@@ -235,7 +235,7 @@ export class Bot<
 		} = {
 			method: "POST",
 			...this.options.api.fetchOptions,
-			// @ts-expect-error types node/bun and global missmatch
+			// @ts-ignore types node/bun and global missmatch
 			headers: new Headers(this.options.api.fetchOptions?.headers),
 		};
 
