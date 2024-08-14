@@ -257,7 +257,7 @@ export class Bot<
 			// @ts-ignore
 
 			const formData = await convertJsonToFormData(method, params);
-			reqOptions.body = formData as FormData;
+			reqOptions.body = formData;
 		} else {
 			reqOptions.headers.set("Content-Type", "application/json");
 
