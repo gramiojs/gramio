@@ -1157,7 +1157,17 @@ export class Bot<
 			this.lazyloadPlugins.map(async (plugin) => this.extend(await plugin)),
 		);
 
-		this.info = await this.api.getMe();
+		const info = await this.api.getMe({
+			suppress: true,
+		});
+
+		if (info instanceof TelegramError) {
+			if (info.code === 404)
+				info.message = "The bot token is incorrect. Check it in BotFather.";
+			throw info;
+		}
+
+		this.info = info;
 	}
 
 	/**
