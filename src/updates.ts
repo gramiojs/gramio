@@ -7,7 +7,6 @@ import {
 import type { APIMethodParams, TelegramUpdate } from "@gramio/types";
 import type { CaughtMiddlewareHandler } from "middleware-io";
 import { Composer } from "./composer";
-import { TelegramError } from "./errors";
 import type { AnyBot } from "./types";
 
 export class Updates {
@@ -79,19 +78,20 @@ export class Updates {
 
 	async startFetchLoop(params: APIMethodParams<"getUpdates"> = {}) {
 		while (this.isStarted) {
-			const updates = await this.bot.api.getUpdates({
-				...params,
-				offset: this.offset,
-				suppress: true,
-			});
+			try {
+				const updates = await this.bot.api.getUpdates({
+					...params,
+					offset: this.offset,
+				});
 
-			if (updates instanceof TelegramError || typeof updates === "undefined") {
-				await scheduler.wait(this.bot.options.api.retryGetUpdatesWait);
-			} else {
 				for await (const update of updates) {
 					//TODO: update errors
 					await this.handleUpdate(update).catch(console.error);
 				}
+			} catch (error) {
+				console.error("Error received when fetching updates", error);
+
+				await scheduler.wait(this.bot.options.api.retryGetUpdatesWait);
 			}
 		}
 	}
