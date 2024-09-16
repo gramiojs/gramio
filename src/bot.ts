@@ -353,6 +353,7 @@ export class Bot<
 			if (!res.body)
 				throw new Error("Response without body (should be never throw)");
 
+			// @ts-ignore denoo
 			await fs.writeFile(path, Readable.fromWeb(res.body));
 
 			return path;
