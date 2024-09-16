@@ -350,7 +350,8 @@ export class Bot<
 		const res = await fetch(url);
 
 		if (path) {
-			if(!res.body) throw new Error("Response without body (should be never throw)")
+			if (!res.body)
+				throw new Error("Response without body (should be never throw)");
 
 			await fs.writeFile(path, Readable.fromWeb(res.body));
 
@@ -974,9 +975,7 @@ export class Bot<
 				(typeof trigger === "string" && context.query === trigger) ||
 				// @ts-expect-error
 				(typeof trigger === "function" && trigger(context)) ||
-				(trigger instanceof RegExp &&
-					context.query &&
-					trigger.test(context.query))
+				(trigger instanceof RegExp && trigger.test(context.query))
 			) {
 				//@ts-expect-error
 				context.args =
@@ -1049,9 +1048,7 @@ export class Bot<
 				(typeof trigger === "string" && context.query === trigger) ||
 				// @ts-expect-error
 				(typeof trigger === "function" && trigger(context)) ||
-				(trigger instanceof RegExp &&
-					context.query &&
-					trigger.test(context.query))
+				(trigger instanceof RegExp && trigger.test(context.query))
 			) {
 				//@ts-expect-error
 				context.args =
@@ -1082,17 +1079,15 @@ export class Bot<
 		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
 	) {
 		return this.on("message", (context, next) => {
+			const text = context.text ?? context.caption;
 			if (
-				(typeof trigger === "string" && context.text === trigger) ||
+				(typeof trigger === "string" && text === trigger) ||
 				// @ts-expect-error
 				(typeof trigger === "function" && trigger(context)) ||
-				(trigger instanceof RegExp &&
-					context.text &&
-					trigger.test(context.text))
+				(trigger instanceof RegExp && text && trigger.test(text))
 			) {
 				//@ts-expect-error
-				context.args =
-					trigger instanceof RegExp ? context.text?.match(trigger) : null;
+				context.args = trigger instanceof RegExp ? text?.match(trigger) : null;
 
 				// TODO: remove
 				//@ts-expect-error
