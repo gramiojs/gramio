@@ -1,5 +1,5 @@
-import { Buffer } from "node:buffer";
 import fs from "node:fs/promises";
+import { Readable } from "node:stream";
 import { CallbackData } from "@gramio/callback-data";
 import {
 	type Attachment,
@@ -349,13 +349,15 @@ export class Bot<
 
 		const res = await fetch(url);
 
-		const buffer = await res.arrayBuffer();
-
 		if (path) {
-			await fs.writeFile(path, Buffer.from(buffer));
+			if(!res.body) throw new Error("Response without body (should be never throw)")
+
+			await fs.writeFile(path, Readable.fromWeb(res.body));
 
 			return path;
 		}
+
+		const buffer = await res.arrayBuffer();
 
 		return buffer;
 	}

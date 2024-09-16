@@ -3,3 +3,5 @@ bun.lockb
 dist
 tsconfig.tsbuildinfo
 test.ts
+.env
+*.local.ts
