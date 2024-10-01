@@ -114,7 +114,8 @@ export class Bot<
 	};
 
 	private errorHandler(context: Context<any>, error: Error) {
-		if (!this.hooks.onError.length) throw error;
+		if (!this.hooks.onError.length)
+			return console.error("[Default Error Handler]", context, error);
 
 		return this.runImmutableHooks("onError", {
 			context,
