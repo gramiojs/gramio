@@ -468,13 +468,17 @@ export class Bot<
 	 * })
 	 * ```
 	 */
-	derive<Handler extends Hooks.Derive<Context<typeof this>>>(
+	derive<
+		Handler extends Hooks.Derive<Context<typeof this> & Derives["global"]>,
+	>(
 		handler: Handler,
 	): Bot<Errors, Derives & { global: Awaited<ReturnType<Handler>> }>;
 
 	derive<
 		Update extends UpdateName,
-		Handler extends Hooks.Derive<ContextType<typeof this, Update>>,
+		Handler extends Hooks.Derive<
+			ContextType<typeof this, Update> & Derives["global"] & Derives[Update]
+		>,
 	>(
 		updateName: MaybeArray<Update>,
 		handler: Handler,
@@ -482,7 +486,9 @@ export class Bot<
 
 	derive<
 		Update extends UpdateName,
-		Handler extends Hooks.Derive<ContextType<typeof this, Update>>,
+		Handler extends Hooks.Derive<
+			ContextType<typeof this, Update> & Derives["global"] & Derives[Update]
+		>,
 	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
 		this.updates.composer.derive(updateNameOrHandler, handler);
 

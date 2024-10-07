@@ -161,13 +161,15 @@ export class Plugin<
 	 * })
 	 * ```
 	 */
-	derive<Handler extends Hooks.Derive<Context<AnyBot>>>(
+	derive<Handler extends Hooks.Derive<Context<AnyBot> & Derives["global"]>>(
 		handler: Handler,
 	): Plugin<Errors, Derives & { global: Awaited<ReturnType<Handler>> }>;
 
 	derive<
 		Update extends UpdateName,
-		Handler extends Hooks.Derive<ContextType<AnyBot, Update>>,
+		Handler extends Hooks.Derive<
+			ContextType<AnyBot, Update> & Derives["global"] & Derives[Update]
+		>,
 	>(
 		updateName: MaybeArray<Update>,
 		handler: Handler,
@@ -175,7 +177,9 @@ export class Plugin<
 
 	derive<
 		Update extends UpdateName,
-		Handler extends Hooks.Derive<ContextType<Bot, Update>>,
+		Handler extends Hooks.Derive<
+			ContextType<Bot, Update> & Derives["global"] & Derives[Update]
+		>,
 	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
 		this._.composer.derive(updateNameOrHandler, handler);
 
