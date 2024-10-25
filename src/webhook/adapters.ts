@@ -13,11 +13,16 @@ export interface FrameworkHandler {
 }
 export type FrameworkAdapter = (...args: any[]) => FrameworkHandler;
 
+const responseOK = new Response("ok!") as Response;
+const responseUnauthorized = new Response(WRONG_TOKEN_ERROR, {
+	status: 401,
+}) as Response;
+
 export const frameworks = {
 	elysia: ({ body, headers }) => ({
 		update: body,
 		header: headers[SECRET_TOKEN_HEADER],
-		unauthorized: () => new Response(WRONG_TOKEN_ERROR, { status: 401 }),
+		unauthorized: () => responseUnauthorized,
 	}),
 	fastify: (request, reply) => ({
 		update: request.body,
@@ -58,13 +63,13 @@ export const frameworks = {
 	"std/http": (req) => ({
 		update: req.json(),
 		header: req.headers.get(SECRET_TOKEN_HEADER),
-		response: () => new Response("ok!"),
-		unauthorized: () => new Response(WRONG_TOKEN_ERROR, { status: 401 }),
+		response: () => responseOK,
+		unauthorized: () => responseUnauthorized,
 	}),
 	"Bun.serve": (req) => ({
 		update: req.json(),
 		header: req.headers.get(SECRET_TOKEN_HEADER),
-		response: () => new Response("ok!"),
-		unauthorized: () => new Response(WRONG_TOKEN_ERROR, { status: 401 }),
+		response: () => responseOK,
+		unauthorized: () => responseUnauthorized,
 	}),
 } satisfies Record<string, FrameworkAdapter>;
