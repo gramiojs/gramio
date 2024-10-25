@@ -13,9 +13,12 @@ export interface FrameworkHandler {
 }
 export type FrameworkAdapter = (...args: any[]) => FrameworkHandler;
 
+// @ts-ignore
 const responseOK = new Response("ok!") as Response;
+
 const responseUnauthorized = new Response(WRONG_TOKEN_ERROR, {
 	status: 401,
+	// @ts-ignore
 }) as Response;
 
 export const frameworks = {
