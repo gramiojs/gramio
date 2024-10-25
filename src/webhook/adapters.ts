@@ -1,6 +1,6 @@
 import type { Buffer } from "node:buffer";
 import type { TelegramUpdate } from "@gramio/types";
-import type { MaybePromise } from "../types";
+import type { MaybePromise } from "../types.js";
 
 const SECRET_TOKEN_HEADER = "X-Telegram-Bot-Api-Secret-Token";
 const WRONG_TOKEN_ERROR = "secret token is invalid";

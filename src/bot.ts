@@ -24,9 +24,9 @@ import type {
 } from "@gramio/types";
 import debug from "debug";
 import { Inspectable } from "inspectable";
-import { ErrorKind, TelegramError } from "./errors";
-import type { Filters } from "./filters";
-import { Plugin } from "./plugin";
+import { ErrorKind, TelegramError } from "./errors.js";
+// import type { Filters } from "./filters";
+import { Plugin } from "./plugin.js";
 import type {
 	AnyBot,
 	AnyPlugin,
@@ -39,8 +39,8 @@ import type {
 	MaybePromise,
 	MaybeSuppressedParams,
 	SuppressedAPIMethods,
-} from "./types";
-import { Updates } from "./updates";
+} from "./types.js";
+import { Updates } from "./updates.js";
 
 const $debugger = debug("gramio");
 const debug$api = $debugger.extend("api");

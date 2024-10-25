@@ -1,4 +1,3 @@
-import { scheduler } from "node:timers/promises";
 import {
 	type Context,
 	type UpdateName,
@@ -6,8 +5,11 @@ import {
 } from "@gramio/contexts";
 import type { APIMethodParams, TelegramUpdate } from "@gramio/types";
 import type { CaughtMiddlewareHandler } from "middleware-io";
-import { Composer } from "./composer";
-import type { AnyBot } from "./types";
+import { Composer } from "./composer.js";
+import type { AnyBot } from "./types.js";
+
+// cant use node:timers/promises because possible browser usage...
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export class Updates {
 	private readonly bot: AnyBot;
@@ -91,7 +93,7 @@ export class Updates {
 			} catch (error) {
 				console.error("Error received when fetching updates", error);
 
-				await scheduler.wait(this.bot.options.api.retryGetUpdatesWait);
+				await sleep(this.bot.options.api.retryGetUpdatesWait ?? 1000);
 			}
 		}
 	}

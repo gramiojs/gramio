@@ -4,7 +4,7 @@ import type {
 	TelegramAPIResponseError,
 	TelegramResponseParameters,
 } from "@gramio/types";
-import type { MaybeSuppressedParams } from "./types";
+import type { MaybeSuppressedParams } from "./types.js";
 
 /** Symbol to determine which error kind is it */
 export const ErrorKind: symbol = Symbol("ErrorKind");

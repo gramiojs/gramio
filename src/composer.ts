@@ -10,7 +10,7 @@ import {
 	Composer as MiddlewareComposer,
 	noopNext,
 } from "middleware-io";
-import type { AnyBot, Handler, Hooks } from "./types";
+import type { AnyBot, Handler, Hooks } from "./types.js";
 
 /** Base-composer without chainable type-safety */
 export class Composer {

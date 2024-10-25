@@ -1,5 +1,5 @@
-import type { Bot } from "../bot";
-import { type FrameworkAdapter, frameworks } from "./adapters";
+import type { Bot } from "../bot.js";
+import { type FrameworkAdapter, frameworks } from "./adapters.js";
 
 /** Union type of webhook handlers name */
 export type WebhookHandlers = keyof typeof frameworks;

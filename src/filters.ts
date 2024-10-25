@@ -5,8 +5,7 @@ import type {
 	MessageContext,
 	UpdateName,
 } from "@gramio/contexts";
-import type { TelegramUpdate } from "@gramio/types";
-import type { Bot } from "./bot";
+import type { Bot } from "./bot.js";
 
 export interface AdditionDefinitions {
 	equal: any;

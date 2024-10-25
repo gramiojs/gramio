@@ -6,16 +6,16 @@ import type {
 } from "@gramio/contexts";
 import type { APIMethods } from "@gramio/types";
 import { Inspectable } from "inspectable";
-import type { Bot } from "./bot";
-import { Composer } from "./composer";
-import { ErrorKind } from "./errors";
+import type { Bot } from "./bot.js";
+import { Composer } from "./composer.js";
+import { ErrorKind } from "./errors.js";
 import type {
 	AnyBot,
 	DeriveDefinitions,
 	ErrorDefinitions,
 	Handler,
 	Hooks,
-} from "./types";
+} from "./types.js";
 
 /**
  * `Plugin` is an object  from which you can extends in Bot instance and adopt types

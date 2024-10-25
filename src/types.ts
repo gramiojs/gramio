@@ -6,9 +6,9 @@ import type {
 	TelegramUser,
 } from "@gramio/types";
 import type { NextMiddleware } from "middleware-io";
-import type { Bot } from "./bot";
-import type { TelegramError } from "./errors";
-import type { Plugin } from "./plugin";
+import type { Bot } from "./bot.js";
+import type { TelegramError } from "./errors.js";
+import type { Plugin } from "./plugin.js";
 
 /** Bot options that you can provide to {@link Bot} constructor */
 export interface BotOptions {
