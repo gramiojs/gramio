@@ -1,18 +1,18 @@
 name: Publish package
 
-on: 
-  workflow_dispatch:
-    inputs:
-      publish_to_npm:
-        description: 'Publish package to NPM'
-        required: false
-        type: boolean
-        default: true
-      publish_to_jsr:
-        description: 'Publish package to JSR'
-        required: false
-        type: boolean
-        default: true
+on:
+    workflow_dispatch:
+        inputs:
+            publish_to_npm:
+                description: "Publish package to NPM"
+                required: false
+                type: boolean
+                default: true
+            publish_to_jsr:
+                description: "Publish package to JSR"
+                required: false
+                type: boolean
+                default: true
 
 permissions:
     contents: write
@@ -60,7 +60,7 @@ jobs:
 
             - name: Publish package to NPM
               if: ${{ github.event.inputs.publish_to_npm }}
-              run: npm publish --access public
+              run: bun publish --access public
               env:
                   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
