@@ -13,10 +13,10 @@ export interface FrameworkHandler {
 }
 export type FrameworkAdapter = (...args: any[]) => FrameworkHandler;
 
-const responseOK = new Response("ok!") as typeof Response;
+const responseOK = new Response("ok!") as Response;
 const responseUnauthorized = new Response(WRONG_TOKEN_ERROR, {
 	status: 401,
-}) as typeof Response;
+}) as Response;
 
 export const frameworks = {
 	elysia: ({ body, headers }) => ({
