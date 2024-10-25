@@ -14,6 +14,15 @@ import type { Plugin } from "./plugin.js";
 export interface BotOptions {
 	/** Bot token */
 	token: string;
+	/** When the bot begins to listen for updates, `GramIO` retrieves information about the bot to verify if the **bot token is valid**
+	 * and to utilize some bot metadata. For instance, this metadata can be used to strip bot mentions in commands.
+	 *
+	 * If you set it up, `GramIO` will not send a `getMe` request on startup.
+	 *
+	 * @important
+	 * **You should set this up when horizontally scaling your bot or working in serverless environments.**
+	 * */
+	info?: TelegramUser;
 	/** List of plugins enabled by default */
 	plugins?: {
 		/** Pass `false` to disable plugin. @default true */

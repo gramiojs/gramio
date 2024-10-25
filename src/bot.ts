@@ -150,7 +150,7 @@ export class Bot<
 		tokenOrOptions:
 			| string
 			| (Omit<BotOptions, "api"> & { api?: Partial<BotOptions["api"]> }),
-		options?: Omit<BotOptions, "token" | "api"> & {
+		optionsRaw?: Omit<BotOptions, "token" | "api"> & {
 			api?: Partial<BotOptions["api"]>;
 		},
 	) {
@@ -158,12 +158,14 @@ export class Bot<
 			typeof tokenOrOptions === "string"
 				? tokenOrOptions
 				: tokenOrOptions?.token;
+		const options =
+			typeof tokenOrOptions === "object" ? tokenOrOptions : optionsRaw;
 
 		if (!token || typeof token !== "string")
 			throw new Error(`Token is ${typeof token} but it should be a string!`);
 
 		this.options = {
-			...(typeof tokenOrOptions === "object" ? tokenOrOptions : options),
+			...options,
 			token,
 			api: {
 				baseURL: "https://api.telegram.org/bot",
@@ -171,12 +173,13 @@ export class Bot<
 				...options?.api,
 			},
 		};
+		if (options?.info) this.info = options.info;
 
 		if (
 			!(
-				options?.plugins &&
-				"format" in options.plugins &&
-				!options.plugins.format
+				optionsRaw?.plugins &&
+				"format" in optionsRaw.plugins &&
+				!optionsRaw.plugins.format
 			)
 		)
 			this.extend(
@@ -1162,17 +1165,19 @@ export class Bot<
 			this.lazyloadPlugins.map(async (plugin) => this.extend(await plugin)),
 		);
 
-		const info = await this.api.getMe({
-			suppress: true,
-		});
+		if (!this.info) {
+			const info = await this.api.getMe({
+				suppress: true,
+			});
 
-		if (info instanceof TelegramError) {
-			if (info.code === 404)
-				info.message = "The bot token is incorrect. Check it in BotFather.";
-			throw info;
+			if (info instanceof TelegramError) {
+				if (info.code === 404)
+					info.message = "The bot token is incorrect. Check it in BotFather.";
+				throw info;
+			}
+
+			this.info = info;
 		}
-
-		this.info = info;
 	}
 
 	/**
