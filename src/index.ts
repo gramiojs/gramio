@@ -12,6 +12,8 @@ export * from "./errors.js";
 export * from "./types.js";
 export * from "./plugin.js";
 export * from "./webhook/index.js";
+export * from "./composer.js";
+export * from "./updates.js";
 
 export * from "@gramio/contexts";
 export * from "@gramio/files";
