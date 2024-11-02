@@ -15,7 +15,7 @@ export interface BotOptions {
 	/** Bot token */
 	token: string;
 	/** When the bot begins to listen for updates, `GramIO` retrieves information about the bot to verify if the **bot token is valid**
-	 * and to utilize some bot metadata. For instance, this metadata can be used to strip bot mentions in commands.
+	 * and to utilize some bot metadata. For example, this metadata will be used to strip bot mentions in commands.
 	 *
 	 * If you set it up, `GramIO` will not send a `getMe` request on startup.
 	 *
