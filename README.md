@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Bot API](https://img.shields.io/badge/Bot%20API-7.11-blue?logo=telegram&style=flat&labelColor=000&color=3b82f6)](https://core.telegram.org/bots/api)
+[![Bot API](https://img.shields.io/badge/Bot%20API-8.0-blue?logo=telegram&style=flat&labelColor=000&color=3b82f6)](https://core.telegram.org/bots/api)
 [![npm](https://img.shields.io/npm/v/gramio?logo=npm&style=flat&labelColor=000&color=3b82f6)](https://www.npmjs.org/package/gramio)
 [![JSR](https://jsr.io/badges/@gramio/core)](https://jsr.io/@gramio/core)
 [![JSR Score](https://jsr.io/badges/@gramio/core/score)](https://jsr.io/@gramio/core)
@@ -11,7 +11,7 @@
 
 TypeScript/JavaScript Telegram Bot API Framework for create your bots with convenience!
 
-✨ **Extensible** - Our plugin and hook system is awesome
+✨ **Extensible** - Our [plugin](https://gramio.dev/plugins/) and [hook](https://gramio.dev/hooks/overview) system is awesome
 
 🛡️ **Type-safe** - Written in TypeScript with love ❤️
 
@@ -24,7 +24,7 @@ TypeScript/JavaScript Telegram Bot API Framework for create your bots with conve
 To create your new bot, you just need to write it to the console:
 
 ```bash [npm]
-npm create gramio ./bot
+npm create gramio@latest ./bot
 ```
 
 and GramIO customize your project the way you want it!
