@@ -4,6 +4,7 @@ import {
 	contextsMappings,
 } from "@gramio/contexts";
 import type { APIMethodParams, TelegramUpdate } from "@gramio/types";
+import { TelegramError } from "errors.js";
 import type { CaughtMiddlewareHandler } from "middleware-io";
 import { Composer } from "./composer.js";
 import type { AnyBot } from "./types.js";
@@ -93,7 +94,9 @@ export class Updates {
 			} catch (error) {
 				console.error("Error received when fetching updates", error);
 
-				await sleep(this.bot.options.api.retryGetUpdatesWait ?? 1000);
+				if (error instanceof TelegramError && error.payload?.retry_after) {
+					await sleep(error.payload.retry_after * 1000);
+				} else await sleep(this.bot.options.api.retryGetUpdatesWait ?? 1000);
 			}
 		}
 	}
