@@ -4,9 +4,9 @@ import {
 	contextsMappings,
 } from "@gramio/contexts";
 import type { APIMethodParams, TelegramUpdate } from "@gramio/types";
-import { TelegramError } from "errors.js";
 import type { CaughtMiddlewareHandler } from "middleware-io";
 import { Composer } from "./composer.js";
+import { TelegramError } from "./errors.js";
 import type { AnyBot } from "./types.js";
 
 // cant use node:timers/promises because possible browser usage...
