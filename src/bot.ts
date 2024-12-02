@@ -861,6 +861,16 @@ export class Bot<
 			this.group(handler);
 		}
 
+		for (const value of plugin._.onErrors) {
+			this.onError(value);
+		}
+		for (const value of plugin._.onStarts) {
+			this.onStart(value);
+		}
+		for (const value of plugin._.onStops) {
+			this.onStop(value);
+		}
+
 		this.dependencies.push(plugin._.name);
 
 		return this;
