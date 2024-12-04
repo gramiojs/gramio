@@ -52,13 +52,13 @@
 		"@gramio/files": "^0.1.0",
 		"@gramio/format": "^0.1.5",
 		"@gramio/keyboards": "^1.0.0",
-		"@gramio/types": "^8.0.6",
+		"@gramio/types": "^8.1.0",
 		"debug": "^4.3.7",
 		"inspectable": "^3.0.2",
 		"middleware-io": "^2.8.1"
 	},
 	"overrides": {
-		"@gramio/types": "^8.0.6"
+		"@gramio/types": "^8.1.0"
 	},
 	"files": ["dist"]
 }
