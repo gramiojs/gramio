@@ -1261,9 +1261,12 @@ export class Bot<
 	 * Stops receiving events via long-polling or webhook
 	 * Currently does not implement graceful shutdown
 	 * */
-	async stop() {
-		if (this.updates.isStarted) this.updates.stopPolling();
-		else await this.api.deleteWebhook();
+	async stop(timeout = 3_000) {
+		if (this.updates.isStarted) {
+			this.updates.stopPolling();
+		}
+		// else await this.api.deleteWebhook();
+		await this.updates.queue.stop(timeout);
 
 		await this.runImmutableHooks("onStop", {
 			plugins: this.dependencies,

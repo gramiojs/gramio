@@ -5,28 +5,26 @@ import {
 } from "@gramio/contexts";
 import type { APIMethodParams, TelegramUpdate } from "@gramio/types";
 import type { CaughtMiddlewareHandler } from "middleware-io";
+import { UpdateQueue, sleep } from "queue.js";
 import { Composer } from "./composer.js";
 import { TelegramError } from "./errors.js";
 import type { AnyBot } from "./types.js";
-
-// cant use node:timers/promises because possible browser usage...
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export class Updates {
 	private readonly bot: AnyBot;
 	isStarted = false;
 	private offset = 0;
 	composer: Composer;
+	queue: UpdateQueue<TelegramUpdate>;
 
 	constructor(bot: AnyBot, onError: CaughtMiddlewareHandler<Context<any>>) {
 		this.bot = bot;
 		this.composer = new Composer(onError);
+		this.queue = new UpdateQueue(this.handleUpdate.bind(this));
 	}
 
 	async handleUpdate(data: TelegramUpdate) {
 		const updateType = Object.keys(data).at(1) as UpdateName;
-
-		this.offset = data.update_id + 1;
 
 		const UpdateContext = contextsMappings[updateType];
 		if (!UpdateContext) throw new Error(updateType);
@@ -63,7 +61,7 @@ export class Updates {
 				});
 			}
 
-			this.composer.compose(context as unknown as Context<AnyBot>);
+			return this.composer.composeWait(context as unknown as Context<AnyBot>);
 		} catch (error) {
 			throw new Error(`[UPDATES] Update type ${updateType} not supported.`);
 		}
@@ -86,10 +84,11 @@ export class Updates {
 					...params,
 					offset: this.offset,
 				});
+				this.offset = (updates.at(-1)?.update_id ?? this.offset) + 1;
 
-				for await (const update of updates) {
-					//TODO: update errors
-					await this.handleUpdate(update).catch(console.error);
+				for (const update of updates) {
+					this.queue.add(update);
+					// await this.handleUpdate(update).catch(console.error);
 				}
 			} catch (error) {
 				console.error("Error received when fetching updates", error);

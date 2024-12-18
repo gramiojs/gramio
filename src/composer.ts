@@ -99,4 +99,8 @@ export class Composer {
 	compose(context: Context<AnyBot>, next = noopNext) {
 		this.composed(context, next);
 	}
+
+	composeWait(context: Context<AnyBot>, next = noopNext) {
+		return this.composed(context, next);
+	}
 }
