@@ -111,6 +111,8 @@ export class Plugin<
 		decorators: {} as Record<string, unknown>,
 	};
 
+	"~" = this._;
+
 	/** Create new Plugin. Please provide `name` */
 	constructor(
 		name: string,

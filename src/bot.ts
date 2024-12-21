@@ -73,6 +73,8 @@ export class Bot<
 	/** @internal. Remap generic */
 	__Derives!: Derives;
 
+	"~" = this._;
+
 	private filters: FilterDefinitions = {
 		context: (name: string) => (context: Context<Bot>) => context.is(name),
 	};
