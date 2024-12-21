@@ -48,17 +48,14 @@
 	},
 	"dependencies": {
 		"@gramio/callback-data": "^0.0.3",
-		"@gramio/contexts": "^0.0.23",
-		"@gramio/files": "^0.1.0",
+		"@gramio/contexts": "^0.1.2",
+		"@gramio/files": "^0.1.2",
 		"@gramio/format": "^0.1.5",
-		"@gramio/keyboards": "^1.0.0",
+		"@gramio/keyboards": "^1.0.2",
 		"@gramio/types": "^8.1.0",
-		"debug": "^4.3.7",
+		"debug": "^4.4.0",
 		"inspectable": "^3.0.2",
 		"middleware-io": "^2.8.1"
-	},
-	"overrides": {
-		"@gramio/types": "^8.1.0"
 	},
 	"files": ["dist"]
 }
