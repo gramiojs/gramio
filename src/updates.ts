@@ -5,9 +5,9 @@ import {
 } from "@gramio/contexts";
 import type { APIMethodParams, TelegramUpdate } from "@gramio/types";
 import type { CaughtMiddlewareHandler } from "middleware-io";
-import { UpdateQueue, sleep } from "queue.js";
 import { Composer } from "./composer.js";
 import { TelegramError } from "./errors.js";
+import { UpdateQueue, sleep } from "./queue.js";
 import type { AnyBot } from "./types.js";
 
 export class Updates {

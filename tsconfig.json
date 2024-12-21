@@ -1,12 +1,10 @@
 {
 	"compilerOptions": {
 		"lib": ["ESNext"],
-		"target": "ES2022",
-		"module": "NodeNext",
-		"moduleDetection": "force",
-
-		/* Bundler mode */
-		"moduleResolution": "NodeNext",
+		"module": "ESNext",
+		"target": "ESNext",
+		"moduleResolution": "Bundler",
+		"esModuleInterop": true,
 		/* Linting */
 		"skipLibCheck": true,
 		"strict": true,
@@ -16,8 +14,9 @@
 		"composite": true,
 		"baseUrl": "./src",
 		"rootDir": "./src",
-		"outDir": "./dist"
+		"outDir": "./dist",
+		"allowImportingTsExtensions": true,
+		"noEmit": true
 	},
-	"include": ["./src"],
-	"exclude": ["./dist"]
+	"include": ["./src"]
 }
