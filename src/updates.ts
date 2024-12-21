@@ -83,10 +83,12 @@ export class Updates {
 				const updates = await this.bot.api.getUpdates({
 					...params,
 					offset: this.offset,
+					timeout: 30,
 				});
-				this.offset = (updates.at(-1)?.update_id ?? this.offset) + 1;
+				const updateId = updates.at(-1)?.update_id;
+				this.offset = updateId ? updateId + 1 : this.offset;
 
-				for (const update of updates) {
+				for await (const update of updates) {
 					this.queue.add(update);
 					// await this.handleUpdate(update).catch(console.error);
 				}
