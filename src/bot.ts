@@ -66,12 +66,12 @@ export class Bot<
 	Derives extends DeriveDefinitions = DeriveDefinitions,
 	// FiltersT extends FilterDefinitions = Filters<typeof this>,
 > {
-	/** @deprecated */
+	/** @deprecated use `~` instead*/
 	_ = {
 		/** @deprecated @internal. Remap generic */
 		derives: {} as Derives,
 	};
-	/** @deprecated @internal. Remap generic */
+	/** @deprecated use `~.derives` instead @internal. Remap generic */
 	__Derives!: Derives;
 
 	"~" = this._;
@@ -232,7 +232,7 @@ export class Bot<
 		params: MaybeSuppressedParams<T> = {},
 	) {
 		const debug$api$method = debug$api.extend(method);
-		const url = `${this.options.api.baseURL}${this.options.token}/${method}`;
+		const url = `${this.options.api.baseURL}${this.options.token}/${this.options.api.useTest ? "test/" : ""}${method}`;
 
 		// Omit<
 		// 	NonNullable<Parameters<typeof fetch>[1]>,
