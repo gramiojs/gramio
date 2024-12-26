@@ -11,10 +11,12 @@ import { Composer } from "./composer.js";
 import { ErrorKind } from "./errors.js";
 import type {
 	AnyBot,
+	AnyPlugin,
 	DeriveDefinitions,
 	ErrorDefinitions,
 	Handler,
 	Hooks,
+	MaybePromise,
 } from "./types.js";
 
 /**
@@ -442,6 +444,17 @@ export class Plugin<
 			});
 		}
 
+		return this;
+	}
+
+	/**
+	 * ! ** At the moment, it can only pick up types** */
+	extend<NewPlugin extends AnyPlugin>(
+		plugin: MaybePromise<NewPlugin>,
+	): Plugin<
+		Errors & NewPlugin["_"]["Errors"],
+		Derives & NewPlugin["_"]["Derives"]
+	> {
 		return this;
 	}
 }

@@ -66,11 +66,12 @@ export class Bot<
 	Derives extends DeriveDefinitions = DeriveDefinitions,
 	// FiltersT extends FilterDefinitions = Filters<typeof this>,
 > {
+	/** @deprecated */
 	_ = {
-		/** @internal. Remap generic */
+		/** @deprecated @internal. Remap generic */
 		derives: {} as Derives,
 	};
-	/** @internal. Remap generic */
+	/** @deprecated @internal. Remap generic */
 	__Derives!: Derives;
 
 	"~" = this._;

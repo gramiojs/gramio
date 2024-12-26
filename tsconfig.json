@@ -10,7 +10,7 @@
 		"strict": true,
 		"noFallthroughCasesInSwitch": true,
 		"forceConsistentCasingInFileNames": true,
-
+		
 		"composite": true,
 		"baseUrl": "./src",
 		"rootDir": "./src",
