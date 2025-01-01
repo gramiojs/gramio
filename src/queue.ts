@@ -1,8 +1,5 @@
 import type { TelegramUpdate } from "@gramio/types";
-
-// cant use node:timers/promises because possible browser usage...
-export const sleep = (ms: number) =>
-	new Promise((resolve) => setTimeout(resolve, ms));
+import { sleep } from "./utils.ts";
 
 // concurrent queue (like event loop) for managing updates with graceful shutdown support
 export class UpdateQueue<Data = TelegramUpdate> {

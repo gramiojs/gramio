@@ -1,16 +1,16 @@
 {
 	"compilerOptions": {
 		"lib": ["ESNext"],
-		"module": "ESNext",
+		"module": "NodeNext",
 		"target": "ESNext",
-		"moduleResolution": "Bundler",
+		"moduleResolution": "NodeNext",
 		"esModuleInterop": true,
 		/* Linting */
 		"skipLibCheck": true,
 		"strict": true,
 		"noFallthroughCasesInSwitch": true,
 		"forceConsistentCasingInFileNames": true,
-		
+
 		"composite": true,
 		"baseUrl": "./src",
 		"rootDir": "./src",

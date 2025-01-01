@@ -24,6 +24,7 @@ import type {
 } from "@gramio/types";
 import debug from "debug";
 import { Inspectable } from "inspectable";
+import { withRetries } from "utils.ts";
 import { ErrorKind, TelegramError } from "./errors.js";
 // import type { Filters } from "./filters";
 import { Plugin } from "./plugin.js";
@@ -1224,11 +1225,14 @@ export class Bot<
 		await this.init();
 
 		if (!webhook) {
-			await this.api.deleteWebhook({
-				drop_pending_updates: dropPendingUpdates,
-			});
+			const r = await withRetries(() =>
+				this.api.deleteWebhook({
+					drop_pending_updates: dropPendingUpdates,
+					suppress: true,
+				}),
+			);
 
-			await this.updates.startPolling({
+			this.updates.startPolling({
 				allowed_updates: allowedUpdates,
 			});
 
@@ -1244,11 +1248,15 @@ export class Bot<
 
 		if (this.updates.isStarted) this.updates.stopPolling();
 
-		await this.api.setWebhook({
-			...webhook,
-			drop_pending_updates: dropPendingUpdates,
-			allowed_updates: allowedUpdates,
-		});
+		// TODO: do we need await it?
+		withRetries(() =>
+			this.api.setWebhook({
+				...webhook,
+				drop_pending_updates: dropPendingUpdates,
+				allowed_updates: allowedUpdates,
+				suppress: true,
+			}),
+		);
 
 		this.runImmutableHooks("onStart", {
 			plugins: this.dependencies,

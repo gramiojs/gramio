@@ -124,7 +124,7 @@ export type SuppressedAPIMethodParams<Method extends keyof APIMethods> =
 		: MaybeSuppressedParams<Method, true>;
 
 /** Type that return MaybeSuppressed API method ReturnType */
-type MaybeSuppressedReturn<
+export type MaybeSuppressedReturn<
 	Method extends keyof APIMethods,
 	IsSuppressed extends boolean | undefined = undefined,
 > = true extends IsSuppressed

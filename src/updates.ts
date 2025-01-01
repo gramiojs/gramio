@@ -7,8 +7,9 @@ import type { APIMethodParams, TelegramUpdate } from "@gramio/types";
 import type { CaughtMiddlewareHandler } from "middleware-io";
 import { Composer } from "./composer.js";
 import { TelegramError } from "./errors.js";
-import { UpdateQueue, sleep } from "./queue.js";
+import { UpdateQueue } from "./queue.js";
 import type { AnyBot } from "./types.js";
+import { sleep } from "./utils.ts";
 
 export class Updates {
 	private readonly bot: AnyBot;
@@ -67,7 +68,7 @@ export class Updates {
 		}
 	}
 	/** @deprecated use bot.start instead @internal */
-	async startPolling(params: APIMethodParams<"getUpdates"> = {}) {
+	startPolling(params: APIMethodParams<"getUpdates"> = {}) {
 		if (this.isStarted) throw new Error("[UPDATES] Polling already started!");
 
 		this.isStarted = true;
