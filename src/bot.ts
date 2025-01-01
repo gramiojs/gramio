@@ -1225,12 +1225,12 @@ export class Bot<
 		await this.init();
 
 		if (!webhook) {
-			const r = await withRetries(() =>
-				this.api.deleteWebhook({
-					drop_pending_updates: dropPendingUpdates,
-					suppress: true,
-				}),
-			);
+			// const r = await withRetries(() =>
+			await this.api.deleteWebhook({
+				drop_pending_updates: dropPendingUpdates,
+				// suppress: true,
+			});
+			// );
 
 			this.updates.startPolling({
 				allowed_updates: allowedUpdates,
@@ -1249,14 +1249,14 @@ export class Bot<
 		if (this.updates.isStarted) this.updates.stopPolling();
 
 		// TODO: do we need await it?
-		withRetries(() =>
-			this.api.setWebhook({
-				...webhook,
-				drop_pending_updates: dropPendingUpdates,
-				allowed_updates: allowedUpdates,
-				suppress: true,
-			}),
-		);
+		// withRetries(() =>
+		await this.api.setWebhook({
+			...webhook,
+			drop_pending_updates: dropPendingUpdates,
+			allowed_updates: allowedUpdates,
+			// suppress: true,
+		});
+		// );
 
 		this.runImmutableHooks("onStart", {
 			plugins: this.dependencies,
