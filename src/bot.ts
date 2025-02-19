@@ -165,7 +165,9 @@ export class Bot<
 		const options =
 			typeof tokenOrOptions === "object" ? tokenOrOptions : optionsRaw;
 
-		if (!token || typeof token !== "string")
+		if (!token) throw new Error("Token is required!");
+
+		if (typeof token !== "string")
 			throw new Error(`Token is ${typeof token} but it should be a string!`);
 
 		this.options = {
