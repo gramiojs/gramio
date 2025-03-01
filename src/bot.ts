@@ -963,7 +963,9 @@ export class Bot<
 				Derives["callback_query"] & {
 					queryData: Trigger extends CallbackData
 						? ReturnType<Trigger["unpack"]>
-						: RegExpMatchArray | null;
+						: Trigger extends RegExp
+							? RegExpMatchArray
+							: never;
 				},
 		) => unknown,
 	) {
@@ -971,17 +973,16 @@ export class Bot<
 			if (!context.data) return next();
 			if (typeof trigger === "string" && context.data !== trigger)
 				return next();
-			if (
-				trigger instanceof CallbackData &&
-				!trigger.regexp().test(context.data)
-			)
-				return next();
-			if (trigger instanceof RegExp && !trigger.test(context.data))
-				return next();
-
-			if (trigger instanceof CallbackData)
+			if (trigger instanceof RegExp) {
+				if (!trigger.test(context.data)) return next();
+				// @ts-expect-error
+				context.queryData = context.data.match(trigger);
+			}
+			if (trigger instanceof CallbackData) {
+				if (!trigger.regexp().test(context.data)) return next();
 				// @ts-expect-error
 				context.queryData = trigger.unpack(context.data);
+			}
 
 			//@ts-expect-error
 			return handler(context);
