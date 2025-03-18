@@ -10,7 +10,11 @@ import {
 	type UpdateName,
 	contextsMappings,
 } from "@gramio/contexts";
-import { convertJsonToFormData, isMediaUpload } from "@gramio/files";
+import {
+	convertJsonToFormData,
+	extractFilesToFormData,
+	isMediaUpload,
+} from "@gramio/files";
 import { FormattableMap } from "@gramio/format";
 import type {
 	APIMethodParams,
@@ -24,7 +28,6 @@ import type {
 } from "@gramio/types";
 import debug from "debug";
 import { Inspectable } from "inspectable";
-import { withRetries } from "utils.ts";
 import { ErrorKind, TelegramError } from "./errors.js";
 // import type { Filters } from "./filters";
 import { Plugin } from "./plugin.js";
@@ -42,6 +45,7 @@ import type {
 	SuppressedAPIMethods,
 } from "./types.js";
 import { Updates } from "./updates.js";
+import { IS_BUN, simplifyObject } from "./utils.ts";
 
 const $debugger = debug("gramio");
 const debug$api = $debugger.extend("api");
@@ -235,7 +239,7 @@ export class Bot<
 		params: MaybeSuppressedParams<T> = {},
 	) {
 		const debug$api$method = debug$api.extend(method);
-		const url = `${this.options.api.baseURL}${this.options.token}/${this.options.api.useTest ? "test/" : ""}${method}`;
+		let url = `${this.options.api.baseURL}${this.options.token}/${this.options.api.useTest ? "test/" : ""}${method}`;
 
 		// Omit<
 		// 	NonNullable<Parameters<typeof fetch>[1]>,
@@ -267,10 +271,19 @@ export class Bot<
 
 		// @ts-ignore
 		if (params && isMediaUpload(method, params)) {
-			// @ts-ignore
+			if (IS_BUN) {
+				const formData = await convertJsonToFormData(method, params);
+				reqOptions.body = formData;
+			} else {
+				const [formData, paramsWithoutFiles] = await extractFilesToFormData(
+					method,
+					params,
+				);
+				reqOptions.body = formData;
 
-			const formData = await convertJsonToFormData(method, params);
-			reqOptions.body = formData;
+				const simplifiedParams = simplifyObject(paramsWithoutFiles);
+				url += `?${new URLSearchParams(simplifiedParams).toString()}`;
+			}
 		} else {
 			reqOptions.headers.set("Content-Type", "application/json");
 
@@ -1102,8 +1115,12 @@ export class Bot<
 		Ctx = ContextType<typeof this, "message"> &
 			Derives["global"] &
 			Derives["message"],
+		Trigger extends RegExp | string | ((context: Ctx) => boolean) =
+			| RegExp
+			| string
+			| ((context: Ctx) => boolean),
 	>(
-		trigger: RegExp | string | ((context: Ctx) => boolean),
+		trigger: Trigger,
 		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
 	) {
 		return this.on("message", (context, next) => {
