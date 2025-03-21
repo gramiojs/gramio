@@ -1,4 +1,10 @@
-import type { Context, UpdateName } from "@gramio/contexts";
+import type { CallbackData } from "@gramio/callback-data";
+import type {
+	BotLike,
+	Context,
+	ContextType,
+	UpdateName,
+} from "@gramio/contexts";
 import type {
 	APIMethodParams,
 	APIMethodReturn,
@@ -334,3 +340,16 @@ export type AnyBot = Bot<any, any>;
 
 /** Type of Bot that accepts any generics */
 export type AnyPlugin = Plugin<any, any>;
+
+export type CallbackQueryShorthandContext<
+	BotType extends BotLike,
+	Trigger extends CallbackData | string | RegExp,
+> = Omit<ContextType<BotType, "callback_query">, "data"> &
+	BotType["__Derives"]["global"] &
+	BotType["__Derives"]["callback_query"] & {
+		queryData: Trigger extends CallbackData
+			? ReturnType<Trigger["unpack"]>
+			: Trigger extends RegExp
+				? RegExpMatchArray
+				: never;
+	};

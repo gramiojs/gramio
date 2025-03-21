@@ -3,6 +3,7 @@ import { Readable } from "node:stream";
 import { CallbackData } from "@gramio/callback-data";
 import {
 	type Attachment,
+	CallbackQueryContext,
 	type Context,
 	type ContextType,
 	type MaybeArray,
@@ -35,6 +36,7 @@ import type {
 	AnyBot,
 	AnyPlugin,
 	BotOptions,
+	CallbackQueryShorthandContext,
 	DeriveDefinitions,
 	ErrorDefinitions,
 	FilterDefinitions,
@@ -971,15 +973,7 @@ export class Bot<
 	callbackQuery<Trigger extends CallbackData | string | RegExp>(
 		trigger: Trigger,
 		handler: (
-			context: Omit<ContextType<typeof this, "callback_query">, "data"> &
-				Derives["global"] &
-				Derives["callback_query"] & {
-					queryData: Trigger extends CallbackData
-						? ReturnType<Trigger["unpack"]>
-						: Trigger extends RegExp
-							? RegExpMatchArray
-							: never;
-				},
+			context: CallbackQueryShorthandContext<typeof this, Trigger>,
 		) => unknown,
 	) {
 		return this.on("callback_query", (context, next) => {
@@ -1246,10 +1240,10 @@ export class Bot<
 
 		if (!webhook) {
 			// const r = await withRetries(() =>
-			await this.api.deleteWebhook({
-				drop_pending_updates: dropPendingUpdates,
-				// suppress: true,
-			});
+			// await this.api.deleteWebhook({
+			// 	drop_pending_updates: dropPendingUpdates,
+			// 	// suppress: true,
+			// });
 			// );
 
 			this.updates.startPolling({
