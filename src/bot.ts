@@ -284,6 +284,7 @@ export class Bot<
 				reqOptions.body = formData;
 
 				const simplifiedParams = simplifyObject(paramsWithoutFiles);
+				// @ts-expect-error https://github.com/oven-sh/bun/issues/18815
 				url += `?${new URLSearchParams(simplifiedParams).toString()}`;
 			}
 		} else {
