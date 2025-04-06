@@ -16,6 +16,16 @@
 				"types": "./dist/index.d.cts",
 				"default": "./dist/index.cjs"
 			}
+		},
+		"./utils": {
+			"import": {
+				"types": "./dist/utils.d.ts",
+				"default": "./dist/utils.js"
+			},
+			"require": {
+				"types": "./dist/utils.d.cts",
+				"default": "./dist/utils.cjs"
+			}
 		}
 	},
 	"keywords": [
@@ -41,14 +51,14 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
-		"@types/bun": "^1.2.5",
+		"@types/bun": "^1.2.8",
 		"@types/debug": "^4.1.12",
-		"pkgroll": "^2.11.2",
-		"typescript": "^5.8.2"
+		"pkgroll": "^2.12.1",
+		"typescript": "^5.8.3"
 	},
 	"dependencies": {
 		"@gramio/callback-data": "^0.0.3",
-		"@gramio/contexts": "^0.1.4",
+		"@gramio/contexts": "^0.1.5",
 		"@gramio/files": "^0.2.0",
 		"@gramio/format": "^0.1.5",
 		"@gramio/keyboards": "^1.1.0",

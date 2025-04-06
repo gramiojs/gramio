@@ -9,7 +9,7 @@ import { Composer } from "./composer.js";
 import { TelegramError } from "./errors.js";
 import { UpdateQueue } from "./queue.js";
 import type { AnyBot } from "./types.js";
-import { sleep } from "./utils.ts";
+import { sleep } from "./utils.internal.ts";
 
 export class Updates {
 	private readonly bot: AnyBot;
