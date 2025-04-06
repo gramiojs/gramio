@@ -3,7 +3,6 @@ import { Readable } from "node:stream";
 import { CallbackData } from "@gramio/callback-data";
 import {
 	type Attachment,
-	CallbackQueryContext,
 	type Context,
 	type ContextType,
 	type MaybeArray,
@@ -47,7 +46,8 @@ import type {
 	SuppressedAPIMethods,
 } from "./types.js";
 import { Updates } from "./updates.js";
-import { IS_BUN, simplifyObject, withRetries } from "./utils.ts";
+import { IS_BUN, simplifyObject } from "./utils.internal.ts";
+import { withRetries } from "./utils.ts";
 
 const $debugger = debug("gramio");
 const debug$api = $debugger.extend("api");

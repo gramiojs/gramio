@@ -1,5 +1,5 @@
 import type { TelegramUpdate } from "@gramio/types";
-import { sleep } from "./utils.ts";
+import { sleep } from "./utils.internal.ts";
 
 // concurrent queue (like event loop) for managing updates with graceful shutdown support
 export class UpdateQueue<Data = TelegramUpdate> {
