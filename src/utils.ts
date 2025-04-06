@@ -1,26 +1,35 @@
-import { TelegramError } from "./errors.ts";
+/**
+ * @module
+ *
+ * Pack of useful utilities for Telegram Bot API and GramIO
+ */
 
-// cant use node:timers/promises because possible browser usage...
-export const sleep = (ms: number) =>
-	new Promise((resolve) => setTimeout(resolve, ms));
+import { TelegramError } from "./errors.ts";
+import { sleep } from "./utils.internal.ts";
+
+async function suppressError<T>(
+	fn: () => Promise<T>,
+): Promise<[T | unknown, boolean]> {
+	try {
+		return [await fn(), false];
+	} catch (error) {
+		return [error, true];
+	}
+}
 
 export async function withRetries<Result extends Promise<unknown>>(
 	resultPromise: () => Result,
 ): Promise<Result> {
-	let [result, isFromCatch] = await resultPromise()
-		.then((result) => [result, true] as const)
-		.catch((error) => [error, false] as const);
-
-	const mode = isFromCatch ? "suppress" : "rethrow";
+	let [result, isFromCatch] = await suppressError(resultPromise);
 
 	while (result instanceof TelegramError) {
 		const retryAfter = result.payload?.retry_after;
 
 		if (retryAfter) {
 			await sleep(retryAfter * 1000);
-			result = await resultPromise().catch((error) => error);
+			[result, isFromCatch] = await suppressError(resultPromise);
 		} else {
-			if (mode === "rethrow") throw result;
+			if (isFromCatch) throw result;
 
 			// TODO: hard conditional typings. fix later
 			// @ts-expect-error
@@ -28,33 +37,8 @@ export async function withRetries<Result extends Promise<unknown>>(
 		}
 	}
 
-	if (result instanceof Error) throw result;
+	if (result instanceof Error && isFromCatch) throw result;
 
+	// @ts-expect-error
 	return result;
 }
-
-function convertToString(value: unknown): string {
-	const typeOfValue = typeof value;
-
-	// wtf
-	if (typeOfValue === "string") return value as string;
-	if (typeOfValue === "object") return JSON.stringify(value);
-	return String(value);
-}
-
-export function simplifyObject(obj: Record<any, any>) {
-	const result: Record<string, string> = {};
-
-	for (const [key, value] of Object.entries(obj)) {
-		const typeOfValue = typeof value;
-
-		if (value === undefined || value === null || typeOfValue === "function")
-			continue;
-
-		result[key] = convertToString(value);
-	}
-
-	return result;
-}
-
-export const IS_BUN = typeof Bun !== "undefined";

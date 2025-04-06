@@ -82,7 +82,6 @@ describe("utils", () => {
 
 				return "success";
 			});
-			console.log("start");
 
 			const start = Date.now();
 			await withRetries(() => failingApi());
@@ -111,6 +110,68 @@ describe("utils", () => {
 			).rejects.toThrow(error);
 
 			expect(failingApi).toHaveBeenCalledTimes(1);
+		});
+
+		test("Should resolves when TelegramError comes from then()", async () => {
+			const error = new TelegramError(
+				{
+					ok: false,
+					description: "test",
+					error_code: 400,
+					parameters: {},
+				},
+				"sendMessage",
+				{
+					chat_id: 1,
+					text: "test",
+				},
+			);
+
+			const api = mock(async () => error);
+
+			expect(withRetries(api)).resolves.toThrow(error);
+			expect(api).toHaveBeenCalledTimes(1);
+		});
+
+		test("Should resolves when Error comes from then()", async () => {
+			const error = new Error("Critical error");
+			const api = mock(async () => error);
+
+			expect(withRetries(api)).resolves.toThrow(error);
+			expect(api).toHaveBeenCalledTimes(1);
+		});
+
+		test("Should reject when TelegramError comes from catch()", async () => {
+			const error = new TelegramError(
+				{
+					ok: false,
+					description: "test",
+					error_code: 400,
+					parameters: {},
+				},
+				"sendMessage",
+				{
+					chat_id: 1,
+					text: "test",
+				},
+			);
+
+			const api = mock(async () => {
+				throw error;
+			});
+
+			expect(withRetries(api)).rejects.toThrow(error);
+			expect(api).toHaveBeenCalledTimes(1);
+		});
+
+		test("Should reject when Error comes from catch()", async () => {
+			const error = new Error("Critical error");
+			const api = mock(async () => {
+				throw error;
+			});
+
+			expect(withRetries(api)).rejects.toThrow(error);
+			expect(api).toHaveBeenCalledTimes(1);
 		});
 	});
 });
