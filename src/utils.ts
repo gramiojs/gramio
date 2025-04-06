@@ -17,8 +17,8 @@ async function suppressError<T>(
 	}
 }
 
-export async function withRetries<Result extends Promise<unknown>>(
-	resultPromise: () => Result,
+export async function withRetries<Result>(
+	resultPromise: () => Promise<Result>,
 ): Promise<Result> {
 	let [result, isFromCatch] = await suppressError(resultPromise);
 
