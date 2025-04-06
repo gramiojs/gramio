@@ -17,7 +17,7 @@ export class UpdateQueue<Data = TelegramUpdate> {
 	}
 
 	add(update: Data) {
-		// console.log("ADD");
+		// console.log("ADD", update);
 		this.updateQueue.push(update);
 
 		this.start();

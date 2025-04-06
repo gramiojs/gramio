@@ -47,7 +47,7 @@ import type {
 	SuppressedAPIMethods,
 } from "./types.js";
 import { Updates } from "./updates.js";
-import { IS_BUN, simplifyObject } from "./utils.ts";
+import { IS_BUN, simplifyObject, withRetries } from "./utils.ts";
 
 const $debugger = debug("gramio");
 const debug$api = $debugger.extend("api");
@@ -1239,12 +1239,12 @@ export class Bot<
 		await this.init();
 
 		if (!webhook) {
-			// const r = await withRetries(() =>
-			// await this.api.deleteWebhook({
-			// 	drop_pending_updates: dropPendingUpdates,
-			// 	// suppress: true,
-			// });
-			// );
+			await withRetries(() =>
+				this.api.deleteWebhook({
+					drop_pending_updates: dropPendingUpdates,
+					// suppress: true,
+				}),
+			);
 
 			this.updates.startPolling({
 				allowed_updates: allowedUpdates,
@@ -1263,14 +1263,14 @@ export class Bot<
 		if (this.updates.isStarted) this.updates.stopPolling();
 
 		// TODO: do we need await it?
-		// withRetries(() =>
-		await this.api.setWebhook({
-			...webhook,
-			drop_pending_updates: dropPendingUpdates,
-			allowed_updates: allowedUpdates,
-			// suppress: true,
-		});
-		// );
+		await withRetries(async () =>
+			this.api.setWebhook({
+				...webhook,
+				drop_pending_updates: dropPendingUpdates,
+				allowed_updates: allowedUpdates,
+				// suppress: true,
+			}),
+		);
 
 		this.runImmutableHooks("onStart", {
 			plugins: this.dependencies,

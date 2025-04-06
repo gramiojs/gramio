@@ -12,11 +12,8 @@
 		"forceConsistentCasingInFileNames": true,
 
 		"composite": true,
-		"baseUrl": "./src",
-		"rootDir": "./src",
-		"outDir": "./dist",
 		"allowImportingTsExtensions": true,
 		"noEmit": true
 	},
-	"include": ["./src"]
+	"include": ["./src", "./tests"]
 }
