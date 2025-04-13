@@ -446,10 +446,7 @@ export class Bot<
 
 	onError<T extends UpdateName>(
 		updateName: MaybeArray<T>,
-		handler: Hooks.OnError<
-			Errors,
-			ContextType<typeof this, T> & Derives["global"] & Derives[T]
-		>,
+		handler: Hooks.OnError<Errors, ContextType<typeof this, T>>,
 	): this;
 
 	onError(
@@ -458,10 +455,7 @@ export class Bot<
 
 	onError<T extends UpdateName>(
 		updateNameOrHandler: T | Hooks.OnError<Errors>,
-		handler?: Hooks.OnError<
-			Errors,
-			ContextType<typeof this, T> & Derives["global"] & Derives[T]
-		>,
+		handler?: Hooks.OnError<Errors, ContextType<typeof this, T>>,
 	): this {
 		if (typeof updateNameOrHandler === "function") {
 			this.hooks.onError.push(updateNameOrHandler);
@@ -780,9 +774,7 @@ export class Bot<
 	/** Register handler to one or many Updates */
 	on<T extends UpdateName>(
 		updateName: MaybeArray<T>,
-		handler: Handler<
-			ContextType<typeof this, T> & Derives["global"] & Derives[T]
-		>,
+		handler: Handler<ContextType<typeof this, T>>,
 	) {
 		this.updates.composer.on(updateName, handler);
 
@@ -910,11 +902,7 @@ export class Bot<
 	 * */
 	reaction(
 		trigger: MaybeArray<TelegramReactionTypeEmojiEmoji>,
-		handler: (
-			context: ContextType<typeof this, "message_reaction"> &
-				Derives["global"] &
-				Derives["message_reaction"],
-		) => unknown,
+		handler: (context: ContextType<typeof this, "message_reaction">) => unknown,
 	) {
 		const reactions = Array.isArray(trigger) ? trigger : [trigger];
 
@@ -998,11 +986,7 @@ export class Bot<
 	}
 
 	/** Register handler to `chosen_inline_result` update */
-	chosenInlineResult<
-		Ctx = ContextType<typeof this, "chosen_inline_result"> &
-			Derives["global"] &
-			Derives["chosen_inline_result"],
-	>(
+	chosenInlineResult<Ctx = ContextType<typeof this, "chosen_inline_result">>(
 		trigger: RegExp | string | ((context: Ctx) => boolean),
 		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
 	) {
@@ -1061,18 +1045,14 @@ export class Bot<
 	 * );
 	 * ```
 	 * */
-	inlineQuery<
-		Ctx = ContextType<typeof this, "inline_query"> &
-			Derives["global"] &
-			Derives["inline_query"],
-	>(
+	inlineQuery<Ctx = ContextType<typeof this, "inline_query">>(
 		trigger: RegExp | string | ((context: Ctx) => boolean),
 		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
 		options: {
 			onResult?: (
-				context: ContextType<Bot, "chosen_inline_result"> &
-					Derives["global"] &
-					Derives["chosen_inline_result"] & { args: RegExpMatchArray | null },
+				context: ContextType<Bot, "chosen_inline_result"> & {
+					args: RegExpMatchArray | null;
+				},
 			) => unknown;
 		} = {},
 	) {
@@ -1107,9 +1087,7 @@ export class Bot<
 	 * });
 	 */
 	hears<
-		Ctx = ContextType<typeof this, "message"> &
-			Derives["global"] &
-			Derives["message"],
+		Ctx = ContextType<typeof this, "message">,
 		Trigger extends RegExp | string | ((context: Ctx) => boolean) =
 			| RegExp
 			| string
@@ -1148,9 +1126,7 @@ export class Bot<
 	command(
 		command: string,
 		handler: (
-			context: ContextType<typeof this, "message"> &
-				Derives["global"] &
-				Derives["message"] & { args: string | null },
+			context: ContextType<typeof this, "message"> & { args: string | null },
 		) => unknown,
 		options?: Omit<SetMyCommandsParams, "commands"> &
 			Omit<TelegramBotCommand, "command">,
