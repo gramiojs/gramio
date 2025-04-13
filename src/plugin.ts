@@ -5,7 +5,6 @@ import type {
 	UpdateName,
 } from "@gramio/contexts";
 import type { APIMethods } from "@gramio/types";
-import { Inspectable } from "inspectable";
 import type { Bot } from "./bot.js";
 import { Composer } from "./composer.js";
 import { ErrorKind } from "./errors.js";
@@ -50,12 +49,6 @@ import type {
  *     });
  * ```
  */
-@Inspectable<Plugin>({
-	serialize: (plugin) => ({
-		name: plugin._.name,
-		dependencies: plugin._.dependencies,
-	}),
-})
 export class Plugin<
 	Errors extends ErrorDefinitions = {},
 	Derives extends DeriveDefinitions = DeriveDefinitions,

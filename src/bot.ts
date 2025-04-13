@@ -27,7 +27,6 @@ import type {
 	TelegramUser,
 } from "@gramio/types";
 import debug from "debug";
-import { Inspectable } from "inspectable";
 import { ErrorKind, TelegramError } from "./errors.js";
 // import type { Filters } from "./filters";
 import { Plugin } from "./plugin.js";
@@ -65,9 +64,6 @@ const debug$api = $debugger.extend("api");
  * bot.start();
  * ```
  */
-@Inspectable<Bot>({
-	serialize: () => ({}),
-})
 export class Bot<
 	Errors extends ErrorDefinitions = {},
 	Derives extends DeriveDefinitions = DeriveDefinitions,
@@ -284,7 +280,6 @@ export class Bot<
 				reqOptions.body = formData;
 
 				const simplifiedParams = simplifyObject(paramsWithoutFiles);
-				// @ts-expect-error https://github.com/oven-sh/bun/issues/18815
 				url += `?${new URLSearchParams(simplifiedParams).toString()}`;
 			}
 		} else {

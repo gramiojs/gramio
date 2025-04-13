@@ -1,7 +1,7 @@
 {
 	"name": "gramio",
 	"type": "module",
-	"version": "0.2.6",
+	"version": "0.3.0",
 	"description": "Powerful, extensible and really type-safe Telegram Bot API framework",
 	"main": "dist/index.cjs",
 	"module": "dist/index.js",
@@ -37,7 +37,12 @@
 		"types",
 		"client",
 		"webhook",
-		"long-polling"
+		"long-polling",
+		"files",
+		"plugins",
+		"format",
+		"contexts",
+		"files"
 	],
 	"scripts": {
 		"type": "tsc --noEmit",
@@ -64,7 +69,6 @@
 		"@gramio/keyboards": "^1.2.1",
 		"@gramio/types": "^9.0.1",
 		"debug": "^4.4.0",
-		"inspectable": "^3.0.2",
 		"middleware-io": "^2.8.1"
 	},
 	"files": ["dist"]
