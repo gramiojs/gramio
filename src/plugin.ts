@@ -1,4 +1,5 @@
 import type {
+	BotLike,
 	Context,
 	ContextType,
 	MaybeArray,
@@ -158,14 +159,14 @@ export class Plugin<
 	 * })
 	 * ```
 	 */
-	derive<Handler extends Hooks.Derive<Context<AnyBot> & Derives["global"]>>(
+	derive<Handler extends Hooks.Derive<Context<BotLike> & Derives["global"]>>(
 		handler: Handler,
 	): Plugin<Errors, Derives & { global: Awaited<ReturnType<Handler>> }>;
 
 	derive<
 		Update extends UpdateName,
 		Handler extends Hooks.Derive<
-			ContextType<AnyBot, Update> & Derives["global"] & Derives[Update]
+			ContextType<BotLike, Update> & Derives["global"] & Derives[Update]
 		>,
 	>(
 		updateName: MaybeArray<Update>,
@@ -175,7 +176,7 @@ export class Plugin<
 	derive<
 		Update extends UpdateName,
 		Handler extends Hooks.Derive<
-			ContextType<Bot, Update> & Derives["global"] & Derives[Update]
+			ContextType<BotLike, Update> & Derives["global"] & Derives[Update]
 		>,
 	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
 		this._.composer.derive(updateNameOrHandler, handler);
@@ -222,7 +223,7 @@ export class Plugin<
 	/** Register handler to one or many Updates */
 	on<T extends UpdateName>(
 		updateName: MaybeArray<T>,
-		handler: Handler<ContextType<AnyBot, T> & Derives["global"] & Derives[T]>,
+		handler: Handler<ContextType<BotLike, T> & Derives["global"] & Derives[T]>,
 	) {
 		this._.composer.on(updateName, handler);
 
@@ -230,7 +231,7 @@ export class Plugin<
 	}
 
 	/** Register handler to any Updates */
-	use(handler: Handler<Context<AnyBot> & Derives["global"]>) {
+	use(handler: Handler<Context<BotLike> & Derives["global"]>) {
 		this._.composer.use(handler);
 
 		return this;
@@ -409,19 +410,19 @@ export class Plugin<
 		updateName: MaybeArray<T>,
 		handler: Hooks.OnError<
 			Errors,
-			ContextType<Bot, T> & Derives["global"] & Derives[T]
+			ContextType<BotLike, T> & Derives["global"] & Derives[T]
 		>,
 	): this;
 
 	onError(
-		handler: Hooks.OnError<Errors, Context<AnyBot> & Derives["global"]>,
+		handler: Hooks.OnError<Errors, Context<BotLike> & Derives["global"]>,
 	): this;
 
 	onError<T extends UpdateName>(
 		updateNameOrHandler: T | Hooks.OnError<Errors>,
 		handler?: Hooks.OnError<
 			Errors,
-			ContextType<Bot, T> & Derives["global"] & Derives[T]
+			ContextType<BotLike, T> & Derives["global"] & Derives[T]
 		>,
 	): this {
 		if (typeof updateNameOrHandler === "function") {
