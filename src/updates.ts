@@ -24,7 +24,7 @@ export class Updates {
 		this.queue = new UpdateQueue(this.handleUpdate.bind(this));
 	}
 
-	async handleUpdate(data: TelegramUpdate) {
+	async handleUpdate(data: TelegramUpdate, mode: "wait" | "lazy" = "wait") {
 		const updateType = Object.keys(data).at(1) as UpdateName;
 
 		const UpdateContext = contextsMappings[updateType];
@@ -32,7 +32,7 @@ export class Updates {
 
 		const updatePayload =
 			data[updateType as Exclude<keyof typeof data, "update_id">];
-		if (!updatePayload) throw new Error("");
+		if (!updatePayload) throw new Error("Unsupported event??");
 		try {
 			let context = new UpdateContext({
 				bot: this.bot,
@@ -62,7 +62,9 @@ export class Updates {
 				});
 			}
 
-			return this.composer.composeWait(context as unknown as Context<AnyBot>);
+			return mode === "wait"
+				? this.composer.composeWait(context as unknown as Context<AnyBot>)
+				: this.composer.compose(context as unknown as Context<AnyBot>);
 		} catch (error) {
 			throw new Error(`[UPDATES] Update type ${updateType} not supported.`);
 		}
