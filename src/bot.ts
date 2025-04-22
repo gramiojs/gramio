@@ -1196,10 +1196,12 @@ export class Bot<
 		allowedUpdates,
 		deleteWebhook,
 	}: {
-		webhook?: Omit<
-			APIMethodParams<"setWebhook">,
-			"drop_pending_updates" | "allowed_updates"
-		>;
+		webhook?:
+			| string
+			| Omit<
+					APIMethodParams<"setWebhook">,
+					"drop_pending_updates" | "allowed_updates"
+			  >;
 		dropPendingUpdates?: boolean;
 		deleteWebhook?: boolean | "on conflict with long-polling";
 		allowedUpdates?: NonNullable<
@@ -1230,7 +1232,7 @@ export class Bot<
 				updatesFrom: "long-polling",
 			});
 
-			return this.info;
+			return this.info!;
 		}
 
 		if (this.updates.isStarted) this.updates.stopPolling();
@@ -1238,7 +1240,7 @@ export class Bot<
 		// TODO: do we need await it?
 		await withRetries(async () =>
 			this.api.setWebhook({
-				...webhook,
+				...(typeof webhook === "string" ? { url: webhook } : webhook),
 				drop_pending_updates: dropPendingUpdates,
 				allowed_updates: allowedUpdates,
 				// suppress: true,
@@ -1252,20 +1254,17 @@ export class Bot<
 			updatesFrom: "webhook",
 		});
 
-		return this.info;
+		return this.info!;
 	}
 
 	/**
 	 * Stops receiving events via long-polling or webhook
 	 * */
 	async stop(timeout = 3_000) {
-		if (this.updates.isStarted) this.updates.stopPolling();
-
 		await Promise.all(
 			[
 				this.updates.queue.stop(timeout),
-				// TODO: wait stopPolling too
-				// this.updates.isStarted ? this.updates.stopPolling() : undefined,
+				this.updates.isStarted ? this.updates.stopPolling() : undefined,
 			].filter(Boolean),
 		);
 
