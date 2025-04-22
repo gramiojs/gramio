@@ -8,8 +8,9 @@ import type { CaughtMiddlewareHandler } from "middleware-io";
 import { Composer } from "./composer.js";
 import { TelegramError } from "./errors.js";
 import { UpdateQueue } from "./queue.js";
-import type { AnyBot } from "./types.js";
+import type { AnyBot, PollingStartOptions } from "./types.js";
 import { debug$updates, sleep } from "./utils.internal.ts";
+import { withRetries } from "./utils.ts";
 
 export class Updates {
 	private readonly bot: AnyBot;
@@ -75,31 +76,33 @@ export class Updates {
 	/** @deprecated use bot.start instead @internal */
 	startPolling(
 		params: APIMethodParams<"getUpdates"> = {},
-		dropPendingUpdates = false,
+		options: PollingStartOptions = {},
 	) {
 		if (this.isStarted) throw new Error("[UPDATES] Polling already started!");
 
 		this.isStarted = true;
 
-		this.startFetchLoop(params, dropPendingUpdates);
+		this.startFetchLoop(params, options);
 
 		return;
 	}
 
 	async startFetchLoop(
 		params: APIMethodParams<"getUpdates"> = {},
-		dropPendingUpdates = false,
+		options: PollingStartOptions = {},
 	) {
-		if (dropPendingUpdates) await this.dropPendingUpdates();
+		if (options.dropPendingUpdates) await this.dropPendingUpdates();
 
 		while (this.isStarted) {
 			try {
 				this.isRequestActive = true;
-				const updates = await this.bot.api.getUpdates({
-					timeout: 30,
-					...params,
-					offset: this.offset,
-				});
+				const updates = await withRetries(() =>
+					this.bot.api.getUpdates({
+						timeout: 30,
+						...params,
+						offset: this.offset,
+					}),
+				);
 				this.isRequestActive = false;
 
 				const updateId = updates.at(-1)?.update_id;
@@ -110,24 +113,45 @@ export class Updates {
 					// await this.handleUpdate(update).catch(console.error);
 				}
 			} catch (error) {
-				console.error("Error received when fetching updates", error);
+				if (error instanceof TelegramError) {
+					if (error.code === 409 && error.message.includes("deleteWebhook")) {
+						if (options.deleteWebhookOnConflict)
+							await this.bot.api.deleteWebhook();
+						continue;
+					}
+				}
 
-				if (error instanceof TelegramError && error.payload?.retry_after) {
-					await sleep(error.payload.retry_after * 1000);
-				} else await sleep(this.bot.options.api.retryGetUpdatesWait ?? 1000);
+				// TODO: possible to remove logs
+				console.error("Error received when fetching updates", error);
+				await sleep(this.bot.options.api.retryGetUpdatesWait ?? 1000);
 			}
 		}
 
 		this.stopPollingPromiseResolve?.();
 	}
 
-	async dropPendingUpdates() {
+	async dropPendingUpdates(deleteWebhookOnConflict = false): Promise<void> {
 		const result = await this.bot.api.getUpdates({
 			// The negative offset can be specified to retrieve updates starting from *-offset* update from the end of the updates queue.
 			// All previous updates will be forgotten.
 			offset: -1,
 			timeout: 0,
+			suppress: true,
 		});
+
+		if (result instanceof TelegramError) {
+			if (result.code === 409 && result.message.includes("deleteWebhook")) {
+				if (deleteWebhookOnConflict) {
+					await this.bot.api.deleteWebhook({
+						drop_pending_updates: true,
+					});
+
+					return;
+				}
+			}
+
+			throw result;
+		}
 
 		const lastUpdateId = result.at(-1)?.update_id;
 

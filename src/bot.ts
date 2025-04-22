@@ -33,6 +33,7 @@ import type {
 	AnyBot,
 	AnyPlugin,
 	BotOptions,
+	BotStartOptions,
 	CallbackQueryShorthandContext,
 	DeriveDefinitions,
 	ErrorDefinitions,
@@ -1192,26 +1193,17 @@ export class Bot<
 	 */
 	async start({
 		webhook,
+		longPolling,
 		dropPendingUpdates,
 		allowedUpdates,
-		deleteWebhook,
-	}: {
-		webhook?:
-			| string
-			| Omit<
-					APIMethodParams<"setWebhook">,
-					"drop_pending_updates" | "allowed_updates"
-			  >;
-		dropPendingUpdates?: boolean;
-		deleteWebhook?: boolean | "on conflict with long-polling";
-		allowedUpdates?: NonNullable<
-			APIMethodParams<"getUpdates">
-		>["allowed_updates"];
-	} = {}) {
+		deleteWebhook: deleteWebhookRaw,
+	}: BotStartOptions = {}) {
 		await this.init();
 
+		const deleteWebhook = deleteWebhookRaw ?? "on-conflict-with-polling";
+
 		if (!webhook) {
-			if (deleteWebhook)
+			if (deleteWebhook === true)
 				await withRetries(() =>
 					this.api.deleteWebhook({
 						drop_pending_updates: dropPendingUpdates,
@@ -1220,9 +1212,13 @@ export class Bot<
 
 			this.updates.startPolling(
 				{
+					...longPolling,
 					allowed_updates: allowedUpdates,
 				},
-				dropPendingUpdates,
+				{
+					dropPendingUpdates,
+					deleteWebhookOnConflict: deleteWebhook === "on-conflict-with-polling",
+				},
 			);
 
 			this.runImmutableHooks("onStart", {
@@ -1237,15 +1233,16 @@ export class Bot<
 
 		if (this.updates.isStarted) this.updates.stopPolling();
 
-		// TODO: do we need await it?
-		await withRetries(async () =>
-			this.api.setWebhook({
-				...(typeof webhook === "string" ? { url: webhook } : webhook),
-				drop_pending_updates: dropPendingUpdates,
-				allowed_updates: allowedUpdates,
-				// suppress: true,
-			}),
-		);
+		// True means that we don't need to set webhook manually
+		if (webhook !== true)
+			await withRetries(async () =>
+				this.api.setWebhook({
+					...(typeof webhook === "string" ? { url: webhook } : webhook),
+					drop_pending_updates: dropPendingUpdates,
+					allowed_updates: allowedUpdates,
+					// suppress: true,
+				}),
+			);
 
 		this.runImmutableHooks("onStart", {
 			plugins: this.dependencies,

@@ -9,6 +9,7 @@ import type {
 	APIMethodParams,
 	APIMethodReturn,
 	APIMethods,
+	SetWebhookParams,
 	TelegramUser,
 } from "@gramio/types";
 import type { NextMiddleware } from "middleware-io";
@@ -353,3 +354,32 @@ export type CallbackQueryShorthandContext<
 				? RegExpMatchArray
 				: never;
 	};
+
+export type BotStartOptionsLongPolling = Omit<
+	NonNullable<APIMethodParams<"getUpdates">>,
+	"allowed_updates" | "offset"
+>;
+
+export type BotStartOptionsWebhook =
+	| true
+	| string
+	| Omit<SetWebhookParams, "drop_pending_updates" | "allowed_updates">;
+
+export type AllowedUpdates = Exclude<
+	NonNullable<APIMethodParams<"getUpdates">>["allowed_updates"],
+	"update_id"
+>;
+
+export interface BotStartOptions {
+	webhook?: BotStartOptionsWebhook;
+	longPolling?: BotStartOptionsLongPolling;
+	dropPendingUpdates?: boolean;
+	allowedUpdates?: AllowedUpdates;
+	// "on conflict with long-polling"
+	deleteWebhook?: boolean | "on-conflict-with-polling";
+}
+
+export interface PollingStartOptions {
+	dropPendingUpdates?: boolean;
+	deleteWebhookOnConflict?: boolean;
+}
