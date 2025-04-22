@@ -14,9 +14,11 @@ import { sleep } from "./utils.internal.ts";
 export class Updates {
 	private readonly bot: AnyBot;
 	isStarted = false;
+	isRequestActive = false;
 	private offset = 0;
 	composer: Composer;
 	queue: UpdateQueue<TelegramUpdate>;
+	stopPollingPromiseResolve: ((value?: undefined) => void) | undefined;
 
 	constructor(bot: AnyBot, onError: CaughtMiddlewareHandler<Context<any>>) {
 		this.bot = bot;
@@ -83,11 +85,14 @@ export class Updates {
 	async startFetchLoop(params: APIMethodParams<"getUpdates"> = {}) {
 		while (this.isStarted) {
 			try {
+				this.isRequestActive = true;
 				const updates = await this.bot.api.getUpdates({
 					...params,
 					offset: this.offset,
 					timeout: 30,
 				});
+				this.isRequestActive = false;
+
 				const updateId = updates.at(-1)?.update_id;
 				this.offset = updateId ? updateId + 1 : this.offset;
 
@@ -103,9 +108,17 @@ export class Updates {
 				} else await sleep(this.bot.options.api.retryGetUpdatesWait ?? 1000);
 			}
 		}
+
+		this.stopPollingPromiseResolve?.();
 	}
 
-	stopPolling() {
+	stopPolling(): Promise<void> {
 		this.isStarted = false;
+
+		if (!this.isRequestActive) return Promise.resolve();
+
+		return new Promise((resolve) => {
+			this.stopPollingPromiseResolve = resolve;
+		});
 	}
 }

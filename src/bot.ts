@@ -1130,7 +1130,6 @@ export class Bot<
 			throw new Error("Do not use / in command name");
 
 		return this.on(["message", "business_message"], (context, next) => {
-			
 			// TODO: change to find
 			if (
 				context.entities?.some((entity) => {
