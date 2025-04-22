@@ -1,3 +1,5 @@
+import debug from "debug";
+
 // cant use node:timers/promises because possible browser usage...
 export const sleep = (ms: number) =>
 	new Promise((resolve) => setTimeout(resolve, ms));
@@ -27,3 +29,7 @@ export function simplifyObject(obj: Record<any, any>) {
 }
 
 export const IS_BUN = typeof Bun !== "undefined";
+
+export const $debugger = debug("gramio");
+export const debug$api = $debugger.extend("api");
+export const debug$updates = $debugger.extend("updates");

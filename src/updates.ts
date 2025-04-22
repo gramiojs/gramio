@@ -9,7 +9,7 @@ import { Composer } from "./composer.js";
 import { TelegramError } from "./errors.js";
 import { UpdateQueue } from "./queue.js";
 import type { AnyBot } from "./types.js";
-import { sleep } from "./utils.internal.ts";
+import { debug$updates, sleep } from "./utils.internal.ts";
 
 export class Updates {
 	private readonly bot: AnyBot;
@@ -71,25 +71,34 @@ export class Updates {
 			throw new Error(`[UPDATES] Update type ${updateType} not supported.`);
 		}
 	}
+
 	/** @deprecated use bot.start instead @internal */
-	startPolling(params: APIMethodParams<"getUpdates"> = {}) {
+	startPolling(
+		params: APIMethodParams<"getUpdates"> = {},
+		dropPendingUpdates = false,
+	) {
 		if (this.isStarted) throw new Error("[UPDATES] Polling already started!");
 
 		this.isStarted = true;
 
-		this.startFetchLoop(params);
+		this.startFetchLoop(params, dropPendingUpdates);
 
 		return;
 	}
 
-	async startFetchLoop(params: APIMethodParams<"getUpdates"> = {}) {
+	async startFetchLoop(
+		params: APIMethodParams<"getUpdates"> = {},
+		dropPendingUpdates = false,
+	) {
+		if (dropPendingUpdates) await this.dropPendingUpdates();
+
 		while (this.isStarted) {
 			try {
 				this.isRequestActive = true;
 				const updates = await this.bot.api.getUpdates({
+					timeout: 30,
 					...params,
 					offset: this.offset,
-					timeout: 30,
 				});
 				this.isRequestActive = false;
 
@@ -112,10 +121,31 @@ export class Updates {
 		this.stopPollingPromiseResolve?.();
 	}
 
-	stopPolling(): Promise<void> {
+	async dropPendingUpdates() {
+		const result = await this.bot.api.getUpdates({
+			// The negative offset can be specified to retrieve updates starting from *-offset* update from the end of the updates queue.
+			// All previous updates will be forgotten.
+			offset: -1,
+			timeout: 0,
+		});
+
+		const lastUpdateId = result.at(-1)?.update_id;
+
+		debug$updates(
+			"Dropping pending updates... Set offset to last update id %s + 1",
+			lastUpdateId,
+		);
+
+		this.offset = lastUpdateId ? lastUpdateId + 1 : this.offset;
+	}
+
+	/**
+	 * ! Soon waitPendingRequests param default will changed to true
+	 */
+	stopPolling(waitPendingRequests = false): Promise<void> {
 		this.isStarted = false;
 
-		if (!this.isRequestActive) return Promise.resolve();
+		if (!this.isRequestActive || !waitPendingRequests) return Promise.resolve();
 
 		return new Promise((resolve) => {
 			this.stopPollingPromiseResolve = resolve;

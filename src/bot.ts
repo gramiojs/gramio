@@ -26,7 +26,6 @@ import type {
 	TelegramReactionTypeEmojiEmoji,
 	TelegramUser,
 } from "@gramio/types";
-import debug from "debug";
 import { ErrorKind, TelegramError } from "./errors.js";
 // import type { Filters } from "./filters";
 import { Plugin } from "./plugin.js";
@@ -45,11 +44,8 @@ import type {
 	SuppressedAPIMethods,
 } from "./types.js";
 import { Updates } from "./updates.js";
-import { IS_BUN, simplifyObject } from "./utils.internal.ts";
+import { IS_BUN, debug$api, simplifyObject } from "./utils.internal.ts";
 import { withRetries } from "./utils.ts";
-
-const $debugger = debug("gramio");
-const debug$api = $debugger.extend("api");
 
 /** Bot instance
  *
@@ -1198,12 +1194,14 @@ export class Bot<
 		webhook,
 		dropPendingUpdates,
 		allowedUpdates,
+		deleteWebhook,
 	}: {
 		webhook?: Omit<
 			APIMethodParams<"setWebhook">,
 			"drop_pending_updates" | "allowed_updates"
 		>;
 		dropPendingUpdates?: boolean;
+		deleteWebhook?: boolean | "on conflict with long-polling";
 		allowedUpdates?: NonNullable<
 			APIMethodParams<"getUpdates">
 		>["allowed_updates"];
@@ -1211,16 +1209,19 @@ export class Bot<
 		await this.init();
 
 		if (!webhook) {
-			await withRetries(() =>
-				this.api.deleteWebhook({
-					drop_pending_updates: dropPendingUpdates,
-					// suppress: true,
-				}),
-			);
+			if (deleteWebhook)
+				await withRetries(() =>
+					this.api.deleteWebhook({
+						drop_pending_updates: dropPendingUpdates,
+					}),
+				);
 
-			this.updates.startPolling({
-				allowed_updates: allowedUpdates,
-			});
+			this.updates.startPolling(
+				{
+					allowed_updates: allowedUpdates,
+				},
+				dropPendingUpdates,
+			);
 
 			this.runImmutableHooks("onStart", {
 				plugins: this.dependencies,
@@ -1256,14 +1257,17 @@ export class Bot<
 
 	/**
 	 * Stops receiving events via long-polling or webhook
-	 * Currently does not implement graceful shutdown
 	 * */
 	async stop(timeout = 3_000) {
-		if (this.updates.isStarted) {
-			this.updates.stopPolling();
-		}
-		// else await this.api.deleteWebhook();
-		await this.updates.queue.stop(timeout);
+		if (this.updates.isStarted) this.updates.stopPolling();
+
+		await Promise.all(
+			[
+				this.updates.queue.stop(timeout),
+				// TODO: wait stopPolling too
+				// this.updates.isStarted ? this.updates.stopPolling() : undefined,
+			].filter(Boolean),
+		);
 
 		await this.runImmutableHooks("onStop", {
 			plugins: this.dependencies,
