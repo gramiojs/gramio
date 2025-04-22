@@ -91,7 +91,8 @@ export class Updates {
 		params: APIMethodParams<"getUpdates"> = {},
 		options: PollingStartOptions = {},
 	) {
-		if (options.dropPendingUpdates) await this.dropPendingUpdates();
+		if (options.dropPendingUpdates)
+			await this.dropPendingUpdates(options.deleteWebhookOnConflict);
 
 		while (this.isStarted) {
 			try {
