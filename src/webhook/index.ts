@@ -48,7 +48,9 @@ export function webhookHandler<Framework extends keyof typeof frameworks>(
 
 		if (secretToken && header !== secretToken) return unauthorized();
 
-		await bot.updates.handleUpdate(await update);
+		// await bot.updates.handleUpdate(await update);
+		// TODO: more think about queue based or wait in handler update
+		bot.updates.queue.add(await update);
 
 		if (response) return response();
 	}) as unknown as ReturnType<(typeof frameworks)[Framework]> extends {
