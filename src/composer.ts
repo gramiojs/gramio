@@ -73,7 +73,7 @@ export class Composer {
 					context[key] = value;
 				}
 
-				next();
+				return await next();
 			});
 		else if (handler)
 			this.on(updateNameOrHandler, async (context, next) => {
@@ -81,7 +81,7 @@ export class Composer {
 					context[key] = value;
 				}
 
-				next();
+				return await next();
 			});
 
 		return this;
