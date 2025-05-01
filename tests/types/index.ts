@@ -32,11 +32,7 @@ import { Plugin } from "../../src/plugin.ts";
 }
 
 {
-	const events = [
-		"message",
-		"callback_query",
-		"chat_member",
-	] as const satisfies UpdateName[];
+	const events = ["message", "callback_query", "chat_member"] as const;
 
 	const bot = new Bot("test")
 		.derive(events, (context) => {

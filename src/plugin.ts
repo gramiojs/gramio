@@ -2,7 +2,6 @@ import type {
 	BotLike,
 	Context,
 	ContextType,
-	MaybeArray,
 	UpdateName,
 } from "@gramio/contexts";
 import type { APIMethods } from "@gramio/types";
@@ -18,6 +17,7 @@ import type {
 	Hooks,
 	MaybePromise,
 } from "./types.js";
+import type { MaybeArray } from "./utils.internal.js";
 
 /**
  * `Plugin` is an object  from which you can extends in Bot instance and adopt types
