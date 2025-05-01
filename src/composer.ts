@@ -1,9 +1,4 @@
-import type {
-	Context,
-	ContextType,
-	MaybeArray,
-	UpdateName,
-} from "@gramio/contexts";
+import type { Context, ContextType, UpdateName } from "@gramio/contexts";
 import {
 	type CaughtMiddlewareHandler,
 	type Middleware,
@@ -11,6 +6,7 @@ import {
 	noopNext,
 } from "middleware-io";
 import type { AnyBot, Handler, Hooks } from "./types.js";
+import type { MaybeArray } from "./utils.internal.js";
 
 /** Base-composer without chainable type-safety */
 export class Composer {

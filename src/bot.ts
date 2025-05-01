@@ -5,7 +5,6 @@ import {
 	type Attachment,
 	type Context,
 	type ContextType,
-	type MaybeArray,
 	PhotoAttachment,
 	type UpdateName,
 	contextsMappings,
@@ -45,7 +44,12 @@ import type {
 	SuppressedAPIMethods,
 } from "./types.js";
 import { Updates } from "./updates.js";
-import { IS_BUN, debug$api, simplifyObject } from "./utils.internal.ts";
+import {
+	IS_BUN,
+	type MaybeArray,
+	debug$api,
+	simplifyObject,
+} from "./utils.internal.ts";
 import { withRetries } from "./utils.ts";
 
 /** Bot instance
@@ -661,6 +665,7 @@ export class Bot<
 
 				return context;
 			});
+			// @ts-expect-error
 		} else this.hooks.preRequest.push(methodsOrHandler);
 
 		return this;
@@ -704,6 +709,7 @@ export class Bot<
 
 				return context;
 			});
+			// @ts-expect-error
 		} else this.hooks.onResponse.push(methodsOrHandler);
 
 		return this;
@@ -747,6 +753,7 @@ export class Bot<
 
 				return context;
 			});
+			// @ts-expect-error
 		} else this.hooks.onResponseError.push(methodsOrHandler);
 
 		return this;
