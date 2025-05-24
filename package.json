@@ -56,20 +56,20 @@
 	"license": "MIT",
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
-		"@types/bun": "^1.2.10",
+		"@types/bun": "^1.2.14",
 		"@types/debug": "^4.1.12",
 		"expect-type": "^1.2.1",
-		"pkgroll": "^2.12.1",
+		"pkgroll": "^2.12.2",
 		"typescript": "^5.8.3"
 	},
 	"dependencies": {
 		"@gramio/callback-data": "^0.0.3",
 		"@gramio/contexts": "^0.2.5",
 		"@gramio/files": "^0.3.0",
-		"@gramio/format": "^0.2.0",
+		"@gramio/format": "^0.2.1",
 		"@gramio/keyboards": "^1.2.1",
 		"@gramio/types": "^9.0.2",
-		"debug": "^4.4.0",
+		"debug": "^4.4.1",
 		"middleware-io": "^2.8.1"
 	},
 	"files": ["dist"]

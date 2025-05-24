@@ -34,3 +34,26 @@ export const debug$api = debug("gramio:api");
 export const debug$updates = debug("gramio:updates");
 
 export type MaybeArray<T> = T | T[] | ReadonlyArray<T>;
+
+export function timeoutWebhook(
+	task: Promise<unknown>,
+	timeout: number,
+	mode: "throw" | "return",
+) {
+	return new Promise((resolve, reject) => {
+		const timeoutTask = setTimeout(() => {
+			if (mode === "throw") {
+				reject(
+					new Error(`Webhook handler execution timed out after ${timeout}ms`),
+				);
+			} else {
+				resolve(undefined);
+			}
+		}, timeout);
+
+		task
+			.then(resolve)
+			.catch(reject)
+			.finally(() => clearTimeout(timeoutTask));
+	});
+}
