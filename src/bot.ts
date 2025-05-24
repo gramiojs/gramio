@@ -1119,15 +1119,20 @@ export class Bot<
 	 * });
 	 */
 	command(
-		command: string,
+		command: MaybeArray<string>,
 		handler: (
 			context: ContextType<typeof this, "message"> & { args: string | null },
 		) => unknown,
-		options?: Omit<SetMyCommandsParams, "commands"> &
-			Omit<TelegramBotCommand, "command">,
+		// options?: Omit<SetMyCommandsParams, "commands"> &
+		// 	Omit<TelegramBotCommand, "command">,
 	) {
-		if (command.startsWith("/"))
-			throw new Error("Do not use / in command name");
+		const normalizedCommands: string[] =
+			typeof command === "string" ? [command] : Array.from(command);
+
+		for (const cmd of normalizedCommands) {
+			if (cmd.startsWith("/"))
+				throw new Error(`Do not use / in command name (${cmd})`);
+		}
 
 		return this.on(["message", "business_message"], (context, next) => {
 			// TODO: change to find
@@ -1137,12 +1142,16 @@ export class Bot<
 
 					const cmd = context.text
 						?.slice(1, entity.length)
-						// biome-ignore lint/style/noNonNullAssertion: <explanation>
-						?.replace(`@${this.info!.username!}`, "");
+						?.replace(
+							this.info?.username ? `@${this.info.username}` : /@[a-zA-Z0-9_]+/,
+							"",
+						);
 					// @ts-expect-error
 					context.args = context.text?.slice(entity.length).trim() || null;
 
-					return cmd === command;
+					return normalizedCommands.some(
+						(normalizedCommand) => cmd === normalizedCommand,
+					);
 				})
 			)
 				// @ts-expect-error
