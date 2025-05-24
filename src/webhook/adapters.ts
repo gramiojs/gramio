@@ -63,6 +63,7 @@ export const frameworks = {
 		header: req.headers[SECRET_TOKEN_HEADER.toLowerCase()],
 		unauthorized: () => res.writeHead(401).end(WRONG_TOKEN_ERROR),
 	}),
+	// TODO: Maybe unify it by 'WebRequest'
 	"std/http": (req) => ({
 		update: req.json(),
 		header: req.headers.get(SECRET_TOKEN_HEADER),
@@ -70,6 +71,12 @@ export const frameworks = {
 		unauthorized: () => responseUnauthorized,
 	}),
 	"Bun.serve": (req) => ({
+		update: req.json(),
+		header: req.headers.get(SECRET_TOKEN_HEADER),
+		response: () => responseOK,
+		unauthorized: () => responseUnauthorized,
+	}),
+	Request: (req) => ({
 		update: req.json(),
 		header: req.headers.get(SECRET_TOKEN_HEADER),
 		response: () => responseOK,
