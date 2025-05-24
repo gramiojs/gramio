@@ -25,6 +25,7 @@ import type {
 	TelegramReactionTypeEmojiEmoji,
 	TelegramUser,
 } from "@gramio/types";
+import debug from "debug";
 import { ErrorKind, TelegramError } from "./errors.js";
 // import type { Filters } from "./filters";
 import { Plugin } from "./plugin.js";
@@ -44,12 +45,7 @@ import type {
 	SuppressedAPIMethods,
 } from "./types.js";
 import { Updates } from "./updates.js";
-import {
-	IS_BUN,
-	type MaybeArray,
-	debug$api,
-	simplifyObject,
-} from "./utils.internal.ts";
+import { IS_BUN, type MaybeArray, simplifyObject } from "./utils.internal.ts";
 import { withRetries } from "./utils.ts";
 
 /** Bot instance
@@ -237,7 +233,7 @@ export class Bot<
 		method: T,
 		params: MaybeSuppressedParams<T> = {},
 	) {
-		const debug$api$method = debug$api.extend(method);
+		const debug$api$method = debug(`gramio:api:${method}`);
 		let url = `${this.options.api.baseURL}${this.options.token}/${this.options.api.useTest ? "test/" : ""}${method}`;
 
 		// Omit<

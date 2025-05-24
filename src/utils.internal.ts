@@ -30,8 +30,7 @@ export function simplifyObject(obj: Record<any, any>) {
 
 export const IS_BUN = typeof Bun !== "undefined";
 
-export const $debugger = debug("gramio");
-export const debug$api = $debugger.extend("api");
-export const debug$updates = $debugger.extend("updates");
+export const debug$api = debug("gramio:api");
+export const debug$updates = debug("gramio:updates");
 
 export type MaybeArray<T> = T | T[] | ReadonlyArray<T>;
