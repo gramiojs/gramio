@@ -532,19 +532,27 @@ export class Bot<
 		nameOrRecordValue: Name | Record<string, any>,
 		value?: Value,
 	) {
-		for (const contextName of Object.keys(contextsMappings)) {
+		for (const contextName of Object.keys(
+			contextsMappings,
+		) as (keyof typeof contextsMappings)[]) {
 			if (typeof nameOrRecordValue === "string")
-				// @ts-expect-error
-				Object.defineProperty(contextsMappings[contextName].prototype, name, {
-					value,
-				});
+				Object.defineProperty(
+					contextsMappings[contextName].prototype,
+					nameOrRecordValue,
+					{
+						value,
+						configurable: true,
+					},
+				);
 			else
 				Object.defineProperties(
-					// @ts-expect-error
 					contextsMappings[contextName].prototype,
-					Object.keys(nameOrRecordValue).reduce<Record<string, any>>(
+					Object.keys(nameOrRecordValue).reduce<PropertyDescriptorMap>(
 						(acc, key) => {
-							acc[key] = { value: nameOrRecordValue[key] };
+							acc[key] = {
+								value: nameOrRecordValue[key],
+								configurable: true,
+							};
 							return acc;
 						},
 						{},
