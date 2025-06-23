@@ -19,6 +19,9 @@ import { Bot } from "../../src/bot.ts";
 				test: number;
 			}>();
 		})
+		.hears(["a", "b"], (context) => {
+			expectTypeOf<typeof context>().toBeObject();
+		})
 		.hears("a", (context) => {
 			expectTypeOf<typeof context>().toBeObject();
 		})

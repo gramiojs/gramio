@@ -1091,9 +1091,9 @@ export class Bot<
 	 */
 	hears<
 		Ctx = ContextType<typeof this, "message">,
-		Trigger extends RegExp | string | ((context: Ctx) => boolean) =
+		Trigger extends RegExp | MaybeArray<string> | ((context: Ctx) => boolean) =
 			| RegExp
-			| string
+			| MaybeArray<string>
 			| ((context: Ctx) => boolean),
 	>(
 		trigger: Trigger,
@@ -1103,6 +1103,7 @@ export class Bot<
 			const text = context.text ?? context.caption;
 			if (
 				(typeof trigger === "string" && text === trigger) ||
+				(Array.isArray(trigger) && text && trigger.includes(text)) ||
 				// @ts-expect-error
 				(typeof trigger === "function" && trigger(context)) ||
 				(trigger instanceof RegExp && text && trigger.test(text))
