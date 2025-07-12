@@ -1,7 +1,7 @@
 {
 	"name": "gramio",
 	"type": "module",
-	"version": "0.4.9",
+	"version": "0.4.10",
 	"description": "Powerful, extensible and really type-safe Telegram Bot API framework",
 	"main": "dist/index.cjs",
 	"module": "dist/index.js",
@@ -72,5 +72,7 @@
 		"debug": "^4.4.1",
 		"middleware-io": "^2.8.1"
 	},
-	"files": ["dist"]
+	"files": [
+		"dist"
+	]
 }
