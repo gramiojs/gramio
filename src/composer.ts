@@ -63,19 +63,21 @@ export class Composer {
 	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
 		if (typeof updateNameOrHandler === "function")
 			this.use(async (context, next) => {
-				for (const [key, value] of Object.entries(
-					await updateNameOrHandler(context),
-				)) {
-					context[key] = value;
+				const assign = await updateNameOrHandler(context)
+
+				for (const key in assign) {
+					context[key] = assign[key]
 				}
 
 				return await next();
 			});
 		else if (handler)
 			this.on(updateNameOrHandler, async (context, next) => {
-				for (const [key, value] of Object.entries(await handler(context))) {
-					context[key] = value;
-				}
+				const assign = await handler(context)
+
+				for (const key in assign) {
+					context[key] = assign[key]
+				} 
 
 				return await next();
 			});
