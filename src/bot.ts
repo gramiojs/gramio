@@ -5,9 +5,9 @@ import {
 	type Attachment,
 	type Context,
 	type ContextType,
+	contextsMappings,
 	PhotoAttachment,
 	type UpdateName,
-	contextsMappings,
 } from "@gramio/contexts";
 import {
 	convertJsonToFormData,
@@ -18,9 +18,7 @@ import { FormattableMap } from "@gramio/format";
 import type {
 	APIMethodParams,
 	APIMethods,
-	SetMyCommandsParams,
 	TelegramAPIResponse,
-	TelegramBotCommand,
 	TelegramReactionType,
 	TelegramReactionTypeEmojiEmoji,
 	TelegramUser,
@@ -1165,6 +1163,55 @@ export class Bot<
 			)
 				// @ts-expect-error
 				return handler(context);
+
+			return next();
+		});
+	}
+
+	/**
+	 * Register handler to `start` command when start parameter is matched
+	 *
+	 * @example
+	 * ```ts
+	 * new Bot().startParameter(/^ref_(.+)$/, (context) => {
+	 *     return context.send(`Reference: ${context.rawStartPayload}`);
+	 * });
+	 * ```
+	 */
+	startParameter(
+		parameter: RegExp | MaybeArray<string>,
+		handler: Handler<
+			ContextType<typeof this, "message"> & {
+				rawStartPayload: string;
+			}
+		>,
+	) {
+		return this.on("message", (context, next) => {
+			if (!context.rawStartPayload) return next();
+
+			if (
+				parameter instanceof RegExp &&
+				parameter.test(context.rawStartPayload)
+			) {
+				// @ts-expect-error
+				return handler(context);
+			}
+
+			if (
+				Array.isArray(parameter) &&
+				parameter.includes(context.rawStartPayload)
+			) {
+				// @ts-expect-error
+				return handler(context);
+			}
+
+			if (
+				typeof parameter === "string" &&
+				parameter === context.rawStartPayload
+			) {
+				// @ts-expect-error
+				return handler(context);
+			}
 
 			return next();
 		});
