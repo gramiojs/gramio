@@ -102,8 +102,16 @@ export class Bot<
 		) =>
 			// @ts-expect-error
 			// biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
-			(_target[method] ??= (args: APIMethodParams<T>) =>
-				this._callApi(method, args)),
+			(_target[method] ??= (args: APIMethodParams<T>) => {
+				// Capture stack trace at the call site to preserve error context
+				const callSite = new Error();
+				// Remove this frame from the stack trace (Node.js/Bun feature)
+				if (Error.captureStackTrace) {
+					Error.captureStackTrace(callSite, _target[method]);
+				}
+
+				return this._callApi(method, args, callSite);
+			}),
 	});
 	private lazyloadPlugins: Promise<Plugin>[] = [];
 	private dependencies: string[] = [];
@@ -236,6 +244,7 @@ export class Bot<
 	private async _callApi<T extends keyof APIMethods>(
 		method: T,
 		params: MaybeSuppressedParams<T> = {},
+		callSite?: Error,
 	) {
 		const executeCall = async () => {
 			const debug$api$method = debug(`gramio:api:${method}`);
@@ -297,7 +306,7 @@ export class Bot<
 			debug$api$method("response: %j", data);
 
 			if (!data.ok) {
-				const err = new TelegramError(data, method, params);
+				const err = new TelegramError(data, method, params, callSite);
 
 				// @ts-expect-error
 				this.runImmutableHooks("onResponseError", err, this.api);

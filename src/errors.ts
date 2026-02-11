@@ -25,6 +25,7 @@ export class TelegramError<T extends keyof APIMethods> extends Error {
 		error: TelegramAPIResponseError,
 		method: T,
 		params: MaybeSuppressedParams<T>,
+		callSite?: Error,
 	) {
 		super(error.description);
 
@@ -34,6 +35,18 @@ export class TelegramError<T extends keyof APIMethods> extends Error {
 		this.code = error.error_code;
 
 		if (error.parameters) this.payload = error.parameters;
+
+		// Restore stack trace from the original call site
+		if (callSite?.stack) {
+			// Extract the relevant part of the call site stack (skip the first line which is the error message)
+			const callSiteLines = callSite.stack.split("\n");
+			// Skip the first line (error message) and get the actual stack frames
+			const relevantFrames = callSiteLines.slice(1);
+
+			// Replace our stack with the call site stack
+			// This makes the error appear as if it was thrown from the user's code
+			this.stack = `${this.name}: ${this.message}\n${relevantFrames.join("\n")}`;
+		}
 	}
 }
 
