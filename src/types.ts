@@ -314,6 +314,34 @@ export namespace Hooks {
 	export type OnResponse<Methods extends keyof APIMethods = keyof APIMethods> =
 		(context: AnyTelegramMethodWithReturn<Methods>) => unknown;
 
+	/** Argument type for {@link OnApiCall} */
+	export type OnApiCallContext<Methods extends keyof APIMethods> =
+		AnyTelegramMethod<Methods>;
+
+	/**
+	 * Type for `onApiCall` hook (wrap-style)
+	 *
+	 * This hook wraps the entire API call execution, enabling span creation
+	 * around API calls for tracing/instrumentation.
+	 *
+	 * @example
+	 * ```typescript
+	 * import { Bot } from "gramio";
+	 *
+	 * const bot = new Bot(process.env.TOKEN!).onApiCall(async (context, next) => {
+	 *     console.log(`Calling ${context.method}`);
+	 *     const result = await next();
+	 *     console.log(`${context.method} completed`);
+	 *     return result;
+	 * });
+	 * ```
+	 *  */
+	export type OnApiCall<Methods extends keyof APIMethods = keyof APIMethods> =
+		(
+			context: OnApiCallContext<Methods>,
+			next: () => Promise<unknown>,
+		) => Promise<unknown>;
+
 	/** Store hooks */
 	export interface Store<T extends ErrorDefinitions> {
 		preRequest: PreRequest[];
@@ -322,6 +350,7 @@ export namespace Hooks {
 		onError: OnError<T>[];
 		onStart: OnStart[];
 		onStop: OnStop[];
+		onApiCall: OnApiCall[];
 	}
 }
 

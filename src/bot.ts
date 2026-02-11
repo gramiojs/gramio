@@ -136,6 +136,7 @@ export class Bot<
 		onError: [],
 		onStart: [],
 		onStop: [],
+		onApiCall: [],
 	};
 
 	constructor(
@@ -202,7 +203,12 @@ export class Bot<
 	private async runHooks<
 		T extends Exclude<
 			keyof Hooks.Store<Errors>,
-			"onError" | "onStart" | "onStop" | "onResponseError" | "onResponse"
+			| "onError"
+			| "onStart"
+			| "onStop"
+			| "onResponseError"
+			| "onResponse"
+			| "onApiCall"
 		>,
 	>(type: T, context: Parameters<Hooks.Store<Errors>[T][0]>[0]) {
 		let data = context;
@@ -231,87 +237,100 @@ export class Bot<
 		method: T,
 		params: MaybeSuppressedParams<T> = {},
 	) {
-		const debug$api$method = debug(`gramio:api:${method}`);
-		let url = `${this.options.api.baseURL}${this.options.token}/${this.options.api.useTest ? "test/" : ""}${method}`;
+		const executeCall = async () => {
+			const debug$api$method = debug(`gramio:api:${method}`);
+			let url = `${this.options.api.baseURL}${this.options.token}/${this.options.api.useTest ? "test/" : ""}${method}`;
 
-		// Omit<
-		// 	NonNullable<Parameters<typeof fetch>[1]>,
-		// 	"headers"
-		// > & {
-		// 	headers: Headers;
-		// }
-		// idk why it cause https://github.com/gramiojs/gramio/actions/runs/10388006206/job/28762703484
-		// also in logs types differs
-		const reqOptions: any = {
-			method: "POST",
-			...this.options.api.fetchOptions,
-			// @ts-ignore types node/bun and global missmatch
-			headers: new Headers(this.options.api.fetchOptions?.headers),
-		};
+			// Omit<
+			// 	NonNullable<Parameters<typeof fetch>[1]>,
+			// 	"headers"
+			// > & {
+			// 	headers: Headers;
+			// }
+			// idk why it cause https://github.com/gramiojs/gramio/actions/runs/10388006206/job/28762703484
+			// also in logs types differs
+			const reqOptions: any = {
+				method: "POST",
+				...this.options.api.fetchOptions,
+				// @ts-ignore types node/bun and global missmatch
+				headers: new Headers(this.options.api.fetchOptions?.headers),
+			};
 
-		const context = await this.runHooks(
-			"preRequest",
-			// TODO: fix type error
-			// @ts-expect-error
-			{
-				method,
-				params,
-			},
-		);
-
-		// biome-ignore lint/style/noParameterAssign: mutate params
-		params = context.params;
-
-		// @ts-ignore
-		if (params && isMediaUpload(method, params)) {
-			if (IS_BUN) {
-				const formData = await convertJsonToFormData(method, params);
-				reqOptions.body = formData;
-			} else {
-				const [formData, paramsWithoutFiles] = await extractFilesToFormData(
+			const context = await this.runHooks(
+				"preRequest",
+				// TODO: fix type error
+				// @ts-expect-error
+				{
 					method,
 					params,
-				);
-				reqOptions.body = formData;
+				},
+			);
 
-				const simplifiedParams = simplifyObject(paramsWithoutFiles);
-				url += `?${new URLSearchParams(simplifiedParams).toString()}`;
+			// biome-ignore lint/style/noParameterAssign: mutate params
+			params = context.params;
+
+			// @ts-ignore
+			if (params && isMediaUpload(method, params)) {
+				if (IS_BUN) {
+					const formData = await convertJsonToFormData(method, params);
+					reqOptions.body = formData;
+				} else {
+					const [formData, paramsWithoutFiles] = await extractFilesToFormData(
+						method,
+						params,
+					);
+					reqOptions.body = formData;
+
+					const simplifiedParams = simplifyObject(paramsWithoutFiles);
+					url += `?${new URLSearchParams(simplifiedParams).toString()}`;
+				}
+			} else {
+				reqOptions.headers.set("Content-Type", "application/json");
+
+				reqOptions.body = JSON.stringify(params);
 			}
-		} else {
-			reqOptions.headers.set("Content-Type", "application/json");
+			debug$api$method("options: %j", reqOptions);
 
-			reqOptions.body = JSON.stringify(params);
+			const response = await fetch(url, reqOptions);
+
+			const data = (await response.json()) as TelegramAPIResponse;
+			debug$api$method("response: %j", data);
+
+			if (!data.ok) {
+				const err = new TelegramError(data, method, params);
+
+				// @ts-expect-error
+				this.runImmutableHooks("onResponseError", err, this.api);
+
+				if (!params?.suppress) throw err;
+
+				return err;
+			}
+
+			this.runImmutableHooks(
+				"onResponse",
+				// TODO: fix type error
+				// @ts-expect-error
+				{
+					method,
+					params,
+					response: data.result as any,
+				},
+			);
+
+			return data.result;
+		};
+
+		if (!this.hooks.onApiCall.length) return executeCall();
+
+		let fn: () => Promise<unknown> = executeCall;
+		for (const hook of [...this.hooks.onApiCall].reverse()) {
+			const prev = fn;
+			// @ts-expect-error distributive union narrowing
+			fn = () => hook({ method, params }, prev);
 		}
-		debug$api$method("options: %j", reqOptions);
 
-		const response = await fetch(url, reqOptions);
-
-		const data = (await response.json()) as TelegramAPIResponse;
-		debug$api$method("response: %j", data);
-
-		if (!data.ok) {
-			const err = new TelegramError(data, method, params);
-
-			// @ts-expect-error
-			this.runImmutableHooks("onResponseError", err, this.api);
-
-			if (!params?.suppress) throw err;
-
-			return err;
-		}
-
-		this.runImmutableHooks(
-			"onResponse",
-			// TODO: fix type error
-			// @ts-expect-error
-			{
-				method,
-				params,
-				response: data.result as any,
-			},
-		);
-
-		return data.result;
+		return fn();
 	}
 
 	/**
@@ -761,6 +780,61 @@ export class Bot<
 		return this;
 	}
 
+	/**
+	 * This hook wraps the entire API call, enabling tracing/instrumentation.
+	 *
+	 * @example
+	 * ```typescript
+	 * import { Bot } from "gramio";
+	 *
+	 * const bot = new Bot(process.env.TOKEN!).onApiCall(async (context, next) => {
+	 *     console.log(`Calling ${context.method}`);
+	 *     const result = await next();
+	 *     console.log(`${context.method} completed`);
+	 *     return result;
+	 * });
+	 * ```
+	 *  */
+	onApiCall<
+		Methods extends keyof APIMethods,
+		Handler extends Hooks.OnApiCall<Methods>,
+	>(methods: MaybeArray<Methods>, handler: Handler): this;
+
+	onApiCall(handler: Hooks.OnApiCall): this;
+
+	onApiCall<
+		Methods extends keyof APIMethods,
+		Handler extends Hooks.OnApiCall<Methods>,
+	>(
+		methodsOrHandler: MaybeArray<Methods> | Hooks.OnApiCall,
+		handler?: Handler,
+	) {
+		if (
+			typeof methodsOrHandler === "string" ||
+			Array.isArray(methodsOrHandler)
+		) {
+			// TODO: error
+			if (!handler) throw new Error("TODO:");
+
+			const methods =
+				typeof methodsOrHandler === "string"
+					? [methodsOrHandler]
+					: methodsOrHandler;
+
+			this.hooks.onApiCall.push(async (context, next) => {
+				// @ts-expect-error
+				if (methods.includes(context.method)) return handler(context, next);
+
+				return next();
+			});
+		} else {
+			// @ts-expect-error
+			this.hooks.onApiCall.push(methodsOrHandler);
+		}
+
+		return this;
+	}
+
 	// onExperimental(
 	// 	// filter: Filters,
 	// 	filter: (
@@ -870,6 +944,13 @@ export class Bot<
 
 			if (!updateName) this.onResponseError(onResponseError);
 			else this.onResponseError(updateName, onResponseError);
+		}
+
+		for (const value of plugin._.onApiCalls) {
+			const [onApiCall, methods] = value;
+
+			if (!methods) this.onApiCall(onApiCall);
+			else this.onApiCall(methods, onApiCall);
 		}
 
 		for (const handler of plugin._.groups) {

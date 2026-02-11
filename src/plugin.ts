@@ -87,6 +87,11 @@ export class Plugin<
 			Hooks.OnResponseError<any>,
 			MaybeArray<keyof APIMethods> | undefined,
 		][],
+		/** Store plugin onApiCalls hooks */
+		onApiCalls: [] as [
+			Hooks.OnApiCall<any>,
+			MaybeArray<keyof APIMethods> | undefined,
+		][],
 		/**
 		 * Store plugin groups
 		 *
@@ -341,6 +346,45 @@ export class Plugin<
 			this._.onResponseErrors.push([handler, methodsOrHandler]);
 		else if (typeof methodsOrHandler === "function")
 			this._.onResponseErrors.push([methodsOrHandler, undefined]);
+
+		return this;
+	}
+
+	/**
+	 * This hook wraps the entire API call, enabling tracing/instrumentation.
+	 *
+	 * @example
+	 * ```typescript
+	 * const plugin = new Plugin("example").onApiCall(async (context, next) => {
+	 *     console.log(`Calling ${context.method}`);
+	 *     const result = await next();
+	 *     console.log(`${context.method} completed`);
+	 *     return result;
+	 * });
+	 * ```
+	 *  */
+	onApiCall<
+		Methods extends keyof APIMethods,
+		Handler extends Hooks.OnApiCall<Methods>,
+	>(methods: MaybeArray<Methods>, handler: Handler): this;
+
+	onApiCall(handler: Hooks.OnApiCall): this;
+
+	onApiCall<
+		Methods extends keyof APIMethods,
+		Handler extends Hooks.OnApiCall<Methods>,
+	>(
+		methodsOrHandler: MaybeArray<Methods> | Hooks.OnApiCall,
+		handler?: Handler,
+	) {
+		if (
+			(typeof methodsOrHandler === "string" ||
+				Array.isArray(methodsOrHandler)) &&
+			handler
+		)
+			this._.onApiCalls.push([handler, methodsOrHandler]);
+		else if (typeof methodsOrHandler === "function")
+			this._.onApiCalls.push([methodsOrHandler, undefined]);
 
 		return this;
 	}
