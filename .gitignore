@@ -5,3 +5,4 @@ test.ts
 .env
 *.local.ts
 test.html
+**/*.local.json
