@@ -24,7 +24,7 @@ describe("UpdateQueue", () => {
 	});
 
 	test("stop respects timeout when handlers never complete", async () => {
-		const queue = new UpdateQueue(
+		const queue = new UpdateQueue<number>(
 			async () =>
 				new Promise(() => {
 					// never resolve
@@ -41,5 +41,3 @@ describe("UpdateQueue", () => {
 		expect(duration).toBeLessThan(200);
 	});
 });
-
-

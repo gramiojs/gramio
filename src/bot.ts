@@ -35,7 +35,6 @@ import type {
 	CallbackQueryShorthandContext,
 	DeriveDefinitions,
 	ErrorDefinitions,
-	FilterDefinitions,
 	Handler,
 	Hooks,
 	MaybePromise,
@@ -73,10 +72,6 @@ export class Bot<
 	__Derives!: Derives;
 
 	"~" = this._;
-
-	private filters: FilterDefinitions = {
-		context: (name: string) => (context: Context<Bot>) => context.is(name),
-	};
 
 	/** Options provided to instance */
 	readonly options: BotOptions;
@@ -198,10 +193,17 @@ export class Bot<
 				new Plugin("@gramio/format").preRequest((context) => {
 					if (!context.params) return context;
 
-					// @ts-ignore
-					const formattable = FormattableMap[context.method];
-					// @ts-ignore add AnyTelegramMethod to @gramio/format
-					if (formattable) context.params = formattable(context.params);
+					const formattable = FormattableMap[
+						context.method as keyof typeof FormattableMap
+					] as
+						| ((
+								params: MaybeSuppressedParams<any>,
+						  ) => MaybeSuppressedParams<any>)
+						| undefined;
+					if (formattable)
+						context.params = formattable(
+							context.params as MaybeSuppressedParams<any>,
+						) as typeof context.params;
 
 					return context;
 				}),
@@ -261,31 +263,24 @@ export class Bot<
 			const reqOptions: any = {
 				method: "POST",
 				...this.options.api.fetchOptions,
-				// @ts-ignore types node/bun and global missmatch
-				headers: new Headers(this.options.api.fetchOptions?.headers),
+				headers: new Headers(this.options.api.fetchOptions?.headers as any),
 			};
 
-			const context = await this.runHooks(
-				"preRequest",
-				// TODO: fix type error
-				// @ts-expect-error
-				{
-					method,
-					params,
-				},
-			);
+			const context = await this.runHooks("preRequest", {
+				method,
+				params,
+			} as any);
 
 			// biome-ignore lint/style/noParameterAssign: mutate params
-			params = context.params;
+			params = context.params as any;
 
-			// @ts-ignore
-			if (params && isMediaUpload(method, params)) {
+			if (params && isMediaUpload(method as any, params as any)) {
 				if (IS_BUN) {
-					const formData = await convertJsonToFormData(method, params);
+					const formData = await convertJsonToFormData(method as any, params);
 					reqOptions.body = formData;
 				} else {
 					const [formData, paramsWithoutFiles] = await extractFilesToFormData(
-						method,
+						method as any,
 						params,
 					);
 					reqOptions.body = formData;
@@ -397,8 +392,7 @@ export class Bot<
 			if (!res.body)
 				throw new Error("Response without body (should be never throw)");
 
-			// @ts-ignore denoo
-			await fs.writeFile(path, Readable.fromWeb(res.body));
+			await fs.writeFile(path, Readable.fromWeb(res.body as any));
 
 			return path;
 		}

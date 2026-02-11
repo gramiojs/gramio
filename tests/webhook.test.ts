@@ -23,8 +23,10 @@ function createRequest(headers: Record<string, string> = {}) {
 }
 
 function createBot() {
-	const queueAdd = mock(() => {});
-	const handleUpdate = mock(async () => {});
+	const queueAdd = mock<(update: typeof SAMPLE_UPDATE) => void>(() => {});
+	const handleUpdate = mock<(update: typeof SAMPLE_UPDATE) => Promise<void>>(
+		async () => {},
+	);
 
 	return {
 		bot: {
