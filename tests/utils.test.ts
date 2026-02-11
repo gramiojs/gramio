@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
 import { TelegramError } from "../src/errors.ts";
 import { withRetries } from "../src/utils.ts";
+import { simplifyObject, timeoutWebhook } from "../src/utils.internal.ts";
 
 describe("utils", () => {
 	describe("withRetries", () => {
@@ -172,6 +173,57 @@ describe("utils", () => {
 
 			expect(withRetries(api)).rejects.toThrow(error);
 			expect(api).toHaveBeenCalledTimes(1);
+		});
+	});
+
+	describe("simplifyObject", () => {
+		test("converts values to strings and skips empty entries", () => {
+			const simplified = simplifyObject({
+				text: "hello",
+				count: 2,
+				nested: { id: 1 },
+				nullable: null,
+				undef: undefined,
+				fn: () => "skip",
+			});
+
+			expect(simplified).toEqual({
+				text: "hello",
+				count: "2",
+				nested: JSON.stringify({ id: 1 }),
+			});
+		});
+	});
+
+	describe("timeoutWebhook", () => {
+		test("resolves with task result before timeout", async () => {
+			const result = await timeoutWebhook(Promise.resolve("ok"), 50, "throw");
+
+			expect(result).toBe("ok");
+		});
+
+		test("rejects when task times out and mode is throw", async () => {
+			await expect(
+				timeoutWebhook(
+					new Promise(() => {
+						// never resolve
+					}),
+					10,
+					"throw",
+				),
+			).rejects.toThrow("Webhook handler execution timed out after 10ms");
+		});
+
+		test("resolves undefined when task times out and mode is return", async () => {
+			const result = await timeoutWebhook(
+				new Promise(() => {
+					// never resolve
+				}),
+				10,
+				"return",
+			);
+
+			expect(result).toBeUndefined();
 		});
 	});
 });
