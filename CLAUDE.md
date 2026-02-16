@@ -43,3 +43,25 @@ bunx pkgroll            # Build (dual CJS/ESM via pkgroll)
 - **`debug` logging** — Namespaces: `gramio:api`, `gramio:updates`.
 - **Runtime detection** — `IS_BUN` constant switches file upload strategy (Bun has optimized paths).
 - **Dual package** — pkgroll builds both CJS and ESM from the same source.
+
+## Testing
+
+### Workflow
+
+After making changes, always run:
+
+1. `bun test` — Run all tests. All must pass.
+2. `bun run type` — Type-check. Must have no errors.
+3. `bun run lint` — Lint with Biome. Must be clean.
+
+### Keeping tests up to date
+
+When modifying bot behavior (handlers, hooks, plugins, middleware), update or add corresponding tests in `tests/`. The main behavioral test file is `tests/gramio-test.test.ts` — it uses `@gramio/test` (`TelegramTestEnvironment`) to simulate users, chats, messages, and callback queries without real HTTP requests.
+
+### Testing patterns with @gramio/test
+
+- **Simple messages/hears/callbacks**: Use `user.sendMessage(text)` and `user.click(data, msg)`.
+- **Command handlers**: Commands require `entities` with `type: "bot_command"`. Use the `emitCommand()` helper or `env.emitUpdate()` with explicit entities — `user.sendMessage("/start")` alone won't trigger `.command()` handlers.
+- **API call assertions**: Check `env.apiCalls` array for `{ method, params, response }`.
+- **Error simulation**: Use `apiError(code, description)` with `env.onApi()`.
+- **Source Bot vs packaged AnyBot**: When passing `new Bot()` to `TelegramTestEnvironment`, add `// @ts-expect-error source Bot vs packaged AnyBot` since the source `Bot` class has separate private property declarations from the packaged `AnyBot` type.
