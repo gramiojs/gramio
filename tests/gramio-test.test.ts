@@ -178,7 +178,7 @@ describe("@gramio/test — hears handler", () => {
 		await user.sendMessage("order 42");
 
 		expect(capturedArgs).not.toBeNull();
-		expect(capturedArgs![1]).toBe("42");
+		expect(capturedArgs?.[1]).toBe("42");
 	});
 
 	test("matches array of strings", async () => {
@@ -262,7 +262,7 @@ describe("@gramio/test — callbackQuery handler", () => {
 		await user.click("action:delete", msg);
 
 		expect(capturedData).not.toBeNull();
-		expect(capturedData![1]).toBe("delete");
+		expect(capturedData?.[1]).toBe("delete");
 	});
 });
 
@@ -763,6 +763,467 @@ describe("@gramio/test — apiCalls tracking", () => {
 		expect(call?.method).toBe("sendMessage");
 		expect(call?.params).toHaveProperty("text", "reply");
 		expect(call?.response).toHaveProperty("message_id");
+	});
+});
+
+describe("@gramio/test — reaction handler", () => {
+	test("triggers on matching emoji add", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).reaction("👍", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+		const msg = await user.sendMessage("react here");
+
+		await user.react(["👍"], msg);
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	test("does not trigger when emoji is not in the list", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).reaction("👍", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Bob" });
+		const msg = await user.sendMessage("react here");
+
+		await user.react(["❤"], msg);
+
+		expect(handler).not.toHaveBeenCalled();
+	});
+
+	test("triggers when any of multiple watched emojis is added", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).reaction(["👍", "❤"], handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Charlie" });
+		const msg = await user.sendMessage("react here");
+
+		await user.react(["❤"], msg);
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	test("does not trigger when emoji is removed (old reaction), not added", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).reaction("👍", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Dave" });
+		const msg = await user.sendMessage("react here");
+
+		// First add 👍
+		await user.react(["👍"], msg);
+		const callsBefore = handler.mock.calls.length;
+
+		// Then remove 👍 (react with empty array to clear)
+		await user.react([], msg);
+
+		// Handler should not fire again for the removal
+		expect(handler.mock.calls.length).toBe(callsBefore);
+	});
+
+	test("tracks reactions per-user: second add of same emoji is a no-op", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).reaction("👍", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Eve" });
+		const msg = await user.sendMessage("react here");
+
+		await user.react(["👍"], msg);
+		// React again with the same emoji — it's already in old_reaction, so not a new addition
+		await user.react(["👍"], msg);
+
+		// Only first react fires the handler
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	test("two different users can react independently", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).reaction("👍", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const alice = env.createUser({ first_name: "Alice" });
+		const bob = env.createUser({ first_name: "Bob" });
+		const msg = await alice.sendMessage("react here");
+
+		await alice.react(["👍"], msg);
+		await bob.react(["👍"], msg);
+
+		expect(handler).toHaveBeenCalledTimes(2);
+	});
+
+	test("user.on(msg).react() scoped shorthand triggers reaction handler", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).reaction("🔥", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Frank" });
+		const msg = await user.sendMessage("test");
+
+		await user.on(msg).react("🔥");
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("@gramio/test — inlineQuery handler", () => {
+	test("matches exact string query", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).inlineQuery("cats", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+
+		await user.sendInlineQuery("cats");
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	test("does not match different string query", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).inlineQuery("cats", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Bob" });
+
+		await user.sendInlineQuery("dogs");
+
+		expect(handler).not.toHaveBeenCalled();
+	});
+
+	test("matches regex query and provides args", async () => {
+		let capturedArgs: RegExpMatchArray | null = null;
+
+		const bot = new Bot(TOKEN).inlineQuery(/^search:(.+)$/, (ctx) => {
+			capturedArgs = ctx.args;
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Charlie" });
+
+		await user.sendInlineQuery("search:typescript");
+
+		expect(capturedArgs).not.toBeNull();
+		expect(capturedArgs?.[1]).toBe("typescript");
+	});
+
+	test("does not match regex that doesn't fit", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).inlineQuery(/^search:(.+)$/, handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Dave" });
+
+		await user.sendInlineQuery("find:something");
+
+		expect(handler).not.toHaveBeenCalled();
+	});
+
+	test("matches with function predicate", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).inlineQuery(
+			(ctx) => ctx.query.length > 3,
+			handler,
+		);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Eve" });
+
+		await user.sendInlineQuery("long query");
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	test("function predicate: no trigger on short query", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).inlineQuery(
+			(ctx) => ctx.query.length > 3,
+			handler,
+		);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Frank" });
+
+		await user.sendInlineQuery("hi");
+
+		expect(handler).not.toHaveBeenCalled();
+	});
+
+	test("onResult option registers chosenInlineResult handler", async () => {
+		const onResultHandler = mock(() => {});
+
+		const bot = new Bot(TOKEN).inlineQuery(/^search:(.+)$/, () => {}, {
+			onResult: onResultHandler,
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Grace" });
+
+		await user.chooseInlineResult("result-1", "search:cats");
+
+		expect(onResultHandler).toHaveBeenCalledTimes(1);
+	});
+
+	test("user.in(chat).sendInlineQuery() triggers inline_query handler", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).on("inline_query", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+		const group = env.createChat({ type: "group", title: "Test Group" });
+
+		await user.in(group).sendInlineQuery("test query");
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("@gramio/test — chosenInlineResult handler", () => {
+	// Note: chosenInlineResult trigger matches context.query (the inline query string),
+	// not the result_id. Use a function predicate to filter by result_id.
+
+	test("matches exact string query that led to chosen result", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).chosenInlineResult("cats", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+
+		await user.chooseInlineResult("result-abc", "cats");
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	test("does not match when query differs from string trigger", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).chosenInlineResult("cats", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Bob" });
+
+		await user.chooseInlineResult("result-abc", "dogs");
+
+		expect(handler).not.toHaveBeenCalled();
+	});
+
+	test("matches regex against query and provides args", async () => {
+		let capturedArgs: RegExpMatchArray | null = null;
+
+		const bot = new Bot(TOKEN).chosenInlineResult(/^search:(.+)$/, (ctx) => {
+			capturedArgs = ctx.args;
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Charlie" });
+
+		await user.chooseInlineResult("item-1", "search:typescript");
+
+		expect(capturedArgs).not.toBeNull();
+		expect(capturedArgs?.[1]).toBe("typescript");
+	});
+
+	test("function predicate receives full context (can check query)", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).chosenInlineResult(
+			(ctx) => ctx.query.startsWith("premium:"),
+			handler,
+		);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Dave" });
+
+		await user.chooseInlineResult("result-1", "premium:plan");
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	test("function predicate: no trigger on non-matching query", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).chosenInlineResult(
+			(ctx) => ctx.query.startsWith("premium:"),
+			handler,
+		);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Eve" });
+
+		await user.chooseInlineResult("result-1", "free:plan");
+
+		expect(handler).not.toHaveBeenCalled();
+	});
+});
+
+describe("@gramio/test — UserInChatScope", () => {
+	test("user.in(chat).sendMessage() sends to the scoped chat", async () => {
+		let receivedChatId: number | undefined;
+
+		const bot = new Bot(TOKEN).on("message", (ctx) => {
+			receivedChatId = ctx.chat.id;
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+		const group = env.createChat({ type: "group", title: "My Group" });
+
+		await user.in(group).sendMessage("hello group");
+
+		expect(receivedChatId).toBe(group.payload.id);
+	});
+
+	test("user.in(chat).join() and leave() update membership", async () => {
+		const bot = new Bot(TOKEN).on("chat_member", () => {});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Bob" });
+		const group = env.createChat({ type: "supergroup", title: "SG" });
+
+		await user.in(group).join();
+		expect(group.members.has(user)).toBe(true);
+
+		await user.in(group).leave();
+		expect(group.members.has(user)).toBe(false);
+	});
+
+	test("user.in(chat).sendInlineQuery() triggers inline_query with chat scope", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).on("inline_query", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Charlie" });
+		const group = env.createChat({ type: "group", title: "Group" });
+
+		await user.in(group).sendInlineQuery("something");
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	test("user.in(chat).on(msg).react() triggers reaction handler", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).reaction("😎", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Dave" });
+		const group = env.createChat({ type: "group", title: "Group" });
+
+		const msg = await user.in(group).sendMessage("hi");
+
+		await user.in(group).on(msg).react("😎");
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	test("user.in(chat).on(msg).click() triggers callbackQuery handler", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).callbackQuery("action:yes", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Eve" });
+		const group = env.createChat({ type: "group", title: "Group" });
+
+		const msg = await user.in(group).sendMessage("do action?");
+
+		await user.in(group).on(msg).click("action:yes");
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("@gramio/test — UserOnMessageScope", () => {
+	test("user.on(msg).react() sets reaction on the message", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).reaction("💅", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+		const msg = await user.sendMessage("message");
+
+		await user.on(msg).react("💅");
+
+		expect(handler).toHaveBeenCalledTimes(1);
+		// Reaction is tracked on the message object
+		expect(msg.reactions.get(user.payload.id)).toContain("💅");
+	});
+
+	test("user.on(msg).click() triggers callbackQuery handler", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).callbackQuery("btn:go", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Bob" });
+		const msg = await user.sendMessage("pick action");
+
+		await user.on(msg).click("btn:go");
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	test("user.on(msg).react() with array of emojis", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).reaction(["👍", "❤"], handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Charlie" });
+		const msg = await user.sendMessage("test");
+
+		await user.on(msg).react(["👍", "❤"]);
+
+		// At least one reaction triggered the handler
+		expect(handler).toHaveBeenCalled();
 	});
 });
 

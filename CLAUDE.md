@@ -54,13 +54,21 @@ After making changes, always run:
 2. `bun run type` — Type-check. Must have no errors.
 3. `bun run lint` — Lint with Biome. Must be clean.
 
+### What we test
+
+Tests here verify **GramIO framework behavior** — handlers, hooks, plugins, middleware, derives, error handling. `@gramio/test` is just a helper that simulates Telegram updates without real HTTP; its own features (UserObject, ChatObject, etc.) are tested in its own repository. Do not write tests whose sole purpose is to verify that `@gramio/test` works.
+
 ### Keeping tests up to date
 
 When modifying bot behavior (handlers, hooks, plugins, middleware), update or add corresponding tests in `tests/`. The main behavioral test file is `tests/gramio-test.test.ts` — it uses `@gramio/test` (`TelegramTestEnvironment`) to simulate users, chats, messages, and callback queries without real HTTP requests.
 
 ### Testing patterns with @gramio/test
 
-- **Simple messages/hears/callbacks**: Use `user.sendMessage(text)` and `user.click(data, msg)`.
+- **Preferred style**: Use the fluent scoped API — `user.on(msg).react("👍")`, `user.on(msg).click("data")`, `user.in(chat).sendMessage("text")` — rather than the lower-level positional overloads.
+- **Simple messages/hears/callbacks**: Use `user.sendMessage(text)` and `user.on(msg).click(data)`.
+- **Reactions**: Use `user.react(emojis, msg)` or `user.on(msg).react(emoji)`.
+- **Inline queries**: Use `user.sendInlineQuery(query)` or `user.in(chat).sendInlineQuery(query)`.
+- **Chosen inline results**: Use `user.chooseInlineResult(resultId, query)`.
 - **Command handlers**: Commands require `entities` with `type: "bot_command"`. Use the `emitCommand()` helper or `env.emitUpdate()` with explicit entities — `user.sendMessage("/start")` alone won't trigger `.command()` handlers.
 - **API call assertions**: Check `env.apiCalls` array for `{ method, params, response }`.
 - **Error simulation**: Use `apiError(code, description)` with `env.onApi()`.
