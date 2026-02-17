@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { UpdateQueue } from "../src/queue.ts";
+import { EventQueue } from "@gramio/composer";
 
-describe("UpdateQueue", () => {
-	test("processes queued updates sequentially", async () => {
+describe("EventQueue", () => {
+	test("processes queued updates", async () => {
 		const processed: number[] = [];
-		const queue = new UpdateQueue<number>(async (update) => {
+		const queue = new EventQueue<number>(async (update) => {
 			processed.push(update);
 			await Bun.sleep(1);
 		});
@@ -18,13 +18,13 @@ describe("UpdateQueue", () => {
 	});
 
 	test("stop resolves immediately when queue is idle", async () => {
-		const queue = new UpdateQueue(async () => {});
+		const queue = new EventQueue(async () => {});
 
 		await expect(queue.stop()).resolves.toBeUndefined();
 	});
 
 	test("stop respects timeout when handlers never complete", async () => {
-		const queue = new UpdateQueue<number>(
+		const queue = new EventQueue<number>(
 			async () =>
 				new Promise(() => {
 					// never resolve

@@ -1,4 +1,5 @@
 import type { CallbackData } from "@gramio/callback-data";
+import type { Next } from "@gramio/composer";
 import type {
 	BotLike,
 	Context,
@@ -12,7 +13,6 @@ import type {
 	SetWebhookParams,
 	TelegramUser,
 } from "@gramio/types";
-import type { NextMiddleware } from "middleware-io";
 import type { Bot } from "./bot.js";
 import type { TelegramError } from "./errors.js";
 import type { Plugin } from "./plugin.js";
@@ -68,7 +68,7 @@ export interface BotOptions {
  * bot.on("message", handler)
  * ```
  */
-export type Handler<T> = (context: T, next: NextMiddleware) => unknown;
+export type Handler<T> = (context: T, next: Next) => unknown;
 
 interface ErrorHandlerParams<
 	Ctx extends Context<AnyBot>,
@@ -336,11 +336,10 @@ export namespace Hooks {
 	 * });
 	 * ```
 	 *  */
-	export type OnApiCall<Methods extends keyof APIMethods = keyof APIMethods> =
-		(
-			context: OnApiCallContext<Methods>,
-			next: () => Promise<unknown>,
-		) => Promise<unknown>;
+	export type OnApiCall<Methods extends keyof APIMethods = keyof APIMethods> = (
+		context: OnApiCallContext<Methods>,
+		next: () => Promise<unknown>,
+	) => Promise<unknown>;
 
 	/** Store hooks */
 	export interface Store<T extends ErrorDefinitions> {

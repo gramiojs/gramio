@@ -184,7 +184,10 @@ export class Plugin<
 			ContextType<BotLike, Update> & Derives["global"] & Derives[Update]
 		>,
 	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
-		this._.composer.derive(updateNameOrHandler, handler);
+		if (typeof updateNameOrHandler === "function")
+			this._.composer.derive(updateNameOrHandler as any);
+		else if (handler)
+			this._.composer.derive(updateNameOrHandler as any, handler as any);
 
 		return this;
 	}
@@ -230,14 +233,14 @@ export class Plugin<
 		updateName: MaybeArray<T>,
 		handler: Handler<ContextType<BotLike, T> & Derives["global"] & Derives[T]>,
 	) {
-		this._.composer.on(updateName, handler);
+		this._.composer.on(updateName as any, handler as any);
 
 		return this;
 	}
 
 	/** Register handler to any Updates */
 	use(handler: Handler<Context<BotLike> & Derives["global"]>) {
-		this._.composer.use(handler);
+		this._.composer.use(handler as any);
 
 		return this;
 	}

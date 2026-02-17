@@ -521,7 +521,10 @@ export class Bot<
 			ContextType<typeof this, Update> & Derives["global"] & Derives[Update]
 		>,
 	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
-		this.updates.composer.derive(updateNameOrHandler, handler);
+		if (typeof updateNameOrHandler === "function")
+			this.updates.composer.derive(updateNameOrHandler as any);
+		else if (handler)
+			this.updates.composer.derive(updateNameOrHandler as any, handler as any);
 
 		return this;
 	}
@@ -854,14 +857,14 @@ export class Bot<
 		updateName: MaybeArray<T>,
 		handler: Handler<ContextType<typeof this, T>>,
 	) {
-		this.updates.composer.on(updateName, handler);
+		this.updates.composer.on(updateName as any, handler as any);
 
 		return this;
 	}
 
 	/** Register handler to any Updates */
 	use(handler: Handler<Context<typeof this> & Derives["global"]>) {
-		this.updates.composer.use(handler);
+		this.updates.composer.use(handler as any);
 
 		return this;
 	}
@@ -918,8 +921,8 @@ export class Bot<
 					.join(", ")}`,
 			);
 
-		if (plugin._.composer.length) {
-			this.use(plugin._.composer.composed);
+		if (plugin._.composer["~"].middlewares.length) {
+			this.use(plugin._.composer.compose() as any);
 		}
 
 		this.decorate(plugin._.decorators);

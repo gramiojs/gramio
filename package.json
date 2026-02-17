@@ -65,13 +65,13 @@
 	},
 	"dependencies": {
 		"@gramio/callback-data": "^0.0.3",
+		"@gramio/composer": "^0.1.0",
 		"@gramio/contexts": "^0.4.0",
 		"@gramio/files": "^0.3.0",
 		"@gramio/format": "^0.3.4",
 		"@gramio/keyboards": "^1.3.0",
 		"@gramio/types": "^9.4.0",
-		"debug": "^4.4.3",
-		"middleware-io": "^2.8.1"
+		"debug": "^4.4.3"
 	},
 	"files": [
 		"dist"

@@ -1,13 +1,12 @@
+import { EventQueue } from "@gramio/composer";
 import {
 	type Context,
-	type UpdateName,
 	contextsMappings,
+	type UpdateName,
 } from "@gramio/contexts";
 import type { APIMethodParams, TelegramUpdate } from "@gramio/types";
-import type { CaughtMiddlewareHandler } from "middleware-io";
 import { Composer } from "./composer.js";
 import { TelegramError } from "./errors.js";
-import { UpdateQueue } from "./queue.js";
 import type { AnyBot, PollingStartOptions } from "./types.js";
 import { debug$updates, sleep } from "./utils.internal.ts";
 import { withRetries } from "./utils.ts";
@@ -17,17 +16,24 @@ export class Updates {
 	isStarted = false;
 	isRequestActive = false;
 	private offset = 0;
-	composer: Composer;
-	queue: UpdateQueue<TelegramUpdate>;
+	composer: InstanceType<typeof Composer>;
+	queue: EventQueue<TelegramUpdate>;
 	stopPollingPromiseResolve: ((value?: undefined) => void) | undefined;
 
-	constructor(bot: AnyBot, onError: CaughtMiddlewareHandler<Context<any>>) {
+	constructor(
+		bot: AnyBot,
+		onError: (context: Context<any>, error: Error) => unknown,
+	) {
 		this.bot = bot;
-		this.composer = new Composer(onError);
-		this.queue = new UpdateQueue(this.handleUpdate.bind(this));
+		this.composer = new Composer();
+		this.composer.onError(async ({ error, context }) => {
+			await onError(context as Context<any>, error as Error);
+			return true;
+		});
+		this.queue = new EventQueue(this.handleUpdate.bind(this));
 	}
 
-	async handleUpdate(data: TelegramUpdate, mode: "wait" | "lazy" = "wait") {
+	async handleUpdate(data: TelegramUpdate, _mode: "wait" | "lazy" = "wait") {
 		const updateType = Object.keys(data).at(1) as UpdateName;
 
 		const UpdateContext = contextsMappings[updateType];
@@ -65,9 +71,7 @@ export class Updates {
 				});
 			}
 
-			return mode === "wait"
-				? this.composer.composeWait(context as unknown as Context<AnyBot>)
-				: this.composer.compose(context as unknown as Context<AnyBot>);
+			return this.composer.run(context as any);
 		} catch (error) {
 			throw new Error(`[UPDATES] Update type ${updateType} not supported.`);
 		}
