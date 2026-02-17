@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import { Readable } from "node:stream";
-import { CallbackData } from "@gramio/callback-data";
+import type { CallbackData } from "@gramio/callback-data";
 import type { EventComposer } from "@gramio/composer";
 import {
 	type Attachment,
@@ -20,7 +20,6 @@ import type {
 	APIMethodParams,
 	APIMethods,
 	TelegramAPIResponse,
-	TelegramReactionType,
 	TelegramReactionTypeEmojiEmoji,
 	TelegramUser,
 } from "@gramio/types";
@@ -181,7 +180,9 @@ export class Bot<
 				...options?.api,
 			},
 		};
-		if (options?.info) this.info = options.info;
+		if (options?.info) {
+			this.info = options.info;
+		}
 
 		if (
 			!(
@@ -1025,36 +1026,8 @@ export class Bot<
 		trigger: MaybeArray<TelegramReactionTypeEmojiEmoji>,
 		handler: (context: ContextType<typeof this, "message_reaction">) => unknown,
 	) {
-		const reactions = Array.isArray(trigger) ? trigger : [trigger];
-
-		return this.on("message_reaction", (context, next) => {
-			const newReactions: TelegramReactionType[] = [];
-
-			for (const reaction of context.newReactions) {
-				if (reaction.type !== "emoji") continue;
-
-				const foundIndex = context.oldReactions.findIndex(
-					(oldReaction) =>
-						oldReaction.type === "emoji" &&
-						oldReaction.emoji === reaction.emoji,
-				);
-				if (foundIndex === -1) {
-					newReactions.push(reaction);
-				} else {
-					// TODO: REFACTOR
-					context.oldReactions.splice(foundIndex, 1);
-				}
-			}
-
-			if (
-				!newReactions.some(
-					(x) => x.type === "emoji" && reactions.includes(x.emoji),
-				)
-			)
-				return next();
-
-			return handler(context);
-		});
+		this.updates.composer.reaction(trigger, handler as any);
+		return this;
 	}
 
 	/**
@@ -1086,24 +1059,8 @@ export class Bot<
 			context: CallbackQueryShorthandContext<typeof this, Trigger>,
 		) => unknown,
 	) {
-		return this.on("callback_query", (context, next) => {
-			if (!context.data) return next();
-			if (typeof trigger === "string" && context.data !== trigger)
-				return next();
-			if (trigger instanceof RegExp) {
-				if (!trigger.test(context.data)) return next();
-				// @ts-expect-error
-				context.queryData = context.data.match(trigger);
-			}
-			if (trigger instanceof CallbackData) {
-				if (!trigger.regexp().test(context.data)) return next();
-				// @ts-expect-error
-				context.queryData = trigger.unpack(context.data);
-			}
-
-			//@ts-expect-error
-			return handler(context);
-		});
+		this.updates.composer.callbackQuery(trigger, handler as any);
+		return this;
 	}
 
 	/** Register handler to `chosen_inline_result` update */
@@ -1111,24 +1068,8 @@ export class Bot<
 		trigger: RegExp | string | ((context: Ctx) => boolean),
 		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
 	) {
-		return this.on("chosen_inline_result", (context, next) => {
-			if (
-				(typeof trigger === "string" && context.query === trigger) ||
-				// @ts-expect-error
-				(typeof trigger === "function" && trigger(context)) ||
-				(trigger instanceof RegExp && trigger.test(context.query))
-			) {
-				//@ts-expect-error
-				context.args =
-					trigger instanceof RegExp ? context.query?.match(trigger) : null;
-
-				// TODO: remove
-				//@ts-expect-error
-				return handler(context);
-			}
-
-			return next();
-		});
+		this.updates.composer.chosenInlineResult(trigger as any, handler as any);
+		return this;
 	}
 
 	/**
@@ -1177,35 +1118,23 @@ export class Bot<
 			) => unknown;
 		} = {},
 	) {
-		// @ts-expect-error fix later...
-		if (options.onResult) this.chosenInlineResult(trigger, options.onResult);
-
-		return this.on("inline_query", (context, next) => {
-			if (
-				(typeof trigger === "string" && context.query === trigger) ||
-				// @ts-expect-error
-				(typeof trigger === "function" && trigger(context)) ||
-				(trigger instanceof RegExp && trigger.test(context.query))
-			) {
-				//@ts-expect-error
-				context.args =
-					trigger instanceof RegExp ? context.query?.match(trigger) : null;
-
-				// TODO: remove
-				//@ts-expect-error
-				return handler(context);
-			}
-
-			return next();
-		});
+		this.updates.composer.inlineQuery(
+			trigger as any,
+			handler as any,
+			options as any,
+		);
+		return this;
 	}
 
 	/**
 	 * Register handler to `message` and `business_message` event
 	 *
+	 * @example
+	 * ```ts
 	 * new Bot().hears(/regular expression with (.*)/i, async (context) => {
 	 *     if (context.args) await context.send(`Params ${context.args[1]}`);
 	 * });
+	 * ```
 	 */
 	hears<
 		Ctx = ContextType<typeof this, "message">,
@@ -1217,75 +1146,28 @@ export class Bot<
 		trigger: Trigger,
 		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
 	) {
-		return this.on("message", (context, next) => {
-			const text = context.text ?? context.caption;
-			if (
-				(typeof trigger === "string" && text === trigger) ||
-				(Array.isArray(trigger) && text && trigger.includes(text)) ||
-				// @ts-expect-error
-				(typeof trigger === "function" && trigger(context)) ||
-				(trigger instanceof RegExp && text && trigger.test(text))
-			) {
-				//@ts-expect-error
-				context.args = trigger instanceof RegExp ? text?.match(trigger) : null;
-
-				// TODO: remove
-				//@ts-expect-error
-				return handler(context);
-			}
-
-			return next();
-		});
+		this.updates.composer.hears(trigger as any, handler as any);
+		return this;
 	}
 
 	/**
 	 * Register handler to `message` and `business_message` event when entities contains a command
 	 *
+	 * @example
+	 * ```ts
 	 * new Bot().command("start", async (context) => {
 	 *     return context.send(`You message is /start ${context.args}`);
 	 * });
+	 * ```
 	 */
 	command(
 		command: MaybeArray<string>,
 		handler: (
 			context: ContextType<typeof this, "message"> & { args: string | null },
 		) => unknown,
-		// options?: Omit<SetMyCommandsParams, "commands"> &
-		// 	Omit<TelegramBotCommand, "command">,
 	) {
-		const normalizedCommands: string[] =
-			typeof command === "string" ? [command] : Array.from(command);
-
-		for (const cmd of normalizedCommands) {
-			if (cmd.startsWith("/"))
-				throw new Error(`Do not use / in command name (${cmd})`);
-		}
-
-		return this.on(["message", "business_message"], (context, next) => {
-			// TODO: change to find
-			if (
-				context.entities?.some((entity) => {
-					if (entity.type !== "bot_command" || entity.offset > 0) return false;
-
-					const cmd = context.text
-						?.slice(1, entity.length)
-						?.replace(
-							this.info?.username ? `@${this.info.username}` : /@[a-zA-Z0-9_]+/,
-							"",
-						);
-					// @ts-expect-error
-					context.args = context.text?.slice(entity.length).trim() || null;
-
-					return normalizedCommands.some(
-						(normalizedCommand) => cmd === normalizedCommand,
-					);
-				})
-			)
-				// @ts-expect-error
-				return handler(context);
-
-			return next();
-		});
+		this.updates.composer.command(command, handler as any);
+		return this;
 	}
 
 	/**
@@ -1306,35 +1188,8 @@ export class Bot<
 			}
 		>,
 	) {
-		return this.on("message", (context, next) => {
-			if (!context.rawStartPayload) return next();
-
-			if (
-				parameter instanceof RegExp &&
-				parameter.test(context.rawStartPayload)
-			) {
-				// @ts-expect-error
-				return handler(context);
-			}
-
-			if (
-				Array.isArray(parameter) &&
-				parameter.includes(context.rawStartPayload)
-			) {
-				// @ts-expect-error
-				return handler(context);
-			}
-
-			if (
-				typeof parameter === "string" &&
-				parameter === context.rawStartPayload
-			) {
-				// @ts-expect-error
-				return handler(context);
-			}
-
-			return next();
-		});
+		this.updates.composer.startParameter(parameter, handler as any);
+		return this;
 	}
 
 	/** Currently not isolated!!! */
@@ -1362,6 +1217,8 @@ export class Bot<
 			}
 
 			this.info = info;
+			// expose info on the composer so Composer.command() can strip bot mentions
+			(this.updates.composer as any).info = this.info;
 		}
 	}
 
