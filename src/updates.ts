@@ -33,7 +33,7 @@ export class Updates {
 		this.queue = new EventQueue(this.handleUpdate.bind(this));
 	}
 
-	async handleUpdate(data: TelegramUpdate, _mode: "wait" | "lazy" = "wait") {
+	async handleUpdate(data: TelegramUpdate) {
 		const updateType = Object.keys(data).at(1) as UpdateName;
 
 		const UpdateContext = contextsMappings[updateType];
