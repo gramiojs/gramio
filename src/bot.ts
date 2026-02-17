@@ -6,7 +6,6 @@ import {
 	type Attachment,
 	type Context,
 	type ContextType,
-	contextsMappings,
 	PhotoAttachment,
 	type UpdateName,
 } from "@gramio/contexts";
@@ -562,33 +561,38 @@ export class Bot<
 		nameOrRecordValue: Name | Record<string, any>,
 		value?: Value,
 	) {
-		for (const contextName of Object.keys(
-			contextsMappings,
-		) as (keyof typeof contextsMappings)[]) {
-			if (typeof nameOrRecordValue === "string")
-				Object.defineProperty(
-					contextsMappings[contextName].prototype,
-					nameOrRecordValue,
-					{
-						value,
-						configurable: true,
-					},
-				);
-			else
-				Object.defineProperties(
-					contextsMappings[contextName].prototype,
-					Object.keys(nameOrRecordValue).reduce<PropertyDescriptorMap>(
-						(acc, key) => {
-							acc[key] = {
-								value: nameOrRecordValue[key],
-								configurable: true,
-							};
-							return acc;
-						},
-						{},
-					),
-				);
-		}
+		this.updates.composer.decorate(
+			typeof nameOrRecordValue === "string"
+				? { [nameOrRecordValue]: value }
+				: nameOrRecordValue,
+		);
+		// for (const contextName of Object.keys(
+		// 	contextsMappings,
+		// ) as (keyof typeof contextsMappings)[]) {
+		// 	if (typeof nameOrRecordValue === "string")
+		// 		Object.defineProperty(
+		// 			contextsMappings[contextName].prototype,
+		// 			nameOrRecordValue,
+		// 			{
+		// 				value,
+		// 				configurable: true,
+		// 			},
+		// 		);
+		// 	else
+		// 		Object.defineProperties(
+		// 			contextsMappings[contextName].prototype,
+		// 			Object.keys(nameOrRecordValue).reduce<PropertyDescriptorMap>(
+		// 				(acc, key) => {
+		// 					acc[key] = {
+		// 						value: nameOrRecordValue[key],
+		// 						configurable: true,
+		// 					};
+		// 					return acc;
+		// 				},
+		// 				{},
+		// 			),
+		// 		);
+		// }
 
 		return this;
 	}
