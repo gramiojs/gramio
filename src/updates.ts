@@ -75,7 +75,7 @@ export class Updates {
 			return this.composer.run(
 				context as unknown as Context<AnyBot> & Record<string, unknown>,
 			);
-		} catch (error) {
+		} catch (_error) {
 			throw new Error(`[UPDATES] Update type ${updateType} not supported.`);
 		}
 	}
@@ -116,10 +116,7 @@ export class Updates {
 				const updateId = updates.at(-1)?.update_id;
 				this.offset = updateId ? updateId + 1 : this.offset;
 
-				for await (const update of updates) {
-					this.queue.add(update);
-					// await this.handleUpdate(update).catch(console.error);
-				}
+				this.queue.addBatch(updates);
 			} catch (error) {
 				if (error instanceof TelegramError) {
 					if (error.code === 409 && error.message.includes("deleteWebhook")) {
