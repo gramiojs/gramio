@@ -199,7 +199,7 @@ export class Plugin<
 			);
 		else if (handler)
 			this._.composer.derive(
-				updateNameOrHandler as Update | Update[],
+				updateNameOrHandler,
 				handler as Hooks.Derive<ContextType<AnyBot, Update>>,
 			);
 
