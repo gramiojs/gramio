@@ -566,6 +566,7 @@ export class Bot<
 				? { [nameOrRecordValue]: value }
 				: nameOrRecordValue,
 		);
+		// TODO: it is interesting choice for perfomance impact. but isolation needed. TODO: research
 		// for (const contextName of Object.keys(
 		// 	contextsMappings,
 		// ) as (keyof typeof contextsMappings)[]) {
