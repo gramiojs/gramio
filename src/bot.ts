@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import { Readable } from "node:stream";
 import { CallbackData } from "@gramio/callback-data";
+import type { EventComposer } from "@gramio/composer";
 import {
 	type Attachment,
 	type Context,
@@ -522,9 +523,14 @@ export class Bot<
 		>,
 	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
 		if (typeof updateNameOrHandler === "function")
-			this.updates.composer.derive(updateNameOrHandler as any);
+			this.updates.composer.derive(
+				updateNameOrHandler as Hooks.Derive<Context<AnyBot>>,
+			);
 		else if (handler)
-			this.updates.composer.derive(updateNameOrHandler as any, handler as any);
+			this.updates.composer.derive(
+				updateNameOrHandler as Update | Update[],
+				handler as Hooks.Derive<ContextType<AnyBot, Update>>,
+			);
 
 		return this;
 	}
@@ -857,14 +863,17 @@ export class Bot<
 		updateName: MaybeArray<T>,
 		handler: Handler<ContextType<typeof this, T>>,
 	) {
-		this.updates.composer.on(updateName as any, handler as any);
+		this.updates.composer.on(
+			updateName as T | T[],
+			handler as Handler<ContextType<AnyBot, T>>,
+		);
 
 		return this;
 	}
 
 	/** Register handler to any Updates */
 	use(handler: Handler<Context<typeof this> & Derives["global"]>) {
-		this.updates.composer.use(handler as any);
+		this.updates.composer.use(handler as Handler<Context<AnyBot>>);
 
 		return this;
 	}
@@ -900,12 +909,33 @@ export class Bot<
 	 *     });
 	 * ```
 	 */
+	extend<UExposed extends object, UDerives extends Record<string, object>>(
+		composer: EventComposer<any, any, any, any, UExposed, UDerives>,
+	): Bot<Errors, Derives & { global: UExposed } & UDerives>;
+
 	extend<NewPlugin extends AnyPlugin>(
 		plugin: MaybePromise<NewPlugin>,
 	): Bot<
 		Errors & NewPlugin["_"]["Errors"],
 		Derives & NewPlugin["_"]["Derives"]
-	> {
+	>;
+
+	extend(
+		pluginOrComposer:
+			| MaybePromise<AnyPlugin>
+			| EventComposer<any, any, any, any, any, any>,
+	): any {
+		if (
+			"compose" in pluginOrComposer &&
+			"run" in pluginOrComposer &&
+			!("_" in pluginOrComposer)
+		) {
+			this.updates.composer.extend(pluginOrComposer);
+			return this;
+		}
+
+		const plugin = pluginOrComposer as MaybePromise<AnyPlugin>;
+
 		if (plugin instanceof Promise) {
 			this.lazyloadPlugins.push(plugin);
 
@@ -922,7 +952,10 @@ export class Bot<
 			);
 
 		if (plugin._.composer["~"].middlewares.length) {
-			this.use(plugin._.composer.compose() as any);
+			// Promote to "scoped" so extend() doesn't isolate plugin middleware
+			// (plugins are expected to modify shared context via derive/use)
+			plugin._.composer.as("scoped");
+			this.updates.composer.extend(plugin._.composer);
 		}
 
 		this.decorate(plugin._.decorators);

@@ -24,3 +24,4 @@ export const { Composer } = createComposer<
 
 export { EventQueue, compose, noopNext, skip, stop };
 export type { Next };
+export type { EventComposer, Middleware } from "@gramio/composer";

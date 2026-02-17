@@ -1,3 +1,4 @@
+import type { EventComposer } from "@gramio/composer";
 import type {
 	BotLike,
 	Context,
@@ -112,7 +113,13 @@ export class Plugin<
 		decorators: {} as Record<string, unknown>,
 	};
 
-	"~" = this._;
+	/** Expose composer internals so `composer.extend(plugin)` works via duck-typing */
+	get "~"(): InstanceType<typeof Composer>["~"] {
+		// Promote to "scoped" so plugin middleware shares context (not isolated).
+		// Same as what Bot.extend(plugin) does. Idempotent — safe to call repeatedly.
+		this._.composer.as("scoped");
+		return this._.composer["~"];
+	}
 
 	/** Create new Plugin. Please provide `name` */
 	constructor(
@@ -120,6 +127,7 @@ export class Plugin<
 		{ dependencies }: { dependencies?: string[] } = {},
 	) {
 		this._.name = name;
+		this._.composer["~"].name = name;
 		if (dependencies) this._.dependencies = dependencies;
 	}
 
@@ -145,6 +153,7 @@ export class Plugin<
 		error[ErrorKind] = kind;
 
 		this._.errorsDefinitions[kind] = error;
+		this._.composer["~"].errorsDefinitions[kind] = error;
 
 		return this as unknown as Plugin<
 			Errors & { [name in Name]: InstanceType<NewError> },
@@ -185,9 +194,14 @@ export class Plugin<
 		>,
 	>(updateNameOrHandler: MaybeArray<Update> | Handler, handler?: Handler) {
 		if (typeof updateNameOrHandler === "function")
-			this._.composer.derive(updateNameOrHandler as any);
+			this._.composer.derive(
+				updateNameOrHandler as Hooks.Derive<Context<AnyBot>>,
+			);
 		else if (handler)
-			this._.composer.derive(updateNameOrHandler as any, handler as any);
+			this._.composer.derive(
+				updateNameOrHandler as Update | Update[],
+				handler as Hooks.Derive<ContextType<AnyBot, Update>>,
+			);
 
 		return this;
 	}
@@ -233,14 +247,17 @@ export class Plugin<
 		updateName: MaybeArray<T>,
 		handler: Handler<ContextType<BotLike, T> & Derives["global"] & Derives[T]>,
 	) {
-		this._.composer.on(updateName as any, handler as any);
+		this._.composer.on(
+			updateName as T | T[],
+			handler as Handler<ContextType<AnyBot, T>>,
+		);
 
 		return this;
 	}
 
 	/** Register handler to any Updates */
 	use(handler: Handler<Context<BotLike> & Derives["global"]>) {
-		this._.composer.use(handler as any);
+		this._.composer.use(handler as Handler<Context<AnyBot>>);
 
 		return this;
 	}
@@ -488,6 +505,11 @@ export class Plugin<
 		return this;
 	}
 
+	/** Extend plugin with a Composer instance (merges middleware with deduplication) */
+	extend<UExposed extends object, UDerives extends Record<string, object>>(
+		composer: EventComposer<any, any, any, any, UExposed, UDerives>,
+	): Plugin<Errors, Derives & { global: UExposed } & UDerives>;
+
 	/**
 	 * ! ** At the moment, it can only pick up types** */
 	extend<NewPlugin extends AnyPlugin>(
@@ -495,7 +517,21 @@ export class Plugin<
 	): Plugin<
 		Errors & NewPlugin["_"]["Errors"],
 		Derives & NewPlugin["_"]["Derives"]
-	> {
+	>;
+
+	extend(
+		pluginOrComposer:
+			| MaybePromise<AnyPlugin>
+			| EventComposer<any, any, any, any, any, any>,
+	): this {
+		if (
+			"compose" in pluginOrComposer &&
+			"run" in pluginOrComposer &&
+			!("_" in pluginOrComposer)
+		) {
+			this._.composer.extend(pluginOrComposer);
+		}
+
 		return this;
 	}
 }

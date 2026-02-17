@@ -64,7 +64,7 @@ describe("@gramio/test — command handler", () => {
 
 		await emitCommand(env, user, "/echo hello world");
 
-		expect(capturedArgs as string).toBe("hello world");
+		expect(capturedArgs!).toBe("hello world");
 		expect(env.apiCalls[0].params).toHaveProperty("text", "Echo: hello world");
 	});
 
@@ -178,7 +178,7 @@ describe("@gramio/test — hears handler", () => {
 		await user.sendMessage("order 42");
 
 		expect(capturedArgs).not.toBeNull();
-		expect((capturedArgs as RegExpMatchArray)[1]).toBe("42");
+		expect(capturedArgs![1]).toBe("42");
 	});
 
 	test("matches array of strings", async () => {
@@ -262,7 +262,7 @@ describe("@gramio/test — callbackQuery handler", () => {
 		await user.click("action:delete", msg);
 
 		expect(capturedData).not.toBeNull();
-		expect((capturedData as RegExpMatchArray)[1]).toBe("delete");
+		expect(capturedData![1]).toBe("delete");
 	});
 });
 

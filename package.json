@@ -65,7 +65,7 @@
 	},
 	"dependencies": {
 		"@gramio/callback-data": "^0.0.3",
-		"@gramio/composer": "^0.1.0",
+		"@gramio/composer": "^0.1.1",
 		"@gramio/contexts": "^0.4.0",
 		"@gramio/files": "^0.3.0",
 		"@gramio/format": "^0.3.4",

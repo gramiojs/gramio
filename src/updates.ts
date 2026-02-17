@@ -71,7 +71,10 @@ export class Updates {
 				});
 			}
 
-			return this.composer.run(context as any);
+			// Context subclass doesn't carry the index signature that Composer's TIn requires
+			return this.composer.run(
+				context as unknown as Context<AnyBot> & Record<string, unknown>,
+			);
 		} catch (error) {
 			throw new Error(`[UPDATES] Update type ${updateType} not supported.`);
 		}
