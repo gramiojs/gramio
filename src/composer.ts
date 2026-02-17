@@ -8,11 +8,34 @@ import {
 	stop,
 } from "@gramio/composer";
 import type { Context, ContextType, UpdateName } from "@gramio/contexts";
-import type { AnyBot } from "./types.js";
+import type { AnyBot, AnyPlugin } from "./types.js";
 
 type TelegramEventMap = {
 	[K in UpdateName]: ContextType<AnyBot, K>;
 };
+
+/** Teach EventComposer.extend() to accept Plugin with proper type extraction */
+declare module "@gramio/composer" {
+	interface EventComposer<
+		TBase,
+		TEventMap,
+		TIn,
+		TOut,
+		TExposed,
+		TDerives,
+	> {
+		extend<P extends AnyPlugin>(
+			plugin: P,
+		): EventComposer<
+			TBase,
+			TEventMap,
+			TIn,
+			TOut & P["_"]["Derives"]["global"],
+			TExposed,
+			TDerives & Omit<P["_"]["Derives"], "global">
+		>;
+	}
+}
 
 export const { Composer } = createComposer<
 	Context<AnyBot> & { [key: string]: unknown },

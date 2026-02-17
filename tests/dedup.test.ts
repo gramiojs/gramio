@@ -275,7 +275,7 @@ describe("Deduplication", () => {
 			});
 
 			const composer = new Composer();
-			composer.extend(plugin as any);
+			composer.extend(plugin);
 
 			const bot = new Bot(TOKEN).extend(composer);
 
@@ -296,8 +296,8 @@ describe("Deduplication", () => {
 			});
 
 			const composer = new Composer();
-			composer.extend(plugin as any);
-			composer.extend(plugin as any);
+			composer.extend(plugin);
+			composer.extend(plugin);
 
 			const bot = new Bot(TOKEN).extend(composer);
 
@@ -317,7 +317,7 @@ describe("Deduplication", () => {
 			});
 
 			const composer = new Composer({ name: "wrapper" });
-			composer.extend(plugin as any);
+			composer.extend(plugin);
 			// Promote so derives escape isolation when extended into bot
 			composer.as("scoped");
 
@@ -346,7 +346,7 @@ describe("Deduplication", () => {
 			});
 
 			const composer = new Composer();
-			composer.extend(plugin as any);
+			composer.extend(plugin);
 			// No .as("scoped") — derive runs but is isolated
 
 			const bot = new Bot(TOKEN)
@@ -378,10 +378,10 @@ describe("Deduplication", () => {
 			const plugin = new Plugin("wrapper-plugin").extend(shared);
 
 			const composerA = new Composer({ name: "a" });
-			composerA.extend(plugin as any);
+			composerA.extend(plugin);
 
 			const composerB = new Composer({ name: "b" });
-			composerB.extend(plugin as any);
+			composerB.extend(plugin);
 
 			const bot = new Bot(TOKEN).extend(composerA).extend(composerB);
 
