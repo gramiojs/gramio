@@ -16,6 +16,7 @@ export type * from "@gramio/types";
 export * from "./bot.js";
 export * from "./composer.js";
 export * from "./errors.js";
+export * from "./filters.js";
 export * from "./plugin.js";
 export * from "./types.js";
 export * from "./updates.js";

@@ -359,11 +359,6 @@ export type ErrorDefinitions = Record<string, Error>;
 /** Map of derives */
 export type DeriveDefinitions = Record<UpdateName | "global", {}>;
 
-export type FilterDefinitions = Record<
-	string,
-	(...args: any[]) => (context: Context<Bot>) => boolean
->;
-
 /** Type of Bot that accepts any generics */
 export type AnyBot = Bot<any, any>;
 

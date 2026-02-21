@@ -85,7 +85,11 @@ export function webhookHandler<Framework extends keyof typeof frameworks>(
 			const timeout = timeoutOptions?.timeout ?? 30000;
 			const onTimeout = timeoutOptions?.onTimeout ?? "throw";
 
-			await timeoutWebhook(bot.updates.handleUpdate(await update), timeout, onTimeout);
+			await timeoutWebhook(
+				bot.updates.handleUpdate(await update),
+				timeout,
+				onTimeout,
+			);
 
 			if (response) return response();
 		}

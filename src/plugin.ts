@@ -242,12 +242,51 @@ export class Plugin<
 		return this;
 	}
 
+	/** Register handler to one or many Updates with a type-narrowing filter */
+	on<T extends UpdateName, Narrowing>(
+		updateName: MaybeArray<T>,
+		filter: (ctx: any) => ctx is Narrowing,
+		handler: Handler<
+			ContextType<BotLike, T> & Derives["global"] & Derives[T] & Narrowing
+		>,
+	): this;
+
+	/** Register handler to one or many Updates with a boolean filter (no type narrowing) */
+	on<T extends UpdateName>(
+		updateName: MaybeArray<T>,
+		filter: (
+			ctx: ContextType<BotLike, T> & Derives["global"] & Derives[T],
+		) => boolean,
+		handler: Handler<ContextType<BotLike, T> & Derives["global"] & Derives[T]>,
+	): this;
+
 	/** Register handler to one or many Updates */
 	on<T extends UpdateName>(
 		updateName: MaybeArray<T>,
 		handler: Handler<ContextType<BotLike, T> & Derives["global"] & Derives[T]>,
+	): this;
+
+	on<T extends UpdateName>(
+		updateName: MaybeArray<T>,
+		filterOrHandler:
+			| Handler<ContextType<BotLike, T> & Derives["global"] & Derives[T]>
+			| ((
+					ctx: ContextType<BotLike, T> & Derives["global"] & Derives[T],
+			  ) => boolean),
+		handler?: Handler<any>,
 	) {
-		this._.composer.on(updateName, handler as Handler<ContextType<AnyBot, T>>);
+		if (handler) {
+			const filter = filterOrHandler as (ctx: any) => boolean;
+			this._.composer.on(updateName, ((ctx: any, next: any) => {
+				if (filter(ctx)) return handler(ctx, next);
+				return next();
+			}) as Handler<ContextType<AnyBot, T>>);
+		} else {
+			this._.composer.on(
+				updateName,
+				filterOrHandler as Handler<ContextType<AnyBot, T>>,
+			);
+		}
 
 		return this;
 	}

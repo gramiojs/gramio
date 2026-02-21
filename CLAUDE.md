@@ -21,8 +21,9 @@ bunx pkgroll            # Build (dual CJS/ESM via pkgroll)
 
 ### Core classes (all in `src/`)
 
-- **Bot** (`bot.ts`, ~1300 lines) — Main class. Holds the API proxy (`bot.api.*`), update handlers (`.on()`, `.command()`, `.hears()`, `.callbackQuery()`, `.reaction()`, `.inlineQuery()`, `.startParameter()`), plugin system (`.extend()`), derive system (`.derive()`, `.decorate()`), hooks, and lifecycle (`.start()`, `.stop()`).
-- **Plugin** (`plugin.ts`) — Same handler/hook/derive API as Bot for composability. Plugins merge their types into the bot instance. Has dependency management between plugins.
+- **Bot** (`bot.ts`, ~1300 lines) — Main class. Holds the API proxy (`bot.api.*`), update handlers (`.on()`, `.command()`, `.hears()`, `.callbackQuery()`, `.reaction()`, `.inlineQuery()`, `.startParameter()`), plugin system (`.extend()`), derive system (`.derive()`, `.decorate()`), hooks, and lifecycle (`.start()`, `.stop()`). `.on()` has 3 overloads: type-narrowing filter, boolean filter, and no filter.
+- **Plugin** (`plugin.ts`) — Same handler/hook/derive API as Bot for composability. Plugins merge their types into the bot instance. Has dependency management between plugins. `.on()` mirrors Bot's 3 overloads.
+- **Filters** (`filters.ts`) — Standalone predicate functions for narrowing context types in `.on()` handlers. Exports `Filter` type and `filters` object with built-in filters (attachment, text, caption, chat, from, regex, etc.) and composition (`and`, `or`, `not`). Filters use `any` as input type with intersection-based narrowing (`ContextType<T> & Narrowing`) so the handler preserves the full context type while adding type narrowing.
 - **Composer** (`composer.ts`) — Middleware chain built on `middleware-io`. Sequential execution with `next()`. Both `.on(updateName, handler)` and `.use(handler)`.
 - **Updates** (`updates.ts`) — Long-polling manager. `.handleUpdate()` dispatches a single update through the middleware chain.
 - **UpdateQueue** (`queue.ts`) — Concurrent update processing queue with graceful shutdown support.
@@ -34,7 +35,7 @@ bunx pkgroll            # Build (dual CJS/ESM via pkgroll)
 
 ### Re-exported packages
 
-`src/index.ts` re-exports from `@gramio/contexts`, `@gramio/files`, `@gramio/keyboards`, `@gramio/types`, `@gramio/format`, `@gramio/callback-data`. Changes to context types, file handling, keyboards, or formatting live in those separate packages.
+`src/index.ts` re-exports from `@gramio/contexts`, `@gramio/files`, `@gramio/keyboards`, `@gramio/types`, `@gramio/format`, `@gramio/callback-data`, and `./filters.js`. Changes to context types, file handling, keyboards, or formatting live in those separate packages.
 
 ### Key patterns
 
@@ -73,3 +74,11 @@ When modifying bot behavior (handlers, hooks, plugins, middleware), update or ad
 - **API call assertions**: Check `env.apiCalls` array for `{ method, params, response }`.
 - **Error simulation**: Use `apiError(code, description)` with `env.onApi()`.
 - **Source Bot vs packaged AnyBot**: When passing `new Bot()` to `TelegramTestEnvironment`, add `// @ts-expect-error source Bot vs packaged AnyBot` since the source `Bot` class has separate private property declarations from the packaged `AnyBot` type.
+- **Filter tests** (`tests/filters.test.ts`): Tests for the `filters` system. Uses `env.emitUpdate()` with raw `TelegramMessage` objects (photoMessage, textMessage, captionPhotoMessage helpers) since filters need specific message shapes. Type-level tests use `expectTypeOf` inside `.on()` handlers to verify both context preservation (`ctx.reply`, `ctx.send`) and type narrowing (`ctx.attachment` as `PhotoAttachment`, `ctx.text` as `string`).
+
+### Filters design notes
+
+- `Filter<In, Out>` type — built-in filters use `In = any` so they're compatible with any bot's context type regardless of generics/derives.
+- `.on()` type-narrowing overload: `on<T, Narrowing>(name, filter: (ctx: any) => ctx is Narrowing, handler: Handler<ContextType<this, T> & Narrowing>)` — handler gets intersection of full context + narrowing.
+- Boolean filters (`from`, `chatId`, `not`) return `(ctx: any) => boolean` (not a type predicate), matching the second overload which preserves the full context without narrowing.
+- `Require`/`RequireValue` from `@gramio/contexts` can't be used in filter output types because `Omit` strips class private properties. Use intersection (`{ attachment: PhotoAttachment }`) instead.

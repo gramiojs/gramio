@@ -1,71 +1,102 @@
-import type {
-	Context,
-	ContextType,
-	MaybeArray,
-	MessageContext,
-	UpdateName,
-} from "@gramio/contexts";
-import type { Bot } from "./bot.js";
+import type { AttachmentsMapping, AttachmentType } from "@gramio/contexts";
 
-export interface AdditionDefinitions {
-	equal: any;
-	addition: Record<string, any>;
+/**
+ * A type guard predicate that narrows `In` to `Out`.
+ * Built-in filters use `any` as `In` so they work with any bot's context type.
+ * The actual narrowing happens via intersection in the `.on()` handler type.
+ */
+export type Filter<In = any, Out extends In = In> = (
+	context: In,
+) => context is Out;
+
+function createAttachmentFilter<T extends AttachmentType>(
+	type: T,
+): Filter<any, { attachment: AttachmentsMapping[T] }> {
+	return ((ctx: any) => ctx.hasAttachmentType(type)) as Filter<
+		any,
+		{ attachment: AttachmentsMapping[T] }
+	>;
 }
 
-type ReturnIfNonNever<T> = [T] extends [never] ? {} : T;
+export const filters = {
+	// Attachment filters
+	photo: createAttachmentFilter("photo"),
+	video: createAttachmentFilter("video"),
+	document: createAttachmentFilter("document"),
+	audio: createAttachmentFilter("audio"),
+	sticker: createAttachmentFilter("sticker"),
+	voice: createAttachmentFilter("voice"),
+	videoNote: createAttachmentFilter("video_note"),
+	animation: createAttachmentFilter("animation"),
+	contact: createAttachmentFilter("contact"),
+	location: createAttachmentFilter("location"),
+	poll: createAttachmentFilter("poll"),
 
-export type Filters<
-	BotType extends Bot = Bot,
-	Base = Context<BotType>,
-	ConditionalAdditions extends AdditionDefinitions[] = [],
-> = {
-	_s: Base;
-	_ad: ConditionalAdditions;
-	__filters: ((context: Context<BotType>) => boolean)[];
-	context<T extends UpdateName>(
-		updateName: MaybeArray<T>,
-	): Filters<BotType, ContextType<BotType, T>, ConditionalAdditions>;
-	is2(): Filters<BotType, 2, ConditionalAdditions>;
-} & ReturnIfNonNever<
-	{
-		[K in keyof ConditionalAdditions &
-			number]: ConditionalAdditions[K] extends {
-			equal: infer E;
-			addition: infer T;
-		}
-			? Base extends E
-				? T
-				: {}
-			: {};
-	}[number]
->;
+	/** Matches any message that has an attachment */
+	media: ((ctx: any) => ctx.hasAttachment()) as Filter<any, { attachment: {} }>,
 
-// type filter = Filters<
-// 	Context<Bot> & {prop: 2},
-// 	[{ equal: { prop: 2 }; addition: { some: 2 } }]
-// >;
+	/** Matches messages that have text */
+	text: ((ctx: any) => ctx.hasText()) as Filter<any, { text: string }>,
 
-// const a = {} as filter;
+	/** Matches messages that have a caption */
+	caption: ((ctx: any) => ctx.hasCaption()) as Filter<any, { caption: string }>,
 
-// // a.s;
+	/** Matches messages that contain a dice */
+	dice: ((ctx: any) => ctx.hasDice()) as Filter<any, { dice: {} }>,
 
-// type S = [{ equal: { prop: 2 }; addition: { some: 2 } }];
+	/** Matches messages that are forwarded */
+	forwardOrigin: ((ctx: any) => ctx.hasForwardOrigin()) as Filter<
+		any,
+		{ forwardOrigin: {} }
+	>,
 
-// type C = {[K in keyof S & number]: S[K]};
+	/** Matches messages from a specific chat type */
+	chat<T extends "private" | "group" | "supergroup" | "channel">(
+		type: T,
+	): Filter<any, { chatType: T }> {
+		return ((ctx: any) => ctx.chatType === type) as Filter<
+			any,
+			{ chatType: T }
+		>;
+	},
 
-// type SA = {
-// 	[K in keyof S & number]: S[K] extends {
-// 		equal: infer E;
-// 		addition: infer T;
-// 	} ? Context<Bot> & {prop: 2} extends E ? T : {} : {}}[number];
+	/** Matches messages from specific user(s). No type narrowing. */
+	from(userId: number | number[]): (ctx: any) => boolean {
+		const ids = Array.isArray(userId) ? userId : [userId];
+		return (ctx: any) =>
+			ctx.senderId !== undefined && ids.includes(ctx.senderId);
+	},
 
-// type A = Context<Bot> & {prop: 2} extends SA ? true : false;
+	/** Matches messages in specific chat(s). No type narrowing. */
+	chatId(chatId: number | number[]): (ctx: any) => boolean {
+		const ids = Array.isArray(chatId) ? chatId : [chatId];
+		return (ctx: any) => ids.includes(ctx.chatId);
+	},
 
-// export const filters: Filters = {
-// 	__filters: [],
-// 	context(updateName) {
-// 		this.__filters.push((context) => context.is(updateName));
+	/** Matches messages whose text/caption matches the regex, sets `ctx.match` */
+	regex(pattern: RegExp): Filter<any, { match: RegExpMatchArray }> {
+		return ((ctx: any) => {
+			const value = ctx.text ?? ctx.caption;
+			if (!value) return false;
+			const result = value.match(pattern);
+			if (!result) return false;
+			ctx.match = result;
+			return true;
+		}) as Filter<any, { match: RegExpMatchArray }>;
+	},
 
-// 		return this;
-// 	},
-// };
+	/** Intersection: both filters must match */
+	and<N1, N2>(f1: Filter<any, N1>, f2: Filter<any, N2>): Filter<any, N1 & N2> {
+		return ((ctx: any) => f1(ctx) && f2(ctx)) as Filter<any, N1 & N2>;
+	},
+
+	/** Union: either filter must match */
+	or<N1, N2>(f1: Filter<any, N1>, f2: Filter<any, N2>): Filter<any, N1 | N2> {
+		return ((ctx: any) => f1(ctx) || f2(ctx)) as Filter<any, N1 | N2>;
+	},
+
+	/** Negation: inverts the filter (no type narrowing) */
+	not(f: (ctx: any) => boolean): (ctx: any) => boolean {
+		return (ctx: any) => !f(ctx);
+	},
+};

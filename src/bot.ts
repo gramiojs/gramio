@@ -24,7 +24,6 @@ import type {
 } from "@gramio/types";
 import debug from "debug";
 import { ErrorKind, TelegramError } from "./errors.js";
-// import type { Filters } from "./filters";
 import { Plugin } from "./plugin.js";
 import type {
 	AnyBot,
@@ -60,7 +59,6 @@ import { withRetries } from "./utils.ts";
 export class Bot<
 	Errors extends ErrorDefinitions = {},
 	Derives extends DeriveDefinitions = DeriveDefinitions,
-	// FiltersT extends FilterDefinitions = Filters<typeof this>,
 > {
 	/** @deprecated use `~` instead*/
 	_ = {
@@ -853,26 +851,48 @@ export class Bot<
 		return this;
 	}
 
-	// onExperimental(
-	// 	// filter: Filters,
-	// 	filter: (
-	// 		f: Filters<
-	// 			Context<typeof this> & Derives["global"],
-	// 			[{ equal: { prop: number }; addition: { some: () => 2 } }]
-	// 		>,
-	// 	) => Filters,
-	// 	handler: Handler<Context<typeof this> & Derives["global"]>,
-	// ) {}
+	/** Register handler to one or many Updates with a type-narrowing filter */
+	on<T extends UpdateName, Narrowing>(
+		updateName: MaybeArray<T>,
+		filter: (ctx: any) => ctx is Narrowing,
+		handler: Handler<ContextType<typeof this, T> & Narrowing>,
+	): this;
+
+	/** Register handler to one or many Updates with a boolean filter (no type narrowing) */
+	on<T extends UpdateName>(
+		updateName: MaybeArray<T>,
+		filter: (ctx: ContextType<typeof this, T>) => boolean,
+		handler: Handler<ContextType<typeof this, T>>,
+	): this;
 
 	/** Register handler to one or many Updates */
 	on<T extends UpdateName>(
 		updateName: MaybeArray<T>,
 		handler: Handler<ContextType<typeof this, T>>,
+	): this;
+
+	on<T extends UpdateName>(
+		updateName: MaybeArray<T>,
+		filterOrHandler:
+			| Handler<ContextType<typeof this, T>>
+			| ((ctx: ContextType<typeof this, T>) => boolean),
+		handler?: Handler<any>,
 	) {
-		this.updates.composer.on(
-			updateName as T | T[],
-			handler as Handler<ContextType<AnyBot, T>>,
-		);
+		if (handler) {
+			const filter = filterOrHandler as (ctx: any) => boolean;
+			this.updates.composer.on(
+				updateName as T | T[],
+				((ctx: any, next: any) => {
+					if (filter(ctx)) return handler(ctx, next);
+					return next();
+				}) as Handler<ContextType<AnyBot, T>>,
+			);
+		} else {
+			this.updates.composer.on(
+				updateName as T | T[],
+				filterOrHandler as Handler<ContextType<AnyBot, T>>,
+			);
+		}
 
 		return this;
 	}
