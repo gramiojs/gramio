@@ -1395,3 +1395,157 @@ describe("filters — guard() narrows types for downstream handlers", () => {
 		});
 	});
 });
+
+// ── Filter-only .on(filter, handler) — no event name ────────────────────────
+
+describe("filter-only .on() — runtime behavior", () => {
+	test("bot.on(filters.text, handler) matches text messages", async () => {
+		const handler = mock(() => {});
+		const bot = new Bot(TOKEN).on(filters.text, () => {
+			handler();
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+
+		await env.emitUpdate({
+			update_id: 0,
+			message: textMessage("hello", user.payload, user.payload.id),
+		});
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	test("bot.on(filters.text, handler) does not match photo-only messages", async () => {
+		const handler = mock(() => {});
+		const bot = new Bot(TOKEN).on(filters.text, () => {
+			handler();
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+
+		await env.emitUpdate({
+			update_id: 0,
+			message: photoMessage(user.payload, user.payload.id),
+		});
+
+		expect(handler).toHaveBeenCalledTimes(0);
+	});
+
+	test("bot.on(filters.photo, handler) matches photo messages", async () => {
+		const handler = mock(() => {});
+		const bot = new Bot(TOKEN).on(filters.photo, () => {
+			handler();
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+
+		await env.emitUpdate({
+			update_id: 0,
+			message: photoMessage(user.payload, user.payload.id),
+		});
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	test("bot.on(filters.from(42), handler) matches the correct user", async () => {
+		const handler = mock(() => {});
+		const bot = new Bot(TOKEN).on(filters.from(42), () => {
+			handler();
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+
+		await env.emitUpdate({
+			update_id: 0,
+			message: textMessage(
+				"hello",
+				{ id: 42, first_name: "Bob", is_bot: false },
+				42,
+			),
+		});
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	test("bot.on(filters.from(42), handler) does not match a different user", async () => {
+		const handler = mock(() => {});
+		const bot = new Bot(TOKEN).on(filters.from(42), () => {
+			handler();
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+
+		await env.emitUpdate({
+			update_id: 0,
+			message: textMessage(
+				"hello",
+				{ id: 99, first_name: "Eve", is_bot: false },
+				99,
+			),
+		});
+
+		expect(handler).toHaveBeenCalledTimes(0);
+	});
+
+	test("filter-only falls through to next middleware when filter rejects", async () => {
+		const fallback = mock(() => {});
+		const filtered = mock(() => {});
+		const bot = new Bot(TOKEN)
+			.on(filters.photo, () => {
+				filtered();
+			})
+			.on("message", () => {
+				fallback();
+			});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+
+		// text message — photo filter won't match, should fall through to fallback
+		await env.emitUpdate({
+			update_id: 0,
+			message: textMessage("hello", user.payload, user.payload.id),
+		});
+
+		expect(filtered).toHaveBeenCalledTimes(0);
+		expect(fallback).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe("filter-only .on() — type narrowing", () => {
+	test("bot.on(filters.text, ctx => ...): ctx.text is string", () => {
+		new Bot(TOKEN).on(filters.text, (ctx) => {
+			expectTypeOf(ctx.text).toBeString();
+		});
+	});
+
+	test("bot.on(filters.photo, ctx => ...): ctx.attachment is PhotoAttachment", () => {
+		new Bot(TOKEN).on(filters.photo, (ctx) => {
+			expectTypeOf(ctx.attachment).toEqualTypeOf<PhotoAttachment>();
+		});
+	});
+
+	test("bot.on(filters.pm, ctx => ...): chatType narrowed to 'private'", () => {
+		new Bot(TOKEN).on(filters.pm, (ctx) => {
+			expectTypeOf(ctx.chatType).toEqualTypeOf<"private">();
+		});
+	});
+
+	test("derives preserved through filter-only .on()", () => {
+		new Bot(TOKEN)
+			.derive(() => ({ myProp: 42 as const }))
+			.on(filters.text, (ctx) => {
+				expectTypeOf(ctx.myProp).toEqualTypeOf<42>();
+				expectTypeOf(ctx.text).toBeString();
+			});
+	});
+});
