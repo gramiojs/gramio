@@ -235,9 +235,9 @@ export class Bot<
 			"onError" | "onStart" | "onStop" | "onResponseError" | "onResponse"
 		>,
 	>(type: T, ...context: Parameters<Hooks.Store<Errors>[T][0]>) {
-		for await (const hook of this.hooks[type]) {
-			//TODO: solve that later
-			//@ts-expect-error
+		for await (const hook of this.hooks[type] as ((
+			...args: Parameters<Hooks.Store<Errors>[T][0]>
+		) => unknown)[]) {
 			await hook(...context);
 		}
 	}
@@ -310,16 +310,11 @@ export class Bot<
 				return err;
 			}
 
-			this.runImmutableHooks(
-				"onResponse",
-				// TODO: fix type error
-				// @ts-expect-error
-				{
-					method,
-					params,
-					response: data.result as any,
-				},
-			);
+			this.runImmutableHooks("onResponse", {
+				method,
+				params,
+				response: data.result,
+			} as Parameters<Hooks.OnResponse>[0]);
 
 			return data.result;
 		};
@@ -477,9 +472,7 @@ export class Bot<
 		if (handler) {
 			this.hooks.onError.push(async (errContext) => {
 				if (errContext.context.is(updateNameOrHandler))
-					// TODO:  Sorry... fix later
-					//@ts-expect-error
-					await handler(errContext);
+					await handler(errContext as Parameters<typeof handler>[0]);
 			});
 		}
 
@@ -693,17 +686,13 @@ export class Bot<
 					? [methodsOrHandler]
 					: methodsOrHandler;
 
-			// TODO: remove error
-			// @ts-expect-error
-			this.hooks.preRequest.push(async (context) => {
-				// TODO: remove ts-ignore
-				// @ts-expect-error
-				if (methods.includes(context.method)) return handler(context);
+			this.hooks.preRequest.push((async (context) => {
+				if ((methods as readonly string[]).includes(context.method))
+					return handler(context as Hooks.PreRequestContext<Methods>);
 
 				return context;
-			});
-			// @ts-expect-error
-		} else this.hooks.preRequest.push(methodsOrHandler);
+			}) as Hooks.PreRequest);
+		} else this.hooks.preRequest.push(methodsOrHandler as Hooks.PreRequest);
 
 		return this;
 	}
@@ -739,15 +728,11 @@ export class Bot<
 					? [methodsOrHandler]
 					: methodsOrHandler;
 
-			this.hooks.onResponse.push(async (context) => {
-				// TODO: remove ts-ignore
-				// @ts-expect-error
-				if (methods.includes(context.method)) return handler(context);
-
-				return context;
-			});
-			// @ts-expect-error
-		} else this.hooks.onResponse.push(methodsOrHandler);
+			this.hooks.onResponse.push((async (context) => {
+				if ((methods as readonly string[]).includes(context.method))
+					return handler(context as Parameters<Handler>[0]);
+			}) as Hooks.OnResponse);
+		} else this.hooks.onResponse.push(methodsOrHandler as Hooks.OnResponse);
 
 		return this;
 	}
@@ -783,15 +768,14 @@ export class Bot<
 					? [methodsOrHandler]
 					: methodsOrHandler;
 
-			this.hooks.onResponseError.push(async (context) => {
-				// TODO: remove ts-ignore
-				// @ts-expect-error
-				if (methods.includes(context.method)) return handler(context);
-
-				return context;
-			});
-			// @ts-expect-error
-		} else this.hooks.onResponseError.push(methodsOrHandler);
+			this.hooks.onResponseError.push((async (context, api) => {
+				if ((methods as readonly string[]).includes(context.method))
+					return handler(context as Parameters<Handler>[0], api);
+			}) as Hooks.OnResponseError);
+		} else
+			this.hooks.onResponseError.push(
+				methodsOrHandler as Hooks.OnResponseError,
+			);
 
 		return this;
 	}
@@ -837,15 +821,14 @@ export class Bot<
 					? [methodsOrHandler]
 					: methodsOrHandler;
 
-			this.hooks.onApiCall.push(async (context, next) => {
-				// @ts-expect-error
-				if (methods.includes(context.method)) return handler(context, next);
+			this.hooks.onApiCall.push((async (context, next) => {
+				if ((methods as readonly string[]).includes(context.method))
+					return handler(context as Parameters<Handler>[0], next);
 
 				return next();
-			});
+			}) as Hooks.OnApiCall);
 		} else {
-			// @ts-expect-error
-			this.hooks.onApiCall.push(methodsOrHandler);
+			this.hooks.onApiCall.push(methodsOrHandler as Hooks.OnApiCall);
 		}
 
 		return this;
