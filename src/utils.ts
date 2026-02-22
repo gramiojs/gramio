@@ -7,38 +7,38 @@
 import { TelegramError } from "./errors.ts";
 import { sleep } from "./utils.internal.ts";
 
+type SuppressResult<T> =
+	| { value: T; caught: false }
+	| { value: unknown; caught: true };
+
 async function suppressError<T>(
 	fn: () => Promise<T>,
-): Promise<[T | unknown, boolean]> {
+): Promise<SuppressResult<T>> {
 	try {
-		return [await fn(), false];
+		return { value: await fn(), caught: false };
 	} catch (error) {
-		return [error, true];
+		return { value: error, caught: true };
 	}
 }
 
 export async function withRetries<Result>(
 	resultPromise: () => Promise<Result>,
 ): Promise<Result> {
-	let [result, isFromCatch] = await suppressError(resultPromise);
+	let state = await suppressError(resultPromise);
 
-	while (result instanceof TelegramError) {
-		const retryAfter = result.payload?.retry_after;
+	while (state.value instanceof TelegramError) {
+		const retryAfter = state.value.payload?.retry_after;
 
 		if (retryAfter) {
 			await sleep(retryAfter * 1000);
-			[result, isFromCatch] = await suppressError(resultPromise);
+			state = await suppressError(resultPromise);
 		} else {
-			if (isFromCatch) throw result;
-
-			// TODO: hard conditional typings. fix later
-			// @ts-expect-error
-			return result;
+			if (state.caught) throw state.value;
+			return state.value;
 		}
 	}
 
-	if (result instanceof Error && isFromCatch) throw result;
+	if (state.caught) throw state.value;
 
-	// @ts-expect-error
-	return result;
+	return state.value;
 }
