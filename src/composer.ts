@@ -33,7 +33,7 @@ type Ctx<K extends keyof ContextsMapping<AnyBot>> = InstanceType<
 	ContextsMapping<AnyBot>[K]
 >;
 
-/** Teach EventComposer.extend() to accept Plugin with proper type extraction */
+/** Teach EventComposer about GramIO-specific overloads */
 declare module "@gramio/composer" {
 	interface EventComposer<TBase, TEventMap, TIn, TOut, TExposed, TDerives> {
 		extend<P extends AnyPlugin>(

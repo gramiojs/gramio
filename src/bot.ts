@@ -879,13 +879,10 @@ export class Bot<
 		handler?: Handler<any>,
 	) {
 		if (handler) {
-			const filter = filterOrHandler as (ctx: any) => boolean;
 			this.updates.composer.on(
-				updateName as T | T[],
-				((ctx: any, next: any) => {
-					if (filter(ctx)) return handler(ctx, next);
-					return next();
-				}) as Handler<ContextType<AnyBot, T>>,
+				updateName as any,
+				filterOrHandler as any,
+				handler,
 			);
 		} else {
 			this.updates.composer.on(

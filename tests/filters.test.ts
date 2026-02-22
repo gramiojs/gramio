@@ -1365,3 +1365,33 @@ describe("filters — boolean filters (no narrowing) preserve full context", () 
 		});
 	});
 });
+
+describe("filters — guard() narrows types for downstream handlers", () => {
+	test("guard(filters.video).on('message', ctx) narrows attachment to VideoAttachment", () => {
+		const bot = new Bot(TOKEN);
+		bot.updates.composer
+			.guard(filters.video)
+			.on("message", (ctx) => {
+				// VideoAttachment-specific properties accessible
+				expectTypeOf(ctx.attachment.duration).toBeNumber();
+				expectTypeOf(ctx.attachment.width).toBeNumber();
+				expectTypeOf(ctx.attachment.height).toBeNumber();
+				expectTypeOf(ctx.reply).toBeFunction();
+			});
+	});
+
+	test("guard(filters.text).on('message', ctx) narrows text to string", () => {
+		const bot = new Bot(TOKEN);
+		bot.updates.composer.guard(filters.text).on("message", (ctx) => {
+			expectTypeOf(ctx.text).toBeString();
+			expectTypeOf(ctx.reply).toBeFunction();
+		});
+	});
+
+	test("guard(filters.pm).on('message', ctx) narrows chatType to 'private'", () => {
+		const bot = new Bot(TOKEN);
+		bot.updates.composer.guard(filters.pm).on("message", (ctx) => {
+			expectTypeOf(ctx.chatType).toEqualTypeOf<"private">();
+		});
+	});
+});
