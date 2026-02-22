@@ -10,10 +10,7 @@ import {
 	stop,
 } from "@gramio/composer";
 import type { Context, ContextsMapping } from "@gramio/contexts";
-import type {
-	TelegramReactionType,
-	TelegramReactionTypeEmojiEmoji,
-} from "@gramio/types";
+import type { TelegramReactionTypeEmojiEmoji } from "@gramio/types";
 import type {
 	AnyBot,
 	AnyPlugin,
@@ -60,30 +57,19 @@ export const { Composer } = createComposer({
 			const reactions = Array.isArray(trigger) ? trigger : [trigger];
 
 			return this.on("message_reaction", (context, next) => {
-				const newReactions: TelegramReactionType[] = [];
-
-				for (const reaction of context.newReactions) {
-					if (reaction.type !== "emoji") continue;
-
-					const foundIndex = context.oldReactions.findIndex(
-						(oldReaction: TelegramReactionType) =>
-							oldReaction.type === "emoji" &&
-							oldReaction.emoji === reaction.emoji,
-					);
-					if (foundIndex === -1) {
-						newReactions.push(reaction);
-					} else {
-						// TODO: REFACTOR
-						context.oldReactions.splice(foundIndex, 1);
-					}
+				const oldEmojis = new Set<string>();
+				for (const r of context.oldReactions) {
+					if (r.type === "emoji") oldEmojis.add(r.emoji);
 				}
 
-				if (
-					!newReactions.some(
-						(x) => x.type === "emoji" && reactions.includes(x.emoji),
-					)
-				)
-					return next();
+				const hasNewMatchingReaction = context.newReactions.some(
+					(reaction) =>
+						reaction.type === "emoji" &&
+						!oldEmojis.has(reaction.emoji) &&
+						reactions.includes(reaction.emoji),
+				);
+
+				if (!hasNewMatchingReaction) return next();
 
 				return handler(context);
 			});
@@ -252,28 +238,27 @@ export const { Composer } = createComposer({
 			}
 
 			return this.on(["message", "business_message"], (context, next) => {
-				// TODO: change to find
-				if (
-					context.entities?.some((entity) => {
-						if (entity.type !== "bot_command" || entity.offset > 0)
-							return false;
+				const entity = context.entities?.find((entity) => {
+					if (entity.type !== "bot_command" || entity.offset > 0) return false;
 
-						const botInfo: { username?: string } | undefined = context.bot.info;
-						const cmd = context.text
-							?.slice(1, entity.length)
-							?.replace(
-								botInfo?.username ? `@${botInfo.username}` : /@[a-zA-Z0-9_]+/,
-								"",
-							);
-						(context as any).args =
-							context.text?.slice(entity.length).trim() || null;
-
-						return normalizedCommands.some(
-							(normalizedCommand) => cmd === normalizedCommand,
+					const botInfo: { username?: string } | undefined = context.bot.info;
+					const cmd = context.text
+						?.slice(1, entity.length)
+						?.replace(
+							botInfo?.username ? `@${botInfo.username}` : /@[a-zA-Z0-9_]+/,
+							"",
 						);
-					})
-				)
+
+					return normalizedCommands.some(
+						(normalizedCommand) => cmd === normalizedCommand,
+					);
+				});
+
+				if (entity) {
+					(context as any).args =
+						context.text?.slice(entity.length).trim() || null;
 					return handler(context as any);
+				}
 
 				return next();
 			});
