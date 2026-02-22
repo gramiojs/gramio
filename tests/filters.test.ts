@@ -1522,21 +1522,33 @@ describe("filter-only .on() — runtime behavior", () => {
 });
 
 describe("filter-only .on() — type narrowing", () => {
-	test("bot.on(filters.text, ctx => ...): ctx.text is string", () => {
+	test("bot.on(filters.text, ctx => ...): ctx.text is string, ctx.send works", () => {
 		new Bot(TOKEN).on(filters.text, (ctx) => {
 			expectTypeOf(ctx.text).toBeString();
+			// send() comes from the compatible event context union (message-like events)
+			expectTypeOf(ctx.send).toBeFunction();
 		});
 	});
 
-	test("bot.on(filters.photo, ctx => ...): ctx.attachment is PhotoAttachment", () => {
+	test("bot.on(filters.photo, ctx => ...): ctx.attachment is PhotoAttachment, ctx.send works", () => {
 		new Bot(TOKEN).on(filters.photo, (ctx) => {
 			expectTypeOf(ctx.attachment).toEqualTypeOf<PhotoAttachment>();
+			expectTypeOf(ctx.send).toBeFunction();
 		});
 	});
 
-	test("bot.on(filters.pm, ctx => ...): chatType narrowed to 'private'", () => {
+	test("bot.on(filters.pm, ctx => ...): chatType narrowed to 'private', ctx.send works", () => {
 		new Bot(TOKEN).on(filters.pm, (ctx) => {
 			expectTypeOf(ctx.chatType).toEqualTypeOf<"private">();
+			expectTypeOf(ctx.send).toBeFunction();
+		});
+	});
+
+	test("bot.on(filters.from(42), ctx => ...): boolean filter, ctx.send works", () => {
+		// boolean filter → Context<Bot> & Derives["global"] (no CompatibleUpdates, no narrowing)
+		new Bot(TOKEN).on(filters.from(42), (ctx) => {
+			// base Context, no send — but that's intentional for boolean filters
+			expectTypeOf(ctx.updateId).toEqualTypeOf<number | undefined>();
 		});
 	});
 
@@ -1546,6 +1558,7 @@ describe("filter-only .on() — type narrowing", () => {
 			.on(filters.text, (ctx) => {
 				expectTypeOf(ctx.myProp).toEqualTypeOf<42>();
 				expectTypeOf(ctx.text).toBeString();
+				expectTypeOf(ctx.send).toBeFunction();
 			});
 	});
 });

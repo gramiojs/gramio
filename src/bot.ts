@@ -4,6 +4,7 @@ import type { CallbackData } from "@gramio/callback-data";
 import type { EventComposer } from "@gramio/composer";
 import {
 	type Attachment,
+	type BotLike,
 	type Context,
 	type ContextType,
 	PhotoAttachment,
@@ -42,6 +43,16 @@ import type {
 import { Updates } from "./updates.js";
 import { IS_BUN, type MaybeArray, simplifyObject } from "./utils.internal.ts";
 import { withRetries } from "./utils.ts";
+
+/**
+ * Yields the subset of UpdateName whose context type contains all keys from Narrowing.
+ * Used to give filter-only .on() handlers a rich union type instead of the bare Context base class.
+ */
+type CompatibleUpdates<B extends BotLike, Narrowing> = {
+	[K in UpdateName]: keyof Narrowing & string extends keyof ContextType<B, K>
+		? K
+		: never;
+}[UpdateName];
 
 /** Bot instance
  *
@@ -854,7 +865,11 @@ export class Bot<
 	/** Register handler with a type-narrowing filter (auto-discovers matching events) */
 	on<Narrowing>(
 		filter: (ctx: any) => ctx is Narrowing,
-		handler: Handler<Context<typeof this> & Derives["global"] & Narrowing>,
+		handler: Handler<
+			ContextType<typeof this, CompatibleUpdates<typeof this, Narrowing>> &
+				Derives["global"] &
+				Narrowing
+		>,
 	): this;
 
 	/** Register handler with a boolean filter (all updates) */

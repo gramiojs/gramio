@@ -21,6 +21,15 @@ import type {
 import type { MaybeArray } from "./utils.internal.js";
 
 /**
+ * Yields the subset of UpdateName whose context type contains all keys from Narrowing.
+ */
+type CompatibleUpdates<B extends BotLike, Narrowing> = {
+	[K in UpdateName]: keyof Narrowing & string extends keyof ContextType<B, K>
+		? K
+		: never;
+}[UpdateName];
+
+/**
  * `Plugin` is an object  from which you can extends in Bot instance and adopt types
  *
  * @example
@@ -245,7 +254,11 @@ export class Plugin<
 	/** Register handler with a type-narrowing filter (auto-discovers matching events) */
 	on<Narrowing>(
 		filter: (ctx: any) => ctx is Narrowing,
-		handler: Handler<Context<BotLike> & Derives["global"] & Narrowing>,
+		handler: Handler<
+			ContextType<BotLike, CompatibleUpdates<BotLike, Narrowing>> &
+				Derives["global"] &
+				Narrowing
+		>,
 	): this;
 
 	/** Register handler with a boolean filter (all updates) */
