@@ -1,47 +1,9 @@
 import { describe, expect, mock, test } from "bun:test";
 import { apiError, TelegramTestEnvironment } from "@gramio/test";
-import type { TelegramMessage } from "@gramio/types";
 import { Bot } from "../src/bot.ts";
 import { Plugin } from "../src/plugin.ts";
 
 const TOKEN = "test-token";
-
-function expectString(value: unknown, message: string): string {
-	if (typeof value !== "string") {
-		throw new Error(message);
-	}
-
-	return value;
-}
-
-/** Helper: build a command message with proper entities */
-function commandMessage(
-	text: string,
-	user: { id: number; first_name: string; is_bot: boolean },
-	chatId: number,
-): TelegramMessage {
-	const cmdEnd = text.indexOf(" ") === -1 ? text.length : text.indexOf(" ");
-	return {
-		message_id: Date.now(),
-		date: Math.floor(Date.now() / 1000),
-		chat: { id: chatId, type: "private" },
-		from: user,
-		text,
-		entities: [{ type: "bot_command", offset: 0, length: cmdEnd }],
-	};
-}
-
-/** Helper: emit a command update through the environment */
-function emitCommand(
-	env: TelegramTestEnvironment,
-	user: ReturnType<TelegramTestEnvironment["createUser"]>,
-	text: string,
-) {
-	return env.emitUpdate({
-		update_id: 0,
-		message: commandMessage(text, user.payload, user.payload.id),
-	});
-}
 
 describe("@gramio/test — command handler", () => {
 	test("responds to /start command", async () => {
@@ -51,7 +13,7 @@ describe("@gramio/test — command handler", () => {
 		const env = new TelegramTestEnvironment(bot);
 		const user = env.createUser({ first_name: "Alice" });
 
-		await emitCommand(env, user, "/start");
+		await user.sendCommand("start");
 
 		expect(env.apiCalls).toHaveLength(1);
 		expect(env.apiCalls[0].method).toBe("sendMessage");
@@ -70,7 +32,7 @@ describe("@gramio/test — command handler", () => {
 		const env = new TelegramTestEnvironment(bot);
 		const user = env.createUser({ first_name: "Bob" });
 
-		await emitCommand(env, user, "/echo hello world");
+		await user.sendCommand("echo", "hello world");
 
 		expect(capturedArgs!).toBe("hello world");
 		expect(env.apiCalls[0].params).toHaveProperty("text", "Echo: hello world");
@@ -88,7 +50,7 @@ describe("@gramio/test — command handler", () => {
 		const env = new TelegramTestEnvironment(bot);
 		const user = env.createUser({ first_name: "Charlie" });
 
-		await emitCommand(env, user, "/ping");
+		await user.sendCommand("ping");
 
 		expect(capturedArgs).toBeNull();
 	});
@@ -102,8 +64,8 @@ describe("@gramio/test — command handler", () => {
 		const env = new TelegramTestEnvironment(bot);
 		const user = env.createUser({ first_name: "Dave" });
 
-		await emitCommand(env, user, "/help");
-		await emitCommand(env, user, "/h");
+		await user.sendCommand("help");
+		await user.sendCommand("h");
 
 		expect(handler).toHaveBeenCalledTimes(2);
 	});
@@ -117,7 +79,7 @@ describe("@gramio/test — command handler", () => {
 		const env = new TelegramTestEnvironment(bot);
 		const user = env.createUser({ first_name: "Eve" });
 
-		await emitCommand(env, user, "/other");
+		await user.sendCommand("other");
 
 		expect(handler).not.toHaveBeenCalled();
 	});
@@ -140,6 +102,60 @@ describe("@gramio/test — command handler", () => {
 		expect(() => {
 			new Bot(TOKEN).command("/start", () => {});
 		}).toThrow("Do not use / in command name");
+	});
+});
+
+describe("@gramio/test — startParameter handler", () => {
+	test("matches exact deep-link payload", async () => {
+		let rawPayload: string | undefined;
+
+		const bot = new Bot(TOKEN).startParameter("ref_123", (ctx) => {
+			rawPayload = ctx.rawStartPayload;
+			return ctx.send("Deep link received!");
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+
+		await user.sendCommand("start", "ref_123");
+
+		expect(rawPayload).toBe("ref_123");
+		expect(env.lastApiCall("sendMessage")?.params).toHaveProperty(
+			"text",
+			"Deep link received!",
+		);
+	});
+
+	test("matches regex deep-link payload", async () => {
+		let matched = false;
+
+		const bot = new Bot(TOKEN).startParameter(/^ref_(.+)$/, (ctx) => {
+			matched = true;
+			return ctx.send(`Ref: ${ctx.rawStartPayload}`);
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Bob" });
+
+		await user.sendCommand("start", "ref_abc");
+
+		expect(matched).toBe(true);
+	});
+
+	test("does not match a different deep-link payload", async () => {
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).startParameter("ref_123", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Charlie" });
+
+		await user.sendCommand("start", "other_payload");
+
+		expect(handler).not.toHaveBeenCalled();
 	});
 });
 
@@ -186,9 +202,7 @@ describe("@gramio/test — hears handler", () => {
 		await user.sendMessage("order 42");
 
 		expect(capturedArgs).not.toBeNull();
-		if (!capturedArgs) throw new Error("expected args");
-		const arg = expectString(capturedArgs[1], "expected arg at index 1");
-		expect(arg).toBe("42");
+		expect(capturedArgs![1]).toBe("42");
 	});
 
 	test("matches array of strings", async () => {
@@ -234,12 +248,9 @@ describe("@gramio/test — callbackQuery handler", () => {
 		const user = env.createUser({ first_name: "Alice" });
 
 		const msg = await user.sendMessage("click me");
-		await user.click("btn:1", msg);
+		await user.on(msg).click("btn:1");
 
-		const answerCall = env.apiCalls.find(
-			(c) => c.method === "answerCallbackQuery",
-		);
-		expect(answerCall).toBeDefined();
+		expect(env.lastApiCall("answerCallbackQuery")).toBeDefined();
 	});
 
 	test("does not match different callback data", async () => {
@@ -252,12 +263,12 @@ describe("@gramio/test — callbackQuery handler", () => {
 		const user = env.createUser({ first_name: "Bob" });
 
 		const msg = await user.sendMessage("click me");
-		await user.click("btn:2", msg);
+		await user.on(msg).click("btn:2");
 
 		expect(handler).not.toHaveBeenCalled();
 	});
 
-	test("matches regex callback data", async () => {
+	test("matches regex callback data and provides args", async () => {
 		let capturedData: RegExpMatchArray | null = null;
 
 		const bot = new Bot(TOKEN).callbackQuery(/^action:(\w+)$/, (ctx) => {
@@ -269,12 +280,10 @@ describe("@gramio/test — callbackQuery handler", () => {
 		const user = env.createUser({ first_name: "Charlie" });
 
 		const msg = await user.sendMessage("test");
-		await user.click("action:delete", msg);
+		await user.on(msg).click("action:delete");
 
 		expect(capturedData).not.toBeNull();
-		if (!capturedData) throw new Error("expected data");
-		const data = expectString(capturedData[1], "expected data at index 1");
-		expect(data).toBe("delete");
+		expect(capturedData![1]).toBe("delete");
 	});
 });
 
@@ -304,7 +313,7 @@ describe("@gramio/test — .on() handler", () => {
 
 		await user.sendMessage("hello");
 		const msg = await user.sendMessage("test");
-		await user.click("data", msg);
+		await user.on(msg).click("data");
 
 		expect(handler).toHaveBeenCalledTimes(3);
 	});
@@ -452,12 +461,11 @@ describe("@gramio/test — onError hook", () => {
 
 		await user.sendMessage("trigger error");
 
-		expect(caughtError).toBeDefined();
 		expect(caughtError?.message).toBe("Something went wrong");
 		expect(caughtKind).toBe("UNKNOWN");
 	});
 
-	test("onError catches API errors via apiError mock", async () => {
+	test("catches API errors via apiError mock", async () => {
 		let caughtError: Error | undefined;
 
 		const bot = new Bot(TOKEN)
@@ -468,15 +476,12 @@ describe("@gramio/test — onError hook", () => {
 
 		// @ts-expect-error source Bot vs packaged AnyBot
 		const env = new TelegramTestEnvironment(bot);
-		env.onApi(
-			"sendMessage",
-			apiError(403, "Forbidden: bot was blocked by the user"),
-		);
+		env.onApi("sendMessage", apiError(403, "Forbidden: bot was blocked by the user"));
+
 		const user = env.createUser({ first_name: "Bob" });
 
 		await user.sendMessage("trigger");
 
-		expect(caughtError).toBeDefined();
 		expect(caughtError?.message).toBe("Forbidden: bot was blocked by the user");
 	});
 
@@ -526,9 +531,9 @@ describe("@gramio/test — API mocking", () => {
 
 		await user.sendMessage("trigger");
 
-		const call = env.apiCalls.find((c) => c.method === "sendMessage");
-		expect(call).toBeDefined();
-		expect(call?.response).toMatchObject({ message_id: 999 });
+		expect(env.lastApiCall("sendMessage")?.response).toMatchObject({
+			message_id: 999,
+		});
 	});
 
 	test("dynamic response mock", async () => {
@@ -547,9 +552,10 @@ describe("@gramio/test — API mocking", () => {
 
 		await user.sendMessage("trigger");
 
-		const call = env.apiCalls.find((c) => c.method === "sendMessage");
-		expect(call).toBeDefined();
-		expect(call?.response).toHaveProperty("text", "hi");
+		expect(env.lastApiCall("sendMessage")?.response).toHaveProperty(
+			"text",
+			"hi",
+		);
 	});
 
 	test("error mock with apiError", async () => {
@@ -563,10 +569,7 @@ describe("@gramio/test — API mocking", () => {
 
 		// @ts-expect-error source Bot vs packaged AnyBot
 		const env = new TelegramTestEnvironment(bot);
-		env.onApi(
-			"sendMessage",
-			apiError(429, "Too Many Requests", { retry_after: 30 }),
-		);
+		env.onApi("sendMessage", apiError(429, "Too Many Requests", { retry_after: 30 }));
 
 		const user = env.createUser({ first_name: "Charlie" });
 
@@ -585,16 +588,13 @@ describe("@gramio/test — API mocking", () => {
 			date: 0,
 			chat: { id: 1, type: "private" as const },
 		});
-
 		env.offApi("sendMessage");
 
 		const user = env.createUser({ first_name: "Dave" });
 
 		await user.sendMessage("trigger");
 
-		const call = env.apiCalls.find((c) => c.method === "sendMessage");
-		expect(call).toBeDefined();
-		expect((call?.response as any).message_id).not.toBe(999);
+		expect((env.lastApiCall("sendMessage")?.response as any).message_id).not.toBe(999);
 	});
 
 	test("offApi with no args resets all overrides", async () => {
@@ -607,16 +607,13 @@ describe("@gramio/test — API mocking", () => {
 			date: 0,
 			chat: { id: 1, type: "private" as const },
 		});
-
 		env.offApi();
 
 		const user = env.createUser({ first_name: "Eve" });
 
 		await user.sendMessage("trigger");
 
-		const call = env.apiCalls.find((c) => c.method === "sendMessage");
-		expect(call).toBeDefined();
-		expect((call?.response as any).message_id).not.toBe(999);
+		expect((env.lastApiCall("sendMessage")?.response as any).message_id).not.toBe(999);
 	});
 });
 
@@ -631,7 +628,7 @@ describe("@gramio/test — chat and user management", () => {
 		const user = env.createUser({ first_name: "Alice" });
 		const group = env.createChat({ type: "group", title: "Test Group" });
 
-		await user.sendMessage(group, "Hello group!");
+		await user.in(group).sendMessage("Hello group!");
 
 		expect(handler).toHaveBeenCalledTimes(1);
 	});
@@ -677,8 +674,8 @@ describe("@gramio/test — chat and user management", () => {
 		const user = env.createUser({ first_name: "Charlie" });
 		const group = env.createChat({ type: "group", title: "Test Group" });
 
-		await user.sendMessage(group, "Message 1");
-		await user.sendMessage(group, "Message 2");
+		await user.in(group).sendMessage("Message 1");
+		await user.in(group).sendMessage("Message 2");
 
 		expect(group.messages).toHaveLength(2);
 	});
@@ -770,11 +767,51 @@ describe("@gramio/test — apiCalls tracking", () => {
 
 		await user.sendMessage("trigger");
 
-		const call = env.apiCalls.find((c) => c.method === "sendMessage");
-		expect(call).toBeDefined();
+		const call = env.lastApiCall("sendMessage");
 		expect(call?.method).toBe("sendMessage");
 		expect(call?.params).toHaveProperty("text", "reply");
 		expect(call?.response).toHaveProperty("message_id");
+	});
+
+	test("clearApiCalls empties the call log", async () => {
+		const bot = new Bot(TOKEN).on("message", (ctx) => ctx.send("hi"));
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Charlie" });
+
+		await user.sendMessage("first");
+		env.clearApiCalls();
+		await user.sendMessage("second");
+
+		expect(env.apiCalls).toHaveLength(1);
+	});
+
+	test("lastApiCall returns the most recent call for a method", async () => {
+		const bot = new Bot(TOKEN).on("message", async (ctx) => {
+			await ctx.send("first");
+			await ctx.send("second");
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Dave" });
+
+		await user.sendMessage("trigger");
+
+		expect(env.lastApiCall("sendMessage")?.params).toHaveProperty(
+			"text",
+			"second",
+		);
+	});
+
+	test("lastApiCall returns undefined when method was never called", async () => {
+		const bot = new Bot(TOKEN);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+
+		expect(env.lastApiCall("sendMessage")).toBeUndefined();
 	});
 });
 
@@ -789,7 +826,7 @@ describe("@gramio/test — reaction handler", () => {
 		const user = env.createUser({ first_name: "Alice" });
 		const msg = await user.sendMessage("react here");
 
-		await user.react(["👍"], msg);
+		await user.on(msg).react("👍");
 
 		expect(handler).toHaveBeenCalledTimes(1);
 	});
@@ -804,7 +841,7 @@ describe("@gramio/test — reaction handler", () => {
 		const user = env.createUser({ first_name: "Bob" });
 		const msg = await user.sendMessage("react here");
 
-		await user.react(["❤"], msg);
+		await user.on(msg).react("❤");
 
 		expect(handler).not.toHaveBeenCalled();
 	});
@@ -819,12 +856,12 @@ describe("@gramio/test — reaction handler", () => {
 		const user = env.createUser({ first_name: "Charlie" });
 		const msg = await user.sendMessage("react here");
 
-		await user.react(["❤"], msg);
+		await user.on(msg).react("❤");
 
 		expect(handler).toHaveBeenCalledTimes(1);
 	});
 
-	test("does not trigger when emoji is removed (old reaction), not added", async () => {
+	test("does not trigger when emoji is removed, not added", async () => {
 		const handler = mock(() => {});
 
 		const bot = new Bot(TOKEN).reaction("👍", handler);
@@ -834,18 +871,15 @@ describe("@gramio/test — reaction handler", () => {
 		const user = env.createUser({ first_name: "Dave" });
 		const msg = await user.sendMessage("react here");
 
-		// First add 👍
-		await user.react(["👍"], msg);
+		await user.on(msg).react("👍");
 		const callsBefore = handler.mock.calls.length;
 
-		// Then remove 👍 (react with empty array to clear)
-		await user.react([], msg);
+		await user.on(msg).react([]);
 
-		// Handler should not fire again for the removal
 		expect(handler.mock.calls.length).toBe(callsBefore);
 	});
 
-	test("tracks reactions per-user: second add of same emoji is a no-op", async () => {
+	test("second add of same emoji is a no-op", async () => {
 		const handler = mock(() => {});
 
 		const bot = new Bot(TOKEN).reaction("👍", handler);
@@ -855,11 +889,9 @@ describe("@gramio/test — reaction handler", () => {
 		const user = env.createUser({ first_name: "Eve" });
 		const msg = await user.sendMessage("react here");
 
-		await user.react(["👍"], msg);
-		// React again with the same emoji — it's already in old_reaction, so not a new addition
-		await user.react(["👍"], msg);
+		await user.on(msg).react("👍");
+		await user.on(msg).react("👍");
 
-		// Only first react fires the handler
 		expect(handler).toHaveBeenCalledTimes(1);
 	});
 
@@ -874,25 +906,10 @@ describe("@gramio/test — reaction handler", () => {
 		const bob = env.createUser({ first_name: "Bob" });
 		const msg = await alice.sendMessage("react here");
 
-		await alice.react(["👍"], msg);
-		await bob.react(["👍"], msg);
+		await alice.on(msg).react("👍");
+		await bob.on(msg).react("👍");
 
 		expect(handler).toHaveBeenCalledTimes(2);
-	});
-
-	test("user.on(msg).react() scoped shorthand triggers reaction handler", async () => {
-		const handler = mock(() => {});
-
-		const bot = new Bot(TOKEN).reaction("🔥", handler);
-
-		// @ts-expect-error source Bot vs packaged AnyBot
-		const env = new TelegramTestEnvironment(bot);
-		const user = env.createUser({ first_name: "Frank" });
-		const msg = await user.sendMessage("test");
-
-		await user.on(msg).react("🔥");
-
-		expect(handler).toHaveBeenCalledTimes(1);
 	});
 });
 
@@ -939,9 +956,7 @@ describe("@gramio/test — inlineQuery handler", () => {
 		await user.sendInlineQuery("search:typescript");
 
 		expect(capturedArgs).not.toBeNull();
-		if (!capturedArgs) throw new Error("expected args");
-		const match = expectString(capturedArgs[1], "expected match at index 1");
-		expect(match).toBe("typescript");
+		expect(capturedArgs![1]).toBe("typescript");
 	});
 
 	test("does not match regex that doesn't fit", async () => {
@@ -1008,10 +1023,12 @@ describe("@gramio/test — inlineQuery handler", () => {
 		expect(onResultHandler).toHaveBeenCalledTimes(1);
 	});
 
-	test("user.in(chat).sendInlineQuery() triggers inline_query handler", async () => {
-		const handler = mock(() => {});
+	test("user.in(chat).sendInlineQuery() carries chat_type", async () => {
+		let receivedChatType: string | undefined;
 
-		const bot = new Bot(TOKEN).on("inline_query", handler);
+		const bot = new Bot(TOKEN).on("inline_query", (ctx) => {
+			receivedChatType = ctx.payload.chat_type;
+		});
 
 		// @ts-expect-error source Bot vs packaged AnyBot
 		const env = new TelegramTestEnvironment(bot);
@@ -1020,7 +1037,7 @@ describe("@gramio/test — inlineQuery handler", () => {
 
 		await user.in(group).sendInlineQuery("test query");
 
-		expect(handler).toHaveBeenCalledTimes(1);
+		expect(receivedChatType).toBe("group");
 	});
 });
 
@@ -1070,9 +1087,7 @@ describe("@gramio/test — chosenInlineResult handler", () => {
 		await user.chooseInlineResult("item-1", "search:typescript");
 
 		expect(capturedArgs).not.toBeNull();
-		if (!capturedArgs) throw new Error("expected args");
-		const match = expectString(capturedArgs[1], "expected match at index 1");
-		expect(match).toBe("typescript");
+		expect(capturedArgs![1]).toBe("typescript");
 	});
 
 	test("function predicate receives full context (can check query)", async () => {
@@ -1143,21 +1158,6 @@ describe("@gramio/test — UserInChatScope", () => {
 		expect(group.members.has(user)).toBe(false);
 	});
 
-	test("user.in(chat).sendInlineQuery() triggers inline_query with chat scope", async () => {
-		const handler = mock(() => {});
-
-		const bot = new Bot(TOKEN).on("inline_query", handler);
-
-		// @ts-expect-error source Bot vs packaged AnyBot
-		const env = new TelegramTestEnvironment(bot);
-		const user = env.createUser({ first_name: "Charlie" });
-		const group = env.createChat({ type: "group", title: "Group" });
-
-		await user.in(group).sendInlineQuery("something");
-
-		expect(handler).toHaveBeenCalledTimes(1);
-	});
-
 	test("user.in(chat).on(msg).react() triggers reaction handler", async () => {
 		const handler = mock(() => {});
 
@@ -1169,7 +1169,6 @@ describe("@gramio/test — UserInChatScope", () => {
 		const group = env.createChat({ type: "group", title: "Group" });
 
 		const msg = await user.in(group).sendMessage("hi");
-
 		await user.in(group).on(msg).react("😎");
 
 		expect(handler).toHaveBeenCalledTimes(1);
@@ -1186,7 +1185,6 @@ describe("@gramio/test — UserInChatScope", () => {
 		const group = env.createChat({ type: "group", title: "Group" });
 
 		const msg = await user.in(group).sendMessage("do action?");
-
 		await user.in(group).on(msg).click("action:yes");
 
 		expect(handler).toHaveBeenCalledTimes(1);
@@ -1207,7 +1205,6 @@ describe("@gramio/test — UserOnMessageScope", () => {
 		await user.on(msg).react("💅");
 
 		expect(handler).toHaveBeenCalledTimes(1);
-		// Reaction is tracked on the message object
 		expect(msg.reactions.get(user.payload.id)).toContain("💅");
 	});
 
@@ -1238,91 +1235,6 @@ describe("@gramio/test — UserOnMessageScope", () => {
 
 		await user.on(msg).react(["👍", "❤"]);
 
-		// At least one reaction triggered the handler
 		expect(handler).toHaveBeenCalled();
-	});
-});
-
-describe("@gramio/test — command with emitUpdate for entities", () => {
-	test("command handler with emitUpdate and proper entities", async () => {
-		const bot = new Bot(TOKEN).command("start", (ctx) => ctx.send("Welcome!"));
-
-		// @ts-expect-error source Bot vs packaged AnyBot
-		const env = new TelegramTestEnvironment(bot);
-		const user = env.createUser({ first_name: "Alice" });
-
-		await env.emitUpdate({
-			update_id: 0,
-			message: {
-				message_id: 1,
-				date: Math.floor(Date.now() / 1000),
-				chat: { id: user.payload.id, type: "private" },
-				from: user.payload,
-				text: "/start",
-				entities: [{ type: "bot_command", offset: 0, length: 6 }],
-			},
-		});
-
-		expect(env.apiCalls).toHaveLength(1);
-		expect(env.apiCalls[0].method).toBe("sendMessage");
-		expect(env.apiCalls[0].params).toHaveProperty("text", "Welcome!");
-	});
-
-	test("startParameter handler via emitUpdate", async () => {
-		let rawPayload: string | undefined;
-
-		const bot = new Bot(TOKEN).startParameter("ref_123", (ctx) => {
-			rawPayload = ctx.rawStartPayload;
-			return ctx.send("Deep link received!");
-		});
-
-		// @ts-expect-error source Bot vs packaged AnyBot
-		const env = new TelegramTestEnvironment(bot);
-		const user = env.createUser({ first_name: "Bob" });
-
-		await env.emitUpdate({
-			update_id: 0,
-			message: {
-				message_id: 1,
-				date: Math.floor(Date.now() / 1000),
-				chat: { id: user.payload.id, type: "private" },
-				from: user.payload,
-				text: "/start ref_123",
-				entities: [{ type: "bot_command", offset: 0, length: 6 }],
-			},
-		});
-
-		expect(rawPayload).toBe("ref_123");
-		expect(env.apiCalls[0].params).toHaveProperty(
-			"text",
-			"Deep link received!",
-		);
-	});
-
-	test("startParameter with regex", async () => {
-		let matched = false;
-
-		const bot = new Bot(TOKEN).startParameter(/^ref_(.+)$/, (ctx) => {
-			matched = true;
-			return ctx.send(`Ref: ${ctx.rawStartPayload}`);
-		});
-
-		// @ts-expect-error source Bot vs packaged AnyBot
-		const env = new TelegramTestEnvironment(bot);
-		const user = env.createUser({ first_name: "Charlie" });
-
-		await env.emitUpdate({
-			update_id: 0,
-			message: {
-				message_id: 1,
-				date: Math.floor(Date.now() / 1000),
-				chat: { id: user.payload.id, type: "private" },
-				from: user.payload,
-				text: "/start ref_abc",
-				entities: [{ type: "bot_command", offset: 0, length: 6 }],
-			},
-		});
-
-		expect(matched).toBe(true);
 	});
 });
