@@ -32,6 +32,82 @@ export type Filter<In = any, Out extends In = In> = (
 ) => context is Out;
 
 type ExtractNarrow<F> = F extends Filter<any, infer N> ? N : never;
+
+/** Maps forward origin type strings to their concrete classes */
+type ForwardOriginMapping = {
+	user: MessageOriginUser;
+	chat: MessageOriginChat;
+	channel: MessageOriginChannel;
+	hidden_user: MessageOriginHiddenUser;
+};
+type AnyForwardOrigin = ForwardOriginMapping[keyof ForwardOriginMapping];
+
+interface ForwardOriginFilter {
+	/** Matches any forwarded message, narrowing `forwardOrigin` to the full origin union */
+	(): Filter<any, { forwardOrigin: AnyForwardOrigin }>;
+	/**
+	 * Matches forwarded messages of a specific origin type.
+	 *
+	 * @example
+	 * filters.forwardOrigin("user")      // forwarded from a real user
+	 * filters.forwardOrigin("channel")   // forwarded from a channel
+	 */
+	<T extends keyof ForwardOriginMapping>(
+		type: T,
+	): Filter<any, { forwardOrigin: ForwardOriginMapping[T] }>;
+}
+
+const forwardOriginFilter: ForwardOriginFilter = (<
+	T extends keyof ForwardOriginMapping,
+>(
+	type?: T,
+) => {
+	if (type === undefined) {
+		return ((ctx: any) => ctx.hasForwardOrigin()) as Filter<
+			any,
+			{ forwardOrigin: AnyForwardOrigin }
+		>;
+	}
+	return ((ctx: any) =>
+		ctx.hasForwardOrigin() && ctx.forwardOrigin?.type === type) as Filter<
+		any,
+		{ forwardOrigin: ForwardOriginMapping[T] }
+	>;
+}) as ForwardOriginFilter;
+
+type ChatTypeUnion = "private" | "group" | "supergroup" | "channel";
+
+interface SenderChatFilter {
+	/** Matches messages sent on behalf of a chat, narrowing `senderChat` to `Chat` */
+	(): Filter<any, { senderChat: Chat }>;
+	/**
+	 * Matches messages sent on behalf of a chat of a specific type.
+	 *
+	 * @example
+	 * filters.senderChat("channel")    // anonymous channel post
+	 * filters.senderChat("supergroup") // anonymous supergroup admin
+	 */
+	<T extends ChatTypeUnion>(
+		type: T,
+	): Filter<any, { senderChat: Chat & { type: T } }>;
+}
+
+const senderChatFilter: SenderChatFilter = (<T extends ChatTypeUnion>(
+	type?: T,
+) => {
+	if (type === undefined) {
+		return ((ctx: any) => ctx.hasSenderChat()) as Filter<
+			any,
+			{ senderChat: Chat }
+		>;
+	}
+	return ((ctx: any) =>
+		ctx.hasSenderChat() && ctx.senderChat?.type === type) as Filter<
+		any,
+		{ senderChat: Chat & { type: T } }
+	>;
+}) as SenderChatFilter;
+
 type UnionToIntersection<U> = (U extends any ? (x: U) => void : never) extends (
 	x: infer I,
 ) => void
@@ -84,49 +160,8 @@ export const filters = {
 	/** Matches messages that contain a dice */
 	dice: ((ctx: any) => ctx.hasDice()) as Filter<any, { dice: Dice }>,
 
-	/** Matches messages that are forwarded */
-	forwardOrigin: ((ctx: any) => ctx.hasForwardOrigin()) as Filter<
-		any,
-		{
-			forwardOrigin:
-				| MessageOriginUser
-				| MessageOriginChat
-				| MessageOriginChannel
-				| MessageOriginHiddenUser;
-		}
-	>,
-
-	/** Matches messages forwarded from a real user */
-	originUser: ((ctx: any) =>
-		ctx.hasForwardOrigin() &&
-		ctx.forwardOrigin?.type === "user") as Filter<
-		any,
-		{ forwardOrigin: MessageOriginUser }
-	>,
-
-	/** Matches messages forwarded on behalf of a chat */
-	originChat: ((ctx: any) =>
-		ctx.hasForwardOrigin() &&
-		ctx.forwardOrigin?.type === "chat") as Filter<
-		any,
-		{ forwardOrigin: MessageOriginChat }
-	>,
-
-	/** Matches messages forwarded from a channel */
-	originChannel: ((ctx: any) =>
-		ctx.hasForwardOrigin() &&
-		ctx.forwardOrigin?.type === "channel") as Filter<
-		any,
-		{ forwardOrigin: MessageOriginChannel }
-	>,
-
-	/** Matches messages forwarded from an unknown/hidden user */
-	originHiddenUser: ((ctx: any) =>
-		ctx.hasForwardOrigin() &&
-		ctx.forwardOrigin?.type === "hidden_user") as Filter<
-		any,
-		{ forwardOrigin: MessageOriginHiddenUser }
-	>,
+	/** Matches forwarded messages. Call without args for any origin, or pass a type to narrow precisely. */
+	forwardOrigin: forwardOriginFilter,
 
 	/** Matches messages that are replies */
 	reply: ((ctx: any) => ctx.hasReplyMessage()) as Filter<
@@ -192,11 +227,8 @@ export const filters = {
 		{ from: User; senderId: number }
 	>,
 
-	/** Matches messages sent on behalf of a chat */
-	senderChat: ((ctx: any) => ctx.hasSenderChat()) as Filter<
-		any,
-		{ senderChat: Chat }
-	>,
+	/** Matches messages sent on behalf of a chat. Pass a type to also narrow `senderChat.type`. */
+	senderChat: senderChatFilter,
 
 	/** Matches giveaway messages */
 	giveaway: ((ctx: any) => ctx.isGiveaway()) as Filter<

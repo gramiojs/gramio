@@ -1945,7 +1945,7 @@ describe("filters — senderChat filter", () => {
 		const handler = mock(() => {});
 		const bot = new Bot(TOKEN).on(
 			"message",
-			filters.senderChat,
+			filters.senderChat(),
 			() => handler(),
 		);
 
@@ -1965,7 +1965,7 @@ describe("filters — senderChat filter", () => {
 		const handler = mock(() => {});
 		const bot = new Bot(TOKEN).on(
 			"message",
-			filters.senderChat,
+			filters.senderChat(),
 			() => handler(),
 		);
 
@@ -2238,7 +2238,7 @@ describe("filters — forwardOrigin filter", () => {
 		const handler = mock(() => {});
 		const bot = new Bot(TOKEN).on(
 			"message",
-			filters.forwardOrigin,
+			filters.forwardOrigin(),
 			() => handler(),
 		);
 
@@ -2258,7 +2258,7 @@ describe("filters — forwardOrigin filter", () => {
 		const handler = mock(() => {});
 		const bot = new Bot(TOKEN).on(
 			"message",
-			filters.forwardOrigin,
+			filters.forwardOrigin(),
 			() => handler(),
 		);
 
@@ -2275,12 +2275,12 @@ describe("filters — forwardOrigin filter", () => {
 	});
 });
 
-describe("filters — originUser filter", () => {
+describe("filters — forwardOrigin('user') filter", () => {
 	test("originUser matches forwarded-from-user messages", async () => {
 		const handler = mock(() => {});
 		const bot = new Bot(TOKEN).on(
 			"message",
-			filters.originUser,
+			filters.forwardOrigin("user"),
 			() => handler(),
 		);
 
@@ -2300,7 +2300,7 @@ describe("filters — originUser filter", () => {
 		const handler = mock(() => {});
 		const bot = new Bot(TOKEN).on(
 			"message",
-			filters.originUser,
+			filters.forwardOrigin("user"),
 			() => handler(),
 		);
 
@@ -2317,12 +2317,12 @@ describe("filters — originUser filter", () => {
 	});
 });
 
-describe("filters — originChat filter", () => {
+describe("filters — forwardOrigin('chat') filter", () => {
 	test("originChat matches forwarded-from-chat messages", async () => {
 		const handler = mock(() => {});
 		const bot = new Bot(TOKEN).on(
 			"message",
-			filters.originChat,
+			filters.forwardOrigin("chat"),
 			() => handler(),
 		);
 
@@ -2342,7 +2342,7 @@ describe("filters — originChat filter", () => {
 		const handler = mock(() => {});
 		const bot = new Bot(TOKEN).on(
 			"message",
-			filters.originChat,
+			filters.forwardOrigin("chat"),
 			() => handler(),
 		);
 
@@ -2359,12 +2359,12 @@ describe("filters — originChat filter", () => {
 	});
 });
 
-describe("filters — originChannel filter", () => {
+describe("filters — forwardOrigin('channel') filter", () => {
 	test("originChannel matches forwarded-from-channel messages", async () => {
 		const handler = mock(() => {});
 		const bot = new Bot(TOKEN).on(
 			"message",
-			filters.originChannel,
+			filters.forwardOrigin("channel"),
 			() => handler(),
 		);
 
@@ -2384,7 +2384,7 @@ describe("filters — originChannel filter", () => {
 		const handler = mock(() => {});
 		const bot = new Bot(TOKEN).on(
 			"message",
-			filters.originChannel,
+			filters.forwardOrigin("channel"),
 			() => handler(),
 		);
 
@@ -2401,12 +2401,12 @@ describe("filters — originChannel filter", () => {
 	});
 });
 
-describe("filters — originHiddenUser filter", () => {
+describe("filters — forwardOrigin('hidden_user') filter", () => {
 	test("originHiddenUser matches forwarded-from-anonymous messages", async () => {
 		const handler = mock(() => {});
 		const bot = new Bot(TOKEN).on(
 			"message",
-			filters.originHiddenUser,
+			filters.forwardOrigin("hidden_user"),
 			() => handler(),
 		);
 
@@ -2426,7 +2426,7 @@ describe("filters — originHiddenUser filter", () => {
 		const handler = mock(() => {});
 		const bot = new Bot(TOKEN).on(
 			"message",
-			filters.originHiddenUser,
+			filters.forwardOrigin("hidden_user"),
 			() => handler(),
 		);
 
@@ -2664,14 +2664,28 @@ describe("filters — improved type narrowings (real types, not {})", () => {
 		});
 	});
 
-	test("senderChat: senderChat narrowed to Chat", () => {
-		new Bot(TOKEN).on("message", filters.senderChat, (ctx) => {
+	test("senderChat(): senderChat narrowed to Chat", () => {
+		new Bot(TOKEN).on("message", filters.senderChat(), (ctx) => {
 			expectTypeOf(ctx.senderChat).toEqualTypeOf<Chat>();
 		});
 	});
 
+	test("senderChat('channel'): senderChat.type narrowed to 'channel'", () => {
+		new Bot(TOKEN).on("message", filters.senderChat("channel"), (ctx) => {
+			expectTypeOf(ctx.senderChat).toEqualTypeOf<Chat & { type: "channel" }>();
+		});
+	});
+
+	test("senderChat('supergroup'): senderChat.type narrowed to 'supergroup'", () => {
+		new Bot(TOKEN).on("message", filters.senderChat("supergroup"), (ctx) => {
+			expectTypeOf(ctx.senderChat).toEqualTypeOf<
+				Chat & { type: "supergroup" }
+			>();
+		});
+	});
+
 	test("forwardOrigin: forwardOrigin narrowed to union of origin types", () => {
-		new Bot(TOKEN).on("message", filters.forwardOrigin, (ctx) => {
+		new Bot(TOKEN).on("message", filters.forwardOrigin(), (ctx) => {
 			expectTypeOf(ctx.forwardOrigin).toEqualTypeOf<
 				| MessageOriginUser
 				| MessageOriginChat
@@ -2682,25 +2696,25 @@ describe("filters — improved type narrowings (real types, not {})", () => {
 	});
 
 	test("originUser: forwardOrigin narrowed to MessageOriginUser", () => {
-		new Bot(TOKEN).on("message", filters.originUser, (ctx) => {
+		new Bot(TOKEN).on("message", filters.forwardOrigin("user"), (ctx) => {
 			expectTypeOf(ctx.forwardOrigin).toEqualTypeOf<MessageOriginUser>();
 		});
 	});
 
 	test("originChat: forwardOrigin narrowed to MessageOriginChat", () => {
-		new Bot(TOKEN).on("message", filters.originChat, (ctx) => {
+		new Bot(TOKEN).on("message", filters.forwardOrigin("chat"), (ctx) => {
 			expectTypeOf(ctx.forwardOrigin).toEqualTypeOf<MessageOriginChat>();
 		});
 	});
 
 	test("originChannel: forwardOrigin narrowed to MessageOriginChannel", () => {
-		new Bot(TOKEN).on("message", filters.originChannel, (ctx) => {
+		new Bot(TOKEN).on("message", filters.forwardOrigin("channel"), (ctx) => {
 			expectTypeOf(ctx.forwardOrigin).toEqualTypeOf<MessageOriginChannel>();
 		});
 	});
 
 	test("originHiddenUser: forwardOrigin narrowed to MessageOriginHiddenUser", () => {
-		new Bot(TOKEN).on("message", filters.originHiddenUser, (ctx) => {
+		new Bot(TOKEN).on("message", filters.forwardOrigin("hidden_user"), (ctx) => {
 			expectTypeOf(ctx.forwardOrigin).toEqualTypeOf<MessageOriginHiddenUser>();
 		});
 	});
