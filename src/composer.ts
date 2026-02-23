@@ -80,26 +80,25 @@ export const { Composer } = createComposer({
 			handler: (context: CallbackQueryShorthandContext<AnyBot, any>) => unknown,
 		) {
 			if (typeof trigger === "string") {
-				return this.on("callback_query", (context, next) => {
+				return this.on<"callback_query", { queryData: string | null }>("callback_query", (context, next) => {
 					if (context.data !== trigger) return next();
-					return handler(context as any);
+					return handler(context);
 				});
 			}
 
 			if (trigger instanceof RegExp) {
-				return this.on("callback_query", (context, next) => {
+				return this.on<"callback_query", { queryData: RegExpMatchArray | null }>("callback_query", (context, next) => {
 					if (!context.data || !trigger.test(context.data)) return next();
-					(context as any).queryData = context.data.match(trigger);
-					return handler(context as any);
+					context.queryData = context.data.match(trigger);
+					return handler(context);
 				});
 			}
 
 			// CallbackData
-			const regexp = trigger.regexp();
-			return this.on("callback_query", (context, next) => {
-				if (!context.data || !regexp.test(context.data)) return next();
-				(context as any).queryData = trigger.unpack(context.data);
-				return handler(context as any);
+			return this.on<"callback_query", { queryData: any }>("callback_query", (context, next) => {
+				if (!context.data || !trigger.filter(context.data)) return next();
+				context.queryData = trigger.unpack(context.data);
+				return handler(context);
 			});
 		},
 
@@ -115,26 +114,26 @@ export const { Composer } = createComposer({
 			) => unknown,
 		) {
 			if (typeof trigger === "string") {
-				return this.on("chosen_inline_result", (context, next) => {
+				return this.on<"chosen_inline_result", { args: RegExpMatchArray | null }>("chosen_inline_result", (context, next) => {
 					if (context.query !== trigger) return next();
-					(context as any).args = null;
-					return handler(context as any);
+					context.args = null;
+					return handler(context);
 				});
 			}
 
 			if (trigger instanceof RegExp) {
-				return this.on("chosen_inline_result", (context, next) => {
+				return this.on<"chosen_inline_result", { args: RegExpMatchArray | null }>("chosen_inline_result", (context, next) => {
 					if (!trigger.test(context.query)) return next();
-					(context as any).args = context.query?.match(trigger);
-					return handler(context as any);
+					context.args = context.query?.match(trigger);
+					return handler(context);
 				});
 			}
 
 			// function predicate
-			return this.on("chosen_inline_result", (context, next) => {
+			return this.on<"chosen_inline_result", { args: RegExpMatchArray | null }>("chosen_inline_result", (context, next) => {
 				if (!trigger(context)) return next();
-				(context as any).args = null;
-				return handler(context as any);
+				context.args = null;
+				return handler(context);
 			});
 		},
 
@@ -157,26 +156,26 @@ export const { Composer } = createComposer({
 				this.chosenInlineResult(trigger as any, options.onResult as any);
 
 			if (typeof trigger === "string") {
-				return this.on("inline_query", (context, next) => {
+				return this.on<"inline_query", { args: RegExpMatchArray | null }>("inline_query", (context, next) => {
 					if (context.query !== trigger) return next();
-					(context as any).args = null;
-					return handler(context as any);
+					context.args = null;
+					return handler(context);
 				});
 			}
 
 			if (trigger instanceof RegExp) {
-				return this.on("inline_query", (context, next) => {
+				return this.on<"inline_query", { args: RegExpMatchArray | null }>("inline_query", (context, next) => {
 					if (!trigger.test(context.query)) return next();
-					(context as any).args = context.query?.match(trigger);
-					return handler(context as any);
+					context.args = context.query?.match(trigger);
+					return handler(context);
 				});
 			}
 
 			// function predicate
-			return this.on("inline_query", (context, next) => {
+			return this.on<"inline_query", { args: RegExpMatchArray | null }>("inline_query", (context, next) => {
 				if (!trigger(context)) return next();
-				(context as any).args = null;
-				return handler(context as any);
+				context.args = null;
+				return handler(context);
 			});
 		},
 
@@ -192,36 +191,36 @@ export const { Composer } = createComposer({
 			) => unknown,
 		) {
 			if (typeof trigger === "string") {
-				return this.on("message", (context, next) => {
+				return this.on<"message", { args: RegExpMatchArray | null }>("message", (context, next) => {
 					if ((context.text ?? context.caption) !== trigger) return next();
-					(context as any).args = null;
-					return handler(context as any);
+					context.args = null;
+					return handler(context);
 				});
 			}
 
 			if (Array.isArray(trigger)) {
-				return this.on("message", (context, next) => {
+				return this.on<"message", { args: RegExpMatchArray | null }>("message", (context, next) => {
 					const text = context.text ?? context.caption;
 					if (!text || !trigger.includes(text)) return next();
-					(context as any).args = null;
-					return handler(context as any);
+					context.args = null;
+					return handler(context);
 				});
 			}
 
 			if (trigger instanceof RegExp) {
-				return this.on("message", (context, next) => {
+				return this.on<"message", { args: RegExpMatchArray | null }>("message", (context, next) => {
 					const text = context.text ?? context.caption;
 					if (!text || !trigger.test(text)) return next();
-					(context as any).args = text.match(trigger);
-					return handler(context as any);
+					context.args = text.match(trigger);
+					return handler(context);
 				});
 			}
 
 			// function predicate
-			return this.on("message", (context, next) => {
+			return this.on<"message", { args: RegExpMatchArray | null }>("message", (context, next) => {
 				if (typeof trigger !== "function" || !trigger(context)) return next();
-				(context as any).args = null;
-				return handler(context as any);
+				context.args = null;
+				return handler(context);
 			});
 		},
 
@@ -237,7 +236,7 @@ export const { Composer } = createComposer({
 					throw new Error(`Do not use / in command name (${cmd})`);
 			}
 
-			return this.on(["message", "business_message"], (context, next) => {
+			return this.on<"message" | "business_message", { args: string | null }>(["message", "business_message"], (context, next) => {
 				const entity = context.entities?.find((entity) => {
 					if (entity.type !== "bot_command" || entity.offset > 0) return false;
 
@@ -255,9 +254,9 @@ export const { Composer } = createComposer({
 				});
 
 				if (entity) {
-					(context as any).args =
+					context.args =
 						context.text?.slice(entity.length).trim() || null;
-					return handler(context as any);
+					return handler(context);
 				}
 
 				return next();
@@ -269,31 +268,31 @@ export const { Composer } = createComposer({
 			handler: Handler<Ctx<"message"> & { rawStartPayload: string }>,
 		) {
 			if (parameter instanceof RegExp) {
-				return this.on("message", (context, next) => {
+				return this.on<"message", { rawStartPayload: string }>("message", (context, next) => {
 					if (
 						!context.rawStartPayload ||
 						!parameter.test(context.rawStartPayload)
 					)
 						return next();
-					return handler(context as any, noopNext);
+					return handler(context, noopNext);
 				});
 			}
 
 			if (Array.isArray(parameter)) {
-				return this.on("message", (context, next) => {
+				return this.on<"message", { rawStartPayload: string }>("message", (context, next) => {
 					if (
 						!context.rawStartPayload ||
 						!parameter.includes(context.rawStartPayload)
 					)
 						return next();
-					return handler(context as any, noopNext);
+					return handler(context, noopNext);
 				});
 			}
 
 			// string
-			return this.on("message", (context, next) => {
-				if (context.rawStartPayload !== parameter) return next();
-				return handler(context as any, noopNext);
+			return this.on<"message", { rawStartPayload: string }>("message", (context, next) => {
+				if (!context.rawStartPayload || context.rawStartPayload !== parameter) return next();
+				return handler(context, noopNext);
 			});
 		},
 	},
