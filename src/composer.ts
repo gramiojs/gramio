@@ -1,5 +1,6 @@
 import type { CallbackData } from "@gramio/callback-data";
 import {
+	buildFromOptions,
 	compose,
 	createComposer,
 	EventQueue,
@@ -32,7 +33,7 @@ type Ctx<K extends keyof ContextsMapping<AnyBot>> = InstanceType<
 
 /** Teach EventComposer about GramIO-specific overloads */
 declare module "@gramio/composer" {
-	interface EventComposer<TBase, TEventMap, TIn, TOut, TExposed, TDerives> {
+	interface EventComposer<TBase, TEventMap, TIn, TOut, TExposed, TDerives, TMethods, TMacros> {
 		extend<P extends AnyPlugin>(
 			plugin: P,
 		): EventComposer<
@@ -41,7 +42,9 @@ declare module "@gramio/composer" {
 			TIn,
 			TOut & P["_"]["Derives"]["global"],
 			TExposed,
-			TDerives & Omit<P["_"]["Derives"], "global">
+			TDerives & Omit<P["_"]["Derives"], "global">,
+			TMethods,
+			TMacros & P["_"]["Macros"]
 		>;
 	}
 }
@@ -53,8 +56,12 @@ export const { Composer } = createComposer({
 		reaction(
 			trigger: MaybeArray<TelegramReactionTypeEmojiEmoji>,
 			handler: (context: Ctx<"message_reaction">) => unknown,
+			macroOptions?: Record<string, unknown>,
 		) {
 			const reactions = Array.isArray(trigger) ? trigger : [trigger];
+			const macroHandler = macroOptions
+				? buildFromOptions(this["~"].macros, macroOptions, (ctx: any, _n: any) => handler(ctx))
+				: null;
 
 			return this.on("message_reaction", (context, next) => {
 				const oldEmojis = new Set<string>();
@@ -71,18 +78,23 @@ export const { Composer } = createComposer({
 
 				if (!hasNewMatchingReaction) return next();
 
-				return handler(context);
+				return macroHandler ? macroHandler(context, noopNext) : handler(context);
 			});
 		},
 
 		callbackQuery(
 			trigger: CallbackData | string | RegExp,
 			handler: (context: CallbackQueryShorthandContext<AnyBot, any>) => unknown,
+			macroOptions?: Record<string, unknown>,
 		) {
+			const macroHandler = macroOptions
+				? buildFromOptions(this["~"].macros, macroOptions, (ctx: any, _n: any) => handler(ctx))
+				: null;
+
 			if (typeof trigger === "string") {
 				return this.on<"callback_query", { queryData: string | null }>("callback_query", (context, next) => {
 					if (context.data !== trigger) return next();
-					return handler(context);
+					return macroHandler ? macroHandler(context, noopNext) : handler(context);
 				});
 			}
 
@@ -90,7 +102,7 @@ export const { Composer } = createComposer({
 				return this.on<"callback_query", { queryData: RegExpMatchArray | null }>("callback_query", (context, next) => {
 					if (!context.data || !trigger.test(context.data)) return next();
 					context.queryData = context.data.match(trigger);
-					return handler(context);
+					return macroHandler ? macroHandler(context, noopNext) : handler(context);
 				});
 			}
 
@@ -98,7 +110,7 @@ export const { Composer } = createComposer({
 			return this.on<"callback_query", { queryData: any }>("callback_query", (context, next) => {
 				if (!context.data || !trigger.filter(context.data)) return next();
 				context.queryData = trigger.unpack(context.data);
-				return handler(context);
+				return macroHandler ? macroHandler(context, noopNext) : handler(context);
 			});
 		},
 
@@ -112,12 +124,17 @@ export const { Composer } = createComposer({
 					args: RegExpMatchArray | null;
 				},
 			) => unknown,
+			macroOptions?: Record<string, unknown>,
 		) {
+			const macroHandler = macroOptions
+				? buildFromOptions(this["~"].macros, macroOptions, (ctx: any, _n: any) => handler(ctx))
+				: null;
+
 			if (typeof trigger === "string") {
 				return this.on<"chosen_inline_result", { args: RegExpMatchArray | null }>("chosen_inline_result", (context, next) => {
 					if (context.query !== trigger) return next();
 					context.args = null;
-					return handler(context);
+					return macroHandler ? macroHandler(context, noopNext) : handler(context);
 				});
 			}
 
@@ -125,7 +142,7 @@ export const { Composer } = createComposer({
 				return this.on<"chosen_inline_result", { args: RegExpMatchArray | null }>("chosen_inline_result", (context, next) => {
 					if (!trigger.test(context.query)) return next();
 					context.args = context.query?.match(trigger);
-					return handler(context);
+					return macroHandler ? macroHandler(context, noopNext) : handler(context);
 				});
 			}
 
@@ -133,7 +150,7 @@ export const { Composer } = createComposer({
 			return this.on<"chosen_inline_result", { args: RegExpMatchArray | null }>("chosen_inline_result", (context, next) => {
 				if (!trigger(context)) return next();
 				context.args = null;
-				return handler(context);
+				return macroHandler ? macroHandler(context, noopNext) : handler(context);
 			});
 		},
 
@@ -150,16 +167,22 @@ export const { Composer } = createComposer({
 						args: RegExpMatchArray | null;
 					},
 				) => unknown;
-			} = {},
+			} & Record<string, unknown> = {},
 		) {
 			if (options.onResult)
 				this.chosenInlineResult(trigger as any, options.onResult as any);
+
+			const { onResult: _, ...macroOptions } = options;
+			const hasMacros = Object.keys(macroOptions).length > 0;
+			const macroHandler = hasMacros
+				? buildFromOptions(this["~"].macros, macroOptions, (ctx: any, _n: any) => handler(ctx))
+				: null;
 
 			if (typeof trigger === "string") {
 				return this.on<"inline_query", { args: RegExpMatchArray | null }>("inline_query", (context, next) => {
 					if (context.query !== trigger) return next();
 					context.args = null;
-					return handler(context);
+					return macroHandler ? macroHandler(context, noopNext) : handler(context);
 				});
 			}
 
@@ -167,7 +190,7 @@ export const { Composer } = createComposer({
 				return this.on<"inline_query", { args: RegExpMatchArray | null }>("inline_query", (context, next) => {
 					if (!trigger.test(context.query)) return next();
 					context.args = context.query?.match(trigger);
-					return handler(context);
+					return macroHandler ? macroHandler(context, noopNext) : handler(context);
 				});
 			}
 
@@ -175,7 +198,7 @@ export const { Composer } = createComposer({
 			return this.on<"inline_query", { args: RegExpMatchArray | null }>("inline_query", (context, next) => {
 				if (!trigger(context)) return next();
 				context.args = null;
-				return handler(context);
+				return macroHandler ? macroHandler(context, noopNext) : handler(context);
 			});
 		},
 
@@ -189,12 +212,17 @@ export const { Composer } = createComposer({
 					args: RegExpMatchArray | null;
 				},
 			) => unknown,
+			macroOptions?: Record<string, unknown>,
 		) {
+			const macroHandler = macroOptions
+				? buildFromOptions(this["~"].macros, macroOptions, (ctx: any, _n: any) => handler(ctx))
+				: null;
+
 			if (typeof trigger === "string") {
 				return this.on<"message", { args: RegExpMatchArray | null }>("message", (context, next) => {
 					if ((context.text ?? context.caption) !== trigger) return next();
 					context.args = null;
-					return handler(context);
+					return macroHandler ? macroHandler(context, noopNext) : handler(context);
 				});
 			}
 
@@ -203,7 +231,7 @@ export const { Composer } = createComposer({
 					const text = context.text ?? context.caption;
 					if (!text || !trigger.includes(text)) return next();
 					context.args = null;
-					return handler(context);
+					return macroHandler ? macroHandler(context, noopNext) : handler(context);
 				});
 			}
 
@@ -212,7 +240,7 @@ export const { Composer } = createComposer({
 					const text = context.text ?? context.caption;
 					if (!text || !trigger.test(text)) return next();
 					context.args = text.match(trigger);
-					return handler(context);
+					return macroHandler ? macroHandler(context, noopNext) : handler(context);
 				});
 			}
 
@@ -220,13 +248,14 @@ export const { Composer } = createComposer({
 			return this.on<"message", { args: RegExpMatchArray | null }>("message", (context, next) => {
 				if (typeof trigger !== "function" || !trigger(context)) return next();
 				context.args = null;
-				return handler(context);
+				return macroHandler ? macroHandler(context, noopNext) : handler(context);
 			});
 		},
 
 		command(
 			command: MaybeArray<string>,
 			handler: (context: Ctx<"message"> & { args: string | null }) => unknown,
+			macroOptions?: Record<string, unknown>,
 		) {
 			const normalizedCommands: string[] =
 				typeof command === "string" ? [command] : Array.from(command);
@@ -235,6 +264,10 @@ export const { Composer } = createComposer({
 				if (cmd.startsWith("/"))
 					throw new Error(`Do not use / in command name (${cmd})`);
 			}
+
+			const macroHandler = macroOptions
+				? buildFromOptions(this["~"].macros, macroOptions, (ctx: any, _n: any) => handler(ctx))
+				: null;
 
 			return this.on<"message" | "business_message", { args: string | null }>(["message", "business_message"], (context, next) => {
 				const entity = context.entities?.find((entity) => {
@@ -256,7 +289,7 @@ export const { Composer } = createComposer({
 				if (entity) {
 					context.args =
 						context.text?.slice(entity.length).trim() || null;
-					return handler(context);
+					return macroHandler ? macroHandler(context, noopNext) : handler(context);
 				}
 
 				return next();
@@ -266,7 +299,12 @@ export const { Composer } = createComposer({
 		startParameter(
 			parameter: RegExp | MaybeArray<string>,
 			handler: Handler<Ctx<"message"> & { rawStartPayload: string }>,
+			macroOptions?: Record<string, unknown>,
 		) {
+			const macroHandler = macroOptions
+				? buildFromOptions(this["~"].macros, macroOptions, (ctx: any, n: any) => handler(ctx, n))
+				: null;
+
 			if (parameter instanceof RegExp) {
 				return this.on<"message", { rawStartPayload: string }>("message", (context, next) => {
 					if (
@@ -274,7 +312,7 @@ export const { Composer } = createComposer({
 						!parameter.test(context.rawStartPayload)
 					)
 						return next();
-					return handler(context, noopNext);
+					return macroHandler ? macroHandler(context, noopNext) : handler(context, noopNext);
 				});
 			}
 
@@ -285,19 +323,30 @@ export const { Composer } = createComposer({
 						!parameter.includes(context.rawStartPayload)
 					)
 						return next();
-					return handler(context, noopNext);
+					return macroHandler ? macroHandler(context, noopNext) : handler(context, noopNext);
 				});
 			}
 
 			// string
 			return this.on<"message", { rawStartPayload: string }>("message", (context, next) => {
 				if (!context.rawStartPayload || context.rawStartPayload !== parameter) return next();
-				return handler(context, noopNext);
+				return macroHandler ? macroHandler(context, noopNext) : handler(context, noopNext);
 			});
 		},
 	},
 });
 
-export { EventQueue, compose, noopNext, skip, stop };
+export { EventQueue, buildFromOptions, compose, noopNext, skip, stop };
 export type { Next };
 export type { EventComposer, Middleware } from "@gramio/composer";
+export type {
+	ContextCallback,
+	WithCtx,
+	MacroHooks,
+	MacroDef,
+	MacroDefinitions,
+	MacroOptionType,
+	MacroDeriveType,
+	HandlerOptions,
+	DeriveFromOptions,
+} from "@gramio/composer";

@@ -1,4 +1,4 @@
-import type { EventComposer } from "@gramio/composer";
+import type { EventComposer, MacroDef, MacroDefinitions } from "@gramio/composer";
 import type {
 	BotLike,
 	Context,
@@ -63,6 +63,7 @@ type CompatibleUpdates<B extends BotLike, Narrowing> = {
 export class Plugin<
 	Errors extends ErrorDefinitions = {},
 	Derives extends DeriveDefinitions = DeriveDefinitions,
+	Macros extends MacroDefinitions = {},
 > {
 	/**
 	 * 	@internal
@@ -80,6 +81,8 @@ export class Plugin<
 		Errors: {} as Errors,
 		/** remap generic type. {} in runtime */
 		Derives: {} as Derives,
+		/** remap generic type. {} in runtime */
+		Macros: {} as Macros,
 		/**	Composer */
 		composer: new Composer(),
 		/** Store plugin preRequests hooks */
@@ -166,7 +169,8 @@ export class Plugin<
 
 		return this as unknown as Plugin<
 			Errors & { [name in Name]: InstanceType<NewError> },
-			Derives
+			Derives,
+			Macros
 		>;
 	}
 
@@ -184,7 +188,7 @@ export class Plugin<
 	 */
 	derive<Handler extends Hooks.Derive<Context<BotLike> & Derives["global"]>>(
 		handler: Handler,
-	): Plugin<Errors, Derives & { global: Awaited<ReturnType<Handler>> }>;
+	): Plugin<Errors, Derives & { global: Awaited<ReturnType<Handler>> }, Macros>;
 
 	derive<
 		Update extends UpdateName,
@@ -194,7 +198,7 @@ export class Plugin<
 	>(
 		updateName: MaybeArray<Update>,
 		handler: Handler,
-	): Plugin<Errors, Derives & { [K in Update]: Awaited<ReturnType<Handler>> }>;
+	): Plugin<Errors, Derives & { [K in Update]: Awaited<ReturnType<Handler>> }, Macros>;
 
 	derive<
 		Update extends UpdateName,
@@ -223,7 +227,8 @@ export class Plugin<
 			global: {
 				[K in keyof Value]: Value[K];
 			};
-		}
+		},
+		Macros
 	>;
 
 	decorate<Name extends string, Value>(
@@ -235,7 +240,8 @@ export class Plugin<
 			global: {
 				[K in Name]: Value;
 			};
-		}
+		},
+		Macros
 	>;
 	decorate<Name extends string, Value>(
 		nameOrValue: Name | Record<string, any>,
@@ -248,6 +254,27 @@ export class Plugin<
 			}
 		}
 
+		return this;
+	}
+
+	/**
+	 * Register a single named macro definition on this plugin
+	 */
+	macro<const Name extends string, TDef extends MacroDef<any, any>>(
+		name: Name,
+		definition: TDef,
+	): Plugin<Errors, Derives, Macros & Record<Name, TDef>>;
+
+	/** Register multiple macro definitions at once */
+	macro<const TDefs extends Record<string, MacroDef<any, any>>>(
+		definitions: TDefs,
+	): Plugin<Errors, Derives, Macros & TDefs>;
+
+	macro(
+		nameOrDefs: string | Record<string, MacroDef<any, any>>,
+		definition?: MacroDef<any, any>,
+	): any {
+		this._.composer.macro(nameOrDefs as any, definition as any);
 		return this;
 	}
 

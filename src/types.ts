@@ -1,5 +1,5 @@
 import type { CallbackData } from "@gramio/callback-data";
-import type { Next } from "@gramio/composer";
+import type { MacroDefinitions, Next } from "@gramio/composer";
 import type {
 	BotLike,
 	Context,
@@ -360,10 +360,10 @@ export type ErrorDefinitions = Record<string, Error>;
 export type DeriveDefinitions = Record<UpdateName | "global", {}>;
 
 /** Type of Bot that accepts any generics */
-export type AnyBot = Bot<any, any>;
+export type AnyBot = Bot<any, any, any>;
 
 /** Type of Bot that accepts any generics */
-export type AnyPlugin = Plugin<any, any>;
+export type AnyPlugin = Plugin<any, any, any>;
 
 export type CallbackQueryShorthandContext<
 	BotType extends BotLike,
