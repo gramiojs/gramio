@@ -1,4 +1,25 @@
-import type { AttachmentsMapping, AttachmentType } from "@gramio/contexts";
+import type {
+	AttachmentsMapping,
+	AttachmentType,
+	Chat,
+	Dice,
+	ExternalReplyInfo,
+	Game,
+	Giveaway,
+	LinkPreviewOptions,
+	Message,
+	MessageContext,
+	MessageEntity,
+	MessageOriginChannel,
+	MessageOriginChat,
+	MessageOriginHiddenUser,
+	MessageOriginUser,
+	PaidMediaInfo,
+	StoryAttachment,
+	TextQuote,
+	User,
+	Venue,
+} from "@gramio/contexts";
 import type { TelegramMessageEntity } from "@gramio/types";
 
 /**
@@ -16,6 +37,9 @@ type UnionToIntersection<U> = (U extends any ? (x: U) => void : never) extends (
 ) => void
 	? I
 	: never;
+
+/** Union of all attachment types (shorthand for `AttachmentsMapping[keyof AttachmentsMapping]`) */
+type AnyAttachment = AttachmentsMapping[keyof AttachmentsMapping];
 
 function createAttachmentFilter<T extends AttachmentType>(
 	type: T,
@@ -41,56 +65,113 @@ export const filters = {
 	poll: createAttachmentFilter("poll"),
 
 	/** Matches any message that has an attachment */
-	media: ((ctx: any) => ctx.hasAttachment()) as Filter<any, { attachment: {} }>,
+	media: ((ctx: any) => ctx.hasAttachment()) as Filter<
+		any,
+		{ attachment: AnyAttachment }
+	>,
 
 	// ── Text & caption ──────────────────────────────────────────────────
 	/** Matches messages that have text */
 	text: ((ctx: any) => ctx.hasText()) as Filter<any, { text: string }>,
 
 	/** Matches messages that have a caption */
-	caption: ((ctx: any) => ctx.hasCaption()) as Filter<any, { caption: string }>,
+	caption: ((ctx: any) => ctx.hasCaption()) as Filter<
+		any,
+		{ caption: string }
+	>,
 
 	// ── Message content & structure ─────────────────────────────────────
 	/** Matches messages that contain a dice */
-	dice: ((ctx: any) => ctx.hasDice()) as Filter<any, { dice: {} }>,
+	dice: ((ctx: any) => ctx.hasDice()) as Filter<any, { dice: Dice }>,
 
 	/** Matches messages that are forwarded */
 	forwardOrigin: ((ctx: any) => ctx.hasForwardOrigin()) as Filter<
 		any,
-		{ forwardOrigin: {} }
+		{
+			forwardOrigin:
+				| MessageOriginUser
+				| MessageOriginChat
+				| MessageOriginChannel
+				| MessageOriginHiddenUser;
+		}
+	>,
+
+	/** Matches messages forwarded from a real user */
+	originUser: ((ctx: any) =>
+		ctx.hasForwardOrigin() &&
+		ctx.forwardOrigin?.type === "user") as Filter<
+		any,
+		{ forwardOrigin: MessageOriginUser }
+	>,
+
+	/** Matches messages forwarded on behalf of a chat */
+	originChat: ((ctx: any) =>
+		ctx.hasForwardOrigin() &&
+		ctx.forwardOrigin?.type === "chat") as Filter<
+		any,
+		{ forwardOrigin: MessageOriginChat }
+	>,
+
+	/** Matches messages forwarded from a channel */
+	originChannel: ((ctx: any) =>
+		ctx.hasForwardOrigin() &&
+		ctx.forwardOrigin?.type === "channel") as Filter<
+		any,
+		{ forwardOrigin: MessageOriginChannel }
+	>,
+
+	/** Matches messages forwarded from an unknown/hidden user */
+	originHiddenUser: ((ctx: any) =>
+		ctx.hasForwardOrigin() &&
+		ctx.forwardOrigin?.type === "hidden_user") as Filter<
+		any,
+		{ forwardOrigin: MessageOriginHiddenUser }
 	>,
 
 	/** Matches messages that are replies */
 	reply: ((ctx: any) => ctx.hasReplyMessage()) as Filter<
 		any,
-		{ replyMessage: {} }
+		{ replyMessage: Message }
 	>,
 
 	/** Matches messages that have text entities */
-	entities: ((ctx: any) => ctx.hasEntities()) as Filter<any, { entities: {} }>,
+	entities: ((ctx: any) => ctx.hasEntities()) as Filter<
+		any,
+		{ entities: MessageEntity[] }
+	>,
 
 	/** Matches messages that have caption entities */
 	captionEntities: ((ctx: any) => ctx.hasCaptionEntities()) as Filter<
 		any,
-		{ captionEntities: {} }
+		{ captionEntities: MessageEntity[] }
 	>,
 
 	/** Matches messages that have a quote */
-	quote: ((ctx: any) => ctx.hasQuote()) as Filter<any, { quote: {} }>,
+	quote: ((ctx: any) => ctx.hasQuote()) as Filter<
+		any,
+		{ quote: TextQuote }
+	>,
 
 	/** Matches messages sent via a bot */
-	viaBot: ((ctx: any) => ctx.hasViaBot()) as Filter<any, { viaBot: {} }>,
+	viaBot: ((ctx: any) => ctx.hasViaBot()) as Filter<any, { viaBot: User }>,
 
 	/** Matches messages that have link preview options */
 	linkPreview: ((ctx: any) => ctx.hasLinkPreviewOptions()) as Filter<
 		any,
-		{ linkPreviewOptions: {} }
+		{ linkPreviewOptions: LinkPreviewOptions }
 	>,
 
 	/** Matches messages with a /start payload */
 	startPayload: ((ctx: any) => ctx.hasStartPayload()) as Filter<
 		any,
 		{ startPayload: string }
+	>,
+
+	/** Matches messages with a raw /start payload string */
+	rawStartPayload: ((ctx: any) =>
+		ctx.rawStartPayload !== undefined) as Filter<
+		any,
+		{ rawStartPayload: string }
 	>,
 
 	/** Matches messages with an author signature */
@@ -102,84 +183,45 @@ export const filters = {
 	/** Matches messages with external reply info */
 	replyInfo: ((ctx: any) => ctx.hasReplyInfo()) as Filter<
 		any,
-		{ externalReply: {} }
+		{ externalReply: ExternalReplyInfo }
 	>,
 
 	/** Matches contexts that have a sender (from user) */
 	hasFrom: ((ctx: any) => ctx.hasFrom()) as Filter<
 		any,
-		{ from: {}; senderId: number }
+		{ from: User; senderId: number }
 	>,
 
 	/** Matches messages sent on behalf of a chat */
 	senderChat: ((ctx: any) => ctx.hasSenderChat()) as Filter<
 		any,
-		{ senderChat: {} }
+		{ senderChat: Chat }
 	>,
 
 	/** Matches giveaway messages */
-	giveaway: ((ctx: any) => ctx.isGiveaway()) as Filter<any, { giveaway: {} }>,
-
-	// ── Parameterized entity filters ────────────────────────────────────
-	/** Matches messages with a specific text entity type */
-	entity(type: TelegramMessageEntity["type"]): Filter<any, { entities: {} }> {
-		return ((ctx: any) => ctx.hasEntities(type)) as Filter<
-			any,
-			{ entities: {} }
-		>;
-	},
-
-	/** Matches messages with a specific caption entity type */
-	captionEntity(
-		type: TelegramMessageEntity["type"],
-	): Filter<any, { captionEntities: {} }> {
-		return ((ctx: any) => ctx.hasCaptionEntities(type)) as Filter<
-			any,
-			{ captionEntities: {} }
-		>;
-	},
-
-	// ── Chat type shortcuts ─────────────────────────────────────────────
-	/** Matches messages from a specific chat type */
-	chat<T extends "private" | "group" | "supergroup" | "channel">(
-		type: T,
-	): Filter<any, { chatType: T }> {
-		return ((ctx: any) => ctx.chatType === type) as Filter<
-			any,
-			{ chatType: T }
-		>;
-	},
-
-	/** Matches private (DM) chats */
-	pm: ((ctx: any) => ctx.chatType === "private") as Filter<
+	giveaway: ((ctx: any) => ctx.isGiveaway()) as Filter<
 		any,
-		{ chatType: "private" }
+		{ giveaway: Giveaway }
 	>,
 
-	/** Matches group chats */
-	group: ((ctx: any) => ctx.chatType === "group") as Filter<
+	/** Matches messages with paid media */
+	paidMedia: ((ctx: any) => ctx.paidMedia !== undefined) as Filter<
 		any,
-		{ chatType: "group" }
-	>,
-
-	/** Matches supergroup chats */
-	supergroup: ((ctx: any) => ctx.chatType === "supergroup") as Filter<
-		any,
-		{ chatType: "supergroup" }
-	>,
-
-	/** Matches channel chats */
-	channel: ((ctx: any) => ctx.chatType === "channel") as Filter<
-		any,
-		{ chatType: "channel" }
+		{ paidMedia: PaidMediaInfo }
 	>,
 
 	// ── Raw property narrowing ──────────────────────────────────────────
 	/** Matches messages with a game */
-	game: ((ctx: any) => ctx.game !== undefined) as Filter<any, { game: {} }>,
+	game: ((ctx: any) => ctx.game !== undefined) as Filter<
+		any,
+		{ game: Game }
+	>,
 
 	/** Matches messages with a story */
-	story: ((ctx: any) => ctx.story !== undefined) as Filter<any, { story: {} }>,
+	story: ((ctx: any) => ctx.story !== undefined) as Filter<
+		any,
+		{ story: StoryAttachment }
+	>,
 
 	/** Matches messages with an effect ID */
 	effectId: ((ctx: any) => ctx.effectId !== undefined) as Filter<
@@ -194,7 +236,10 @@ export const filters = {
 	>,
 
 	/** Matches messages with a venue */
-	venue: ((ctx: any) => ctx.venue !== undefined) as Filter<any, { venue: {} }>,
+	venue: ((ctx: any) => ctx.venue !== undefined) as Filter<
+		any,
+		{ venue: Venue }
+	>,
 
 	// ── Sender/chat property filters (boolean, no narrowing) ────────────
 	/** Matches messages from bot accounts */
@@ -217,7 +262,7 @@ export const filters = {
 	mediaSpoiler: ((ctx: any) =>
 		ctx.hasAttachment() && ctx.hasMediaSpoiler?.() === true) as Filter<
 		any,
-		{ attachment: {} }
+		{ attachment: AnyAttachment }
 	>,
 
 	/** Matches messages with protected content. No type narrowing. */
@@ -230,7 +275,7 @@ export const filters = {
 	/** Matches callback queries that have an associated message */
 	hasMessage: ((ctx: any) => ctx.hasMessage?.()) as Filter<
 		any,
-		{ message: {} }
+		{ message: MessageContext<any> }
 	>,
 
 	/** Matches callback queries that have data */
@@ -240,6 +285,68 @@ export const filters = {
 	hasInlineMessageId: ((ctx: any) => ctx.hasInlineMessageId?.()) as Filter<
 		any,
 		{ inlineMessageId: string }
+	>,
+
+	/** Matches callback queries with a game short name */
+	hasGameShortName: ((ctx: any) => ctx.hasGameShortName?.()) as Filter<
+		any,
+		{ gameShortName: string }
+	>,
+
+	// ── Parameterized entity filters ────────────────────────────────────
+	/** Matches messages with a specific text entity type */
+	entity(
+		type: TelegramMessageEntity["type"],
+	): Filter<any, { entities: MessageEntity[] }> {
+		return ((ctx: any) => ctx.hasEntities(type)) as Filter<
+			any,
+			{ entities: MessageEntity[] }
+		>;
+	},
+
+	/** Matches messages with a specific caption entity type */
+	captionEntity(
+		type: TelegramMessageEntity["type"],
+	): Filter<any, { captionEntities: MessageEntity[] }> {
+		return ((ctx: any) => ctx.hasCaptionEntities(type)) as Filter<
+			any,
+			{ captionEntities: MessageEntity[] }
+		>;
+	},
+
+	// ── Chat type shortcuts ─────────────────────────────────────────────
+	/** Matches messages from a specific chat type. Narrows both `chatType` and `chat.type`. */
+	chat<T extends "private" | "group" | "supergroup" | "channel">(
+		type: T,
+	): Filter<any, { chatType: T; chat: { type: T } }> {
+		return ((ctx: any) => ctx.chatType === type) as Filter<
+			any,
+			{ chatType: T; chat: { type: T } }
+		>;
+	},
+
+	/** Matches private (DM) chats. Narrows both `chatType` and `chat.type`. */
+	pm: ((ctx: any) => ctx.chatType === "private") as Filter<
+		any,
+		{ chatType: "private"; chat: { type: "private" } }
+	>,
+
+	/** Matches group chats. Narrows both `chatType` and `chat.type`. */
+	group: ((ctx: any) => ctx.chatType === "group") as Filter<
+		any,
+		{ chatType: "group"; chat: { type: "group" } }
+	>,
+
+	/** Matches supergroup chats. Narrows both `chatType` and `chat.type`. */
+	supergroup: ((ctx: any) => ctx.chatType === "supergroup") as Filter<
+		any,
+		{ chatType: "supergroup"; chat: { type: "supergroup" } }
+	>,
+
+	/** Matches channel chats. Narrows both `chatType` and `chat.type`. */
+	channel: ((ctx: any) => ctx.chatType === "channel") as Filter<
+		any,
+		{ chatType: "channel"; chat: { type: "channel" } }
 	>,
 
 	// ── Parameterized filters ───────────────────────────────────────────
