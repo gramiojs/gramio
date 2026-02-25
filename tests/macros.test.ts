@@ -16,7 +16,7 @@ describe("Macro System — Bot", () => {
 		// @ts-expect-error source Bot vs packaged AnyBot
 		const env = new TelegramTestEnvironment(bot);
 		// Verify macro is registered on the underlying composer
-		expect(env.bot.updates.composer["~"].macros.auth).toBe(def);
+		expect((env as any).bot.updates.composer["~"].macros.auth).toBe(def);
 	});
 
 	test("bot.macro() registers multiple macros at once", () => {
@@ -27,8 +27,8 @@ describe("Macro System — Bot", () => {
 
 		// @ts-expect-error source Bot vs packaged AnyBot
 		const env = new TelegramTestEnvironment(bot);
-		expect(env.bot.updates.composer["~"].macros.auth).toBe(auth);
-		expect(env.bot.updates.composer["~"].macros.cache).toBe(cache);
+		expect((env as any).bot.updates.composer["~"].macros.auth).toBe(auth);
+		expect((env as any).bot.updates.composer["~"].macros.cache).toBe(cache);
 	});
 
 	test("command with boolean macro preHandler", async () => {
