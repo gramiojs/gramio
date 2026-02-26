@@ -2,9 +2,13 @@ import type { CallbackData } from "@gramio/callback-data";
 import {
 	buildFromOptions,
 	compose,
+	type ComposerLike,
+	type ContextOf,
 	createComposer,
+	defineComposerMethods,
 	EventQueue,
 	eventTypes,
+	type MacroDefinitions,
 	type Next,
 	noopNext,
 	skip,
@@ -12,12 +16,7 @@ import {
 } from "@gramio/composer";
 import type { Context, ContextsMapping } from "@gramio/contexts";
 import type { TelegramReactionTypeEmojiEmoji } from "@gramio/types";
-import type {
-	AnyBot,
-	AnyPlugin,
-	CallbackQueryShorthandContext,
-	Handler,
-} from "./types.js";
+import type { AnyBot, AnyPlugin, Handler } from "./types.js";
 import type { MaybeArray } from "./utils.internal.js";
 
 type TelegramEventMap = {
@@ -30,6 +29,15 @@ type TelegramEventMap = {
 type Ctx<K extends keyof ContextsMapping<AnyBot>> = InstanceType<
 	ContextsMapping<AnyBot>[K]
 >;
+
+/**
+ * Extends `ComposerLike<T>` with the two internal members that method
+ * bodies need: macro registry and the cross-method `chosenInlineResult` call.
+ */
+type GramIOLike<T> = ComposerLike<T> & {
+	"~": { macros: MacroDefinitions };
+	chosenInlineResult(trigger: any, handler: any, macroOptions?: any): T;
+};
 
 /** Teach EventComposer about GramIO-specific overloads */
 declare module "@gramio/composer" {
@@ -49,21 +57,21 @@ declare module "@gramio/composer" {
 	}
 }
 
-export const { Composer } = createComposer({
-	discriminator: (ctx: Context<AnyBot>) => (ctx as any).updateType,
-	types: eventTypes<TelegramEventMap>(),
-	methods: {
-		reaction(
-			trigger: MaybeArray<TelegramReactionTypeEmojiEmoji>,
-			handler: (context: Ctx<"message_reaction">) => unknown,
-			macroOptions?: Record<string, unknown>,
-		) {
-			const reactions = Array.isArray(trigger) ? trigger : [trigger];
-			const macroHandler = macroOptions
-				? buildFromOptions(this["~"].macros, macroOptions, (ctx: any, _n: any) => handler(ctx))
-				: null;
+const methods = defineComposerMethods({
+	reaction<TThis extends GramIOLike<TThis>>(
+		this: TThis,
+		trigger: MaybeArray<TelegramReactionTypeEmojiEmoji>,
+		handler: (context: Ctx<"message_reaction"> & ContextOf<TThis>) => unknown,
+		macroOptions?: Record<string, unknown>,
+	): TThis {
+		const reactions = Array.isArray(trigger) ? trigger : [trigger];
+		const macroHandler = macroOptions
+			? buildFromOptions(this["~"].macros, macroOptions, handler)
+			: null;
 
-			return this.on("message_reaction", (context, next) => {
+		return this.on(
+			"message_reaction",
+			(context: Ctx<"message_reaction"> & ContextOf<TThis>, next: Next) => {
 				const oldEmojis = new Set<string>();
 				for (const r of context.oldReactions) {
 					if (r.type === "emoji") oldEmojis.add(r.emoji);
@@ -77,263 +85,289 @@ export const { Composer } = createComposer({
 				);
 
 				if (!hasNewMatchingReaction) return next();
+				return macroHandler ? macroHandler(context, noopNext) : handler(context);
+			},
+		);
+	},
 
+	callbackQuery<TThis extends GramIOLike<TThis>, Trigger extends CallbackData | string | RegExp>(
+		this: TThis,
+		trigger: Trigger,
+		handler: (context: Ctx<"callback_query"> & {
+			queryData: Trigger extends CallbackData
+				? ReturnType<Trigger["unpack"]>
+				: Trigger extends RegExp
+					? RegExpMatchArray
+					: never;
+		} & ContextOf<TThis>) => unknown,
+		macroOptions?: Record<string, unknown>,
+	): TThis {
+		const macroHandler = macroOptions
+			? buildFromOptions(this["~"].macros, macroOptions, handler)
+			: null;
+
+		type QueryData = Trigger extends CallbackData
+			? ReturnType<Trigger["unpack"]>
+			: Trigger extends RegExp
+				? RegExpMatchArray
+				: never;
+		type Inner = Ctx<"callback_query"> & { queryData: QueryData } & ContextOf<TThis>;
+
+		if (typeof trigger === "string") {
+			return this.on("callback_query", (context: Inner, next: Next) => {
+				if (context.data !== trigger) return next();
 				return macroHandler ? macroHandler(context, noopNext) : handler(context);
 			});
-		},
+		}
 
-		callbackQuery(
-			trigger: CallbackData | string | RegExp,
-			handler: (context: CallbackQueryShorthandContext<AnyBot, any>) => unknown,
-			macroOptions?: Record<string, unknown>,
-		) {
-			const macroHandler = macroOptions
-				? buildFromOptions(this["~"].macros, macroOptions, (ctx: any, _n: any) => handler(ctx))
-				: null;
-
-			if (typeof trigger === "string") {
-				return this.on<"callback_query", { queryData: string | null }>("callback_query", (context, next) => {
-					if (context.data !== trigger) return next();
-					return macroHandler ? macroHandler(context, noopNext) : handler(context);
-				});
-			}
-
-			if (trigger instanceof RegExp) {
-				return this.on<"callback_query", { queryData: RegExpMatchArray | null }>("callback_query", (context, next) => {
-					if (!context.data || !trigger.test(context.data)) return next();
-					context.queryData = context.data.match(trigger);
-					return macroHandler ? macroHandler(context, noopNext) : handler(context);
-				});
-			}
-
-			// CallbackData
-			return this.on<"callback_query", { queryData: any }>("callback_query", (context, next) => {
-				if (!context.data || !trigger.filter(context.data)) return next();
-				context.queryData = trigger.unpack(context.data);
+		if (trigger instanceof RegExp) {
+			return this.on("callback_query", (context: Inner, next: Next) => {
+				if (!context.data || !trigger.test(context.data)) return next();
+				context.queryData = context.data.match(trigger) as QueryData;
 				return macroHandler ? macroHandler(context, noopNext) : handler(context);
 			});
-		},
+		}
 
-		chosenInlineResult(
-			trigger:
-				| RegExp
-				| string
-				| ((context: Ctx<"chosen_inline_result">) => boolean),
-			handler: (
+		// CallbackData
+		return this.on("callback_query", (context: Inner, next: Next) => {
+			if (!context.data || !trigger.filter(context.data)) return next();
+			context.queryData = trigger.unpack(context.data) as QueryData;
+			return macroHandler ? macroHandler(context, noopNext) : handler(context);
+		});
+	},
+
+	chosenInlineResult<TThis extends GramIOLike<TThis>>(
+		this: TThis,
+		trigger:
+			| RegExp
+			| string
+			| ((context: Ctx<"chosen_inline_result">) => boolean),
+		handler: (
+			context: Ctx<"chosen_inline_result"> & {
+				args: RegExpMatchArray | null;
+			} & ContextOf<TThis>,
+		) => unknown,
+		macroOptions?: Record<string, unknown>,
+	): TThis {
+		type Inner = Ctx<"chosen_inline_result"> & { args: RegExpMatchArray | null } & ContextOf<TThis>;
+		const macroHandler = macroOptions
+			? buildFromOptions(this["~"].macros, macroOptions, handler)
+			: null;
+
+		if (typeof trigger === "string") {
+			return this.on("chosen_inline_result", (context: Inner, next: Next) => {
+				if (context.query !== trigger) return next();
+				context.args = null;
+				return macroHandler ? macroHandler(context, noopNext) : handler(context);
+			});
+		}
+
+		if (trigger instanceof RegExp) {
+			return this.on("chosen_inline_result", (context: Inner, next: Next) => {
+				if (!trigger.test(context.query)) return next();
+				context.args = context.query?.match(trigger);
+				return macroHandler ? macroHandler(context, noopNext) : handler(context);
+			});
+		}
+
+		// function predicate
+		return this.on("chosen_inline_result", (context: Inner, next: Next) => {
+			if (!trigger(context)) return next();
+			context.args = null;
+			return macroHandler ? macroHandler(context, noopNext) : handler(context);
+		});
+	},
+
+	inlineQuery<TThis extends GramIOLike<TThis>>(
+		this: TThis,
+		trigger: RegExp | string | ((context: Ctx<"inline_query">) => boolean),
+		handler: (
+			context: Ctx<"inline_query"> & {
+				args: RegExpMatchArray | null;
+			} & ContextOf<TThis>,
+		) => unknown,
+		options: {
+			onResult?: (
 				context: Ctx<"chosen_inline_result"> & {
 					args: RegExpMatchArray | null;
-				},
-			) => unknown,
-			macroOptions?: Record<string, unknown>,
-		) {
-			const macroHandler = macroOptions
-				? buildFromOptions(this["~"].macros, macroOptions, (ctx: any, _n: any) => handler(ctx))
-				: null;
+				} & ContextOf<TThis>,
+			) => unknown;
+		} & Record<string, unknown> = {},
+	): TThis {
+		if (options.onResult) this.chosenInlineResult(trigger, options.onResult);
 
-			if (typeof trigger === "string") {
-				return this.on<"chosen_inline_result", { args: RegExpMatchArray | null }>("chosen_inline_result", (context, next) => {
-					if (context.query !== trigger) return next();
-					context.args = null;
-					return macroHandler ? macroHandler(context, noopNext) : handler(context);
-				});
-			}
+		type Inner = Ctx<"inline_query"> & { args: RegExpMatchArray | null } & ContextOf<TThis>;
 
-			if (trigger instanceof RegExp) {
-				return this.on<"chosen_inline_result", { args: RegExpMatchArray | null }>("chosen_inline_result", (context, next) => {
-					if (!trigger.test(context.query)) return next();
-					context.args = context.query?.match(trigger);
-					return macroHandler ? macroHandler(context, noopNext) : handler(context);
-				});
-			}
+		const { onResult: _, ...macroOptions } = options;
+		const hasMacros = Object.keys(macroOptions).length > 0;
+		const macroHandler = hasMacros
+			? buildFromOptions(this["~"].macros, macroOptions, handler)
+			: null;
 
-			// function predicate
-			return this.on<"chosen_inline_result", { args: RegExpMatchArray | null }>("chosen_inline_result", (context, next) => {
-				if (!trigger(context)) return next();
+		if (typeof trigger === "string") {
+			return this.on("inline_query", (context: Inner, next: Next) => {
+				if (context.query !== trigger) return next();
 				context.args = null;
 				return macroHandler ? macroHandler(context, noopNext) : handler(context);
 			});
-		},
+		}
 
-		inlineQuery(
-			trigger: RegExp | string | ((context: Ctx<"inline_query">) => boolean),
-			handler: (
-				context: Ctx<"inline_query"> & {
-					args: RegExpMatchArray | null;
-				},
-			) => unknown,
-			options: {
-				onResult?: (
-					context: Ctx<"chosen_inline_result"> & {
-						args: RegExpMatchArray | null;
-					},
-				) => unknown;
-			} & Record<string, unknown> = {},
-		) {
-			if (options.onResult)
-				this.chosenInlineResult(trigger as any, options.onResult as any);
+		if (trigger instanceof RegExp) {
+			return this.on("inline_query", (context: Inner, next: Next) => {
+				if (!trigger.test(context.query)) return next();
+				context.args = context.query?.match(trigger);
+				return macroHandler ? macroHandler(context, noopNext) : handler(context);
+			});
+		}
 
-			const { onResult: _, ...macroOptions } = options;
-			const hasMacros = Object.keys(macroOptions).length > 0;
-			const macroHandler = hasMacros
-				? buildFromOptions(this["~"].macros, macroOptions, (ctx: any, _n: any) => handler(ctx))
-				: null;
+		// function predicate
+		return this.on("inline_query", (context: Inner, next: Next) => {
+			if (!trigger(context)) return next();
+			context.args = null;
+			return macroHandler ? macroHandler(context, noopNext) : handler(context);
+		});
+	},
 
-			if (typeof trigger === "string") {
-				return this.on<"inline_query", { args: RegExpMatchArray | null }>("inline_query", (context, next) => {
-					if (context.query !== trigger) return next();
-					context.args = null;
-					return macroHandler ? macroHandler(context, noopNext) : handler(context);
-				});
-			}
+	hears<TThis extends GramIOLike<TThis>>(
+		this: TThis,
+		trigger:
+			| RegExp
+			| MaybeArray<string>
+			| ((context: Ctx<"message">) => boolean),
+		handler: (
+			context: Ctx<"message"> & {
+				args: RegExpMatchArray | null;
+			} & ContextOf<TThis>,
+		) => unknown,
+		macroOptions?: Record<string, unknown>,
+	): TThis {
+		type Inner = Ctx<"message"> & { args: RegExpMatchArray | null } & ContextOf<TThis>;
+		const macroHandler = macroOptions
+			? buildFromOptions(this["~"].macros, macroOptions, handler)
+			: null;
 
-			if (trigger instanceof RegExp) {
-				return this.on<"inline_query", { args: RegExpMatchArray | null }>("inline_query", (context, next) => {
-					if (!trigger.test(context.query)) return next();
-					context.args = context.query?.match(trigger);
-					return macroHandler ? macroHandler(context, noopNext) : handler(context);
-				});
-			}
-
-			// function predicate
-			return this.on<"inline_query", { args: RegExpMatchArray | null }>("inline_query", (context, next) => {
-				if (!trigger(context)) return next();
+		if (typeof trigger === "string") {
+			return this.on("message", (context: Inner, next: Next) => {
+				if ((context.text ?? context.caption) !== trigger) return next();
 				context.args = null;
 				return macroHandler ? macroHandler(context, noopNext) : handler(context);
 			});
-		},
+		}
 
-		hears(
-			trigger:
-				| RegExp
-				| MaybeArray<string>
-				| ((context: Ctx<"message">) => boolean),
-			handler: (
-				context: Ctx<"message"> & {
-					args: RegExpMatchArray | null;
-				},
-			) => unknown,
-			macroOptions?: Record<string, unknown>,
-		) {
-			const macroHandler = macroOptions
-				? buildFromOptions(this["~"].macros, macroOptions, (ctx: any, _n: any) => handler(ctx))
-				: null;
-
-			if (typeof trigger === "string") {
-				return this.on<"message", { args: RegExpMatchArray | null }>("message", (context, next) => {
-					if ((context.text ?? context.caption) !== trigger) return next();
-					context.args = null;
-					return macroHandler ? macroHandler(context, noopNext) : handler(context);
-				});
-			}
-
-			if (Array.isArray(trigger)) {
-				return this.on<"message", { args: RegExpMatchArray | null }>("message", (context, next) => {
-					const text = context.text ?? context.caption;
-					if (!text || !trigger.includes(text)) return next();
-					context.args = null;
-					return macroHandler ? macroHandler(context, noopNext) : handler(context);
-				});
-			}
-
-			if (trigger instanceof RegExp) {
-				return this.on<"message", { args: RegExpMatchArray | null }>("message", (context, next) => {
-					const text = context.text ?? context.caption;
-					if (!text || !trigger.test(text)) return next();
-					context.args = text.match(trigger);
-					return macroHandler ? macroHandler(context, noopNext) : handler(context);
-				});
-			}
-
-			// function predicate
-			return this.on<"message", { args: RegExpMatchArray | null }>("message", (context, next) => {
-				if (typeof trigger !== "function" || !trigger(context)) return next();
+		if (Array.isArray(trigger)) {
+			return this.on("message", (context: Inner, next: Next) => {
+				const text = context.text ?? context.caption;
+				if (!text || !trigger.includes(text)) return next();
 				context.args = null;
 				return macroHandler ? macroHandler(context, noopNext) : handler(context);
 			});
-		},
+		}
 
-		command(
-			command: MaybeArray<string>,
-			handler: (context: Ctx<"message"> & { args: string | null }) => unknown,
-			macroOptions?: Record<string, unknown>,
-		) {
-			const normalizedCommands: string[] =
-				typeof command === "string" ? [command] : Array.from(command);
+		if (trigger instanceof RegExp) {
+			return this.on("message", (context: Inner, next: Next) => {
+				const text = context.text ?? context.caption;
+				if (!text || !trigger.test(text)) return next();
+				context.args = text.match(trigger);
+				return macroHandler ? macroHandler(context, noopNext) : handler(context);
+			});
+		}
 
-			for (const cmd of normalizedCommands) {
-				if (cmd.startsWith("/"))
-					throw new Error(`Do not use / in command name (${cmd})`);
-			}
+		// function predicate
+		return this.on("message", (context: Inner, next: Next) => {
+			if (typeof trigger !== "function" || !trigger(context)) return next();
+			context.args = null;
+			return macroHandler ? macroHandler(context, noopNext) : handler(context);
+		});
+	},
 
-			const macroHandler = macroOptions
-				? buildFromOptions(this["~"].macros, macroOptions, (ctx: any, _n: any) => handler(ctx))
-				: null;
+	command<TThis extends GramIOLike<TThis>>(
+		this: TThis,
+		command: MaybeArray<string>,
+		handler: (context: Ctx<"message"> & { args: string | null } & ContextOf<TThis>) => unknown,
+		macroOptions?: Record<string, unknown>,
+	): TThis {
+		const normalizedCommands: string[] =
+			typeof command === "string" ? [command] : Array.from(command);
 
-			return this.on<"message" | "business_message", { args: string | null }>(["message", "business_message"], (context, next) => {
-				const entity = context.entities?.find((entity) => {
-					if (entity.type !== "bot_command" || entity.offset > 0) return false;
+		for (const cmd of normalizedCommands) {
+			if (cmd.startsWith("/"))
+				throw new Error(`Do not use / in command name (${cmd})`);
+		}
 
-					const botInfo: { username?: string } | undefined = context.bot.info;
-					const cmd = context.text
-						?.slice(1, entity.length)
-						?.replace(
-							botInfo?.username ? `@${botInfo.username}` : /@[a-zA-Z0-9_]+/,
-							"",
-						);
+		type Inner = Ctx<"message"> & { args: string | null } & ContextOf<TThis>;
+		const macroHandler = macroOptions
+			? buildFromOptions(this["~"].macros, macroOptions, handler)
+			: null;
 
-					return normalizedCommands.some(
-						(normalizedCommand) => cmd === normalizedCommand,
+		return this.on(["message", "business_message"], (context: Inner, next: Next) => {
+			const entity = context.entities?.find((entity) => {
+				if (entity.type !== "bot_command" || entity.offset > 0) return false;
+
+				const botInfo: { username?: string } | undefined = context.bot.info;
+				const cmd = context.text
+					?.slice(1, entity.length)
+					?.replace(
+						botInfo?.username ? `@${botInfo.username}` : /@[a-zA-Z0-9_]+/,
+						"",
 					);
-				});
 
-				if (entity) {
-					context.args =
-						context.text?.slice(entity.length).trim() || null;
-					return macroHandler ? macroHandler(context, noopNext) : handler(context);
-				}
-
-				return next();
+				return normalizedCommands.some(
+					(normalizedCommand) => cmd === normalizedCommand,
+				);
 			});
-		},
 
-		startParameter(
-			parameter: RegExp | MaybeArray<string>,
-			handler: Handler<Ctx<"message"> & { rawStartPayload: string }>,
-			macroOptions?: Record<string, unknown>,
-		) {
-			const macroHandler = macroOptions
-				? buildFromOptions(this["~"].macros, macroOptions, (ctx: any, n: any) => handler(ctx, n))
-				: null;
-
-			if (parameter instanceof RegExp) {
-				return this.on<"message", { rawStartPayload: string }>("message", (context, next) => {
-					if (
-						!context.rawStartPayload ||
-						!parameter.test(context.rawStartPayload)
-					)
-						return next();
-					return macroHandler ? macroHandler(context, noopNext) : handler(context, noopNext);
-				});
+			if (entity) {
+				context.args = context.text?.slice(entity.length).trim() || null;
+				return macroHandler ? macroHandler(context, noopNext) : handler(context);
 			}
 
-			if (Array.isArray(parameter)) {
-				return this.on<"message", { rawStartPayload: string }>("message", (context, next) => {
-					if (
-						!context.rawStartPayload ||
-						!parameter.includes(context.rawStartPayload)
-					)
-						return next();
-					return macroHandler ? macroHandler(context, noopNext) : handler(context, noopNext);
-				});
-			}
+			return next();
+		});
+	},
 
-			// string
-			return this.on<"message", { rawStartPayload: string }>("message", (context, next) => {
-				if (!context.rawStartPayload || context.rawStartPayload !== parameter) return next();
+	startParameter<TThis extends GramIOLike<TThis>>(
+		this: TThis,
+		parameter: RegExp | MaybeArray<string>,
+		handler: Handler<Ctx<"message"> & { rawStartPayload: string } & ContextOf<TThis>>,
+		macroOptions?: Record<string, unknown>,
+	): TThis {
+		type Inner = Ctx<"message"> & { rawStartPayload: string } & ContextOf<TThis>;
+		const macroHandler = macroOptions
+			? buildFromOptions(this["~"].macros, macroOptions, handler)
+			: null;
+
+		if (parameter instanceof RegExp) {
+			return this.on("message", (context: Inner, next: Next) => {
+				if (!context.rawStartPayload || !parameter.test(context.rawStartPayload))
+					return next();
 				return macroHandler ? macroHandler(context, noopNext) : handler(context, noopNext);
 			});
-		},
+		}
+
+		if (Array.isArray(parameter)) {
+			return this.on("message", (context: Inner, next: Next) => {
+				if (!context.rawStartPayload || !parameter.includes(context.rawStartPayload))
+					return next();
+				return macroHandler ? macroHandler(context, noopNext) : handler(context, noopNext);
+			});
+		}
+
+		// string
+		return this.on("message", (context: Inner, next: Next) => {
+			if (!context.rawStartPayload || context.rawStartPayload !== parameter) return next();
+			return macroHandler ? macroHandler(context, noopNext) : handler(context, noopNext);
+		});
 	},
+});
+
+export const { Composer } = createComposer<
+	Context<AnyBot>,
+	TelegramEventMap,
+	typeof methods
+>({
+	discriminator: (ctx: Context<AnyBot>) => (ctx as any).updateType,
+	types: eventTypes<TelegramEventMap>(),
+	methods,
 });
 
 export { EventQueue, buildFromOptions, compose, noopNext, skip, stop };

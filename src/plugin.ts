@@ -1,4 +1,8 @@
-import type { EventComposer, MacroDef, MacroDefinitions } from "@gramio/composer";
+import type {
+	EventComposer,
+	MacroDef,
+	MacroDefinitions,
+} from "@gramio/composer";
 import type {
 	BotLike,
 	Context,
@@ -198,7 +202,11 @@ export class Plugin<
 	>(
 		updateName: MaybeArray<Update>,
 		handler: Handler,
-	): Plugin<Errors, Derives & { [K in Update]: Awaited<ReturnType<Handler>> }, Macros>;
+	): Plugin<
+		Errors,
+		Derives & { [K in Update]: Awaited<ReturnType<Handler>> },
+		Macros
+	>;
 
 	derive<
 		Update extends UpdateName,

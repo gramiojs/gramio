@@ -2,9 +2,9 @@ import fs from "node:fs/promises";
 import { Readable } from "node:stream";
 import type { CallbackData } from "@gramio/callback-data";
 import type {
+	DeriveFromOptions,
 	EventComposer,
 	HandlerOptions,
-	DeriveFromOptions,
 	MacroDef,
 	MacroDefinitions,
 } from "@gramio/composer";
@@ -531,7 +531,11 @@ export class Bot<
 	>(
 		updateName: MaybeArray<Update>,
 		handler: Handler,
-	): Bot<Errors, Derives & { [K in Update]: Awaited<ReturnType<Handler>> }, Macros>;
+	): Bot<
+		Errors,
+		Derives & { [K in Update]: Awaited<ReturnType<Handler>> },
+		Macros
+	>;
 
 	derive<
 		Update extends UpdateName,
@@ -1063,7 +1067,10 @@ export class Bot<
 			this.updates.composer.extend(plugin._.composer);
 		} else if (Object.keys(plugin._.composer["~"].macros).length) {
 			// Merge macros even when plugin has no middleware
-			Object.assign(this.updates.composer["~"].macros, plugin._.composer["~"].macros);
+			Object.assign(
+				this.updates.composer["~"].macros,
+				plugin._.composer["~"].macros,
+			);
 		}
 
 		this.decorate(plugin._.decorators);
@@ -1129,9 +1136,17 @@ export class Bot<
 	 * });
 	 * ```
 	 * */
-	reaction<TOptions extends HandlerOptions<ContextType<typeof this, "message_reaction">, Macros> = {}>(
+	reaction<
+		TOptions extends HandlerOptions<
+			ContextType<typeof this, "message_reaction">,
+			Macros
+		> = {},
+	>(
 		trigger: MaybeArray<TelegramReactionTypeEmojiEmoji>,
-		handler: (context: ContextType<typeof this, "message_reaction"> & DeriveFromOptions<Macros, TOptions>) => unknown,
+		handler: (
+			context: ContextType<typeof this, "message_reaction"> &
+				DeriveFromOptions<Macros, TOptions>,
+		) => unknown,
 		options?: TOptions,
 	) {
 		this.updates.composer.reaction(trigger, handler as any, options as any);
@@ -1163,15 +1178,23 @@ export class Bot<
 	 */
 	callbackQuery<
 		Trigger extends CallbackData | string | RegExp,
-		TOptions extends HandlerOptions<CallbackQueryShorthandContext<typeof this, Trigger>, Macros> = {},
+		TOptions extends HandlerOptions<
+			CallbackQueryShorthandContext<typeof this, Trigger>,
+			Macros
+		> = {},
 	>(
 		trigger: Trigger,
 		handler: (
-			context: CallbackQueryShorthandContext<typeof this, Trigger> & DeriveFromOptions<Macros, TOptions>,
+			context: CallbackQueryShorthandContext<typeof this, Trigger> &
+				DeriveFromOptions<Macros, TOptions>,
 		) => unknown,
 		options?: TOptions,
 	) {
-		this.updates.composer.callbackQuery(trigger, handler as any, options as any);
+		this.updates.composer.callbackQuery(
+			trigger,
+			handler as any,
+			options as any,
+		);
 		return this;
 	}
 
@@ -1181,10 +1204,19 @@ export class Bot<
 		TOptions extends HandlerOptions<Ctx, Macros> = {},
 	>(
 		trigger: RegExp | string | ((context: Ctx) => boolean),
-		handler: (context: Ctx & { args: RegExpMatchArray | null } & DeriveFromOptions<Macros, TOptions>) => unknown,
+		handler: (
+			context: Ctx & { args: RegExpMatchArray | null } & DeriveFromOptions<
+					Macros,
+					TOptions
+				>,
+		) => unknown,
 		options?: TOptions,
 	) {
-		this.updates.composer.chosenInlineResult(trigger as any, handler as any, options as any);
+		this.updates.composer.chosenInlineResult(
+			trigger as any,
+			handler as any,
+			options as any,
+		);
 		return this;
 	}
 
@@ -1261,7 +1293,12 @@ export class Bot<
 		TOptions extends HandlerOptions<Ctx, Macros> = {},
 	>(
 		trigger: Trigger,
-		handler: (context: Ctx & { args: RegExpMatchArray | null } & DeriveFromOptions<Macros, TOptions>) => unknown,
+		handler: (
+			context: Ctx & { args: RegExpMatchArray | null } & DeriveFromOptions<
+					Macros,
+					TOptions
+				>,
+		) => unknown,
 		options?: TOptions,
 	) {
 		this.updates.composer.hears(trigger as any, handler as any, options as any);
@@ -1278,10 +1315,17 @@ export class Bot<
 	 * });
 	 * ```
 	 */
-	command<TOptions extends HandlerOptions<ContextType<typeof this, "message">, Macros> = {}>(
+	command<
+		TOptions extends HandlerOptions<
+			ContextType<typeof this, "message">,
+			Macros
+		> = {},
+	>(
 		command: MaybeArray<string>,
 		handler: (
-			context: ContextType<typeof this, "message"> & { args: string | null } & DeriveFromOptions<Macros, TOptions>,
+			context: ContextType<typeof this, "message"> & {
+				args: string | null;
+			} & DeriveFromOptions<Macros, TOptions>,
 		) => unknown,
 		options?: TOptions,
 	) {
@@ -1299,7 +1343,12 @@ export class Bot<
 	 * });
 	 * ```
 	 */
-	startParameter<TOptions extends HandlerOptions<ContextType<typeof this, "message"> & { rawStartPayload: string }, Macros> = {}>(
+	startParameter<
+		TOptions extends HandlerOptions<
+			ContextType<typeof this, "message"> & { rawStartPayload: string },
+			Macros
+		> = {},
+	>(
 		parameter: RegExp | MaybeArray<string>,
 		handler: Handler<
 			ContextType<typeof this, "message"> & {
@@ -1308,7 +1357,11 @@ export class Bot<
 		>,
 		options?: TOptions,
 	) {
-		this.updates.composer.startParameter(parameter, handler as any, options as any);
+		this.updates.composer.startParameter(
+			parameter,
+			handler as any,
+			options as any,
+		);
 		return this;
 	}
 

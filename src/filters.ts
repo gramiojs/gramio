@@ -151,10 +151,7 @@ export const filters = {
 	text: ((ctx: any) => ctx.hasText()) as Filter<any, { text: string }>,
 
 	/** Matches messages that have a caption */
-	caption: ((ctx: any) => ctx.hasCaption()) as Filter<
-		any,
-		{ caption: string }
-	>,
+	caption: ((ctx: any) => ctx.hasCaption()) as Filter<any, { caption: string }>,
 
 	// ── Message content & structure ─────────────────────────────────────
 	/** Matches messages that contain a dice */
@@ -182,10 +179,7 @@ export const filters = {
 	>,
 
 	/** Matches messages that have a quote */
-	quote: ((ctx: any) => ctx.hasQuote()) as Filter<
-		any,
-		{ quote: TextQuote }
-	>,
+	quote: ((ctx: any) => ctx.hasQuote()) as Filter<any, { quote: TextQuote }>,
 
 	/** Matches messages sent via a bot */
 	viaBot: ((ctx: any) => ctx.hasViaBot()) as Filter<any, { viaBot: User }>,
@@ -203,8 +197,7 @@ export const filters = {
 	>,
 
 	/** Matches messages with a raw /start payload string */
-	rawStartPayload: ((ctx: any) =>
-		ctx.rawStartPayload !== undefined) as Filter<
+	rawStartPayload: ((ctx: any) => ctx.rawStartPayload !== undefined) as Filter<
 		any,
 		{ rawStartPayload: string }
 	>,
@@ -244,10 +237,7 @@ export const filters = {
 
 	// ── Raw property narrowing ──────────────────────────────────────────
 	/** Matches messages with a game */
-	game: ((ctx: any) => ctx.game !== undefined) as Filter<
-		any,
-		{ game: Game }
-	>,
+	game: ((ctx: any) => ctx.game !== undefined) as Filter<any, { game: Game }>,
 
 	/** Matches messages with a story */
 	story: ((ctx: any) => ctx.story !== undefined) as Filter<

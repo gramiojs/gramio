@@ -6,7 +6,7 @@
       "name": "gramio",
       "dependencies": {
         "@gramio/callback-data": "^0.1.0",
-        "@gramio/composer": "^0.2.0",
+        "@gramio/composer": "^0.3.0",
         "@gramio/contexts": "^0.4.0",
         "@gramio/files": "^0.3.0",
         "@gramio/format": "^0.3.4",
@@ -98,7 +98,7 @@
 
     "@gramio/callback-data": ["@gramio/callback-data@0.1.0", "", {}, "sha512-eqpR2Bod7dySDLDu8RB3xJdcrwyE3ZrhHaP+v0xOqWbgOCGY+gZp37E2E0KeXq/ko/8DLp3XeTaQD61++kiK6A=="],
 
-    "@gramio/composer": ["@gramio/composer@0.2.0", "", {}, "sha512-rjXePc47md99qPsxcfA9Uj+h10X2RxDPX/h88PXwVMH+98yh8KXmk4ZlNqcG+Bj7Pxn1/9ysrFL2B+NislxPJQ=="],
+    "@gramio/composer": ["@gramio/composer@0.3.0", "", {}, "sha512-IqO6FqehXH9xx+o6HRP87E6a6v78IuGrVFeoiH1HQ9FXNtq3xQZ/ZhP5f9MgT09vNMgRoRvxjFQ2aK2w++pTXQ=="],
 
     "@gramio/contexts": ["@gramio/contexts@0.4.0", "", { "peerDependencies": { "@gramio/types": "^9.4.0", "inspectable": "^3.0.1" } }, "sha512-yWThdaII6ewPWvVlYHYWzVKGAmzMmP0PDYkdLz64Jd8sKh2vmimLap7nVcw0ZvITY5U6USDJX8Cxun/rvx7qmA=="],
 
