@@ -14,13 +14,11 @@ export interface FrameworkHandler {
 }
 export type FrameworkAdapter = (...args: any[]) => FrameworkHandler;
 
-// @ts-expect-error
 const responseOK = () => new Response(RESPONSE_OK) as Response;
 
 const responseUnauthorized = () =>
 	new Response(WRONG_TOKEN_ERROR, {
 		status: 401,
-		// @ts-expect-error
 	}) as Response;
 
 export const frameworks = {

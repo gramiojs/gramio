@@ -274,7 +274,7 @@ const methods = defineComposerMethods({
 
 		// function predicate
 		return this.on("message", (context: Inner, next: Next) => {
-			if (typeof trigger !== "function" || !trigger(context)) return next();
+			if (typeof trigger !== "function" || !trigger(context as unknown as Ctx<"message">)) return next();
 			context.args = null;
 			return macroHandler ? macroHandler(context, noopNext) : handler(context);
 		});

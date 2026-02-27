@@ -203,7 +203,7 @@ describe("@gramio/test — hears handler", () => {
 		await user.sendMessage("order 42");
 
 		expect(capturedArgs).not.toBeNull();
-		expect(capturedArgs?.[1]).toBe("42");
+		expect(capturedArgs![1]!).toBe("42");
 	});
 
 	test("matches array of strings", async () => {
@@ -284,7 +284,7 @@ describe("@gramio/test — callbackQuery handler", () => {
 		await user.on(msg).click("action:delete");
 
 		expect(capturedData).not.toBeNull();
-		expect(capturedData?.[1]).toBe("delete");
+		expect(capturedData![1]!).toBe("delete");
 	});
 });
 
@@ -967,7 +967,7 @@ describe("@gramio/test — inlineQuery handler", () => {
 		await user.sendInlineQuery("search:typescript");
 
 		expect(capturedArgs).not.toBeNull();
-		expect(capturedArgs?.[1]).toBe("typescript");
+		expect(capturedArgs![1]!).toBe("typescript");
 	});
 
 	test("does not match regex that doesn't fit", async () => {
@@ -1098,7 +1098,7 @@ describe("@gramio/test — chosenInlineResult handler", () => {
 		await user.chooseInlineResult("item-1", "search:typescript");
 
 		expect(capturedArgs).not.toBeNull();
-		expect(capturedArgs?.[1]).toBe("typescript");
+		expect(capturedArgs![1]!).toBe("typescript");
 	});
 
 	test("function predicate receives full context (can check query)", async () => {
