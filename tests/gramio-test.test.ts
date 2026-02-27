@@ -1,6 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
 import { apiError, TelegramTestEnvironment } from "@gramio/test";
 import { Bot } from "../src/bot.ts";
+import { Composer } from "../src/composer.ts";
 import { Plugin } from "../src/plugin.ts";
 
 const TOKEN = "test-token";
@@ -202,7 +203,7 @@ describe("@gramio/test — hears handler", () => {
 		await user.sendMessage("order 42");
 
 		expect(capturedArgs).not.toBeNull();
-		expect(capturedArgs![1]).toBe("42");
+		expect(capturedArgs?.[1]).toBe("42");
 	});
 
 	test("matches array of strings", async () => {
@@ -283,7 +284,7 @@ describe("@gramio/test — callbackQuery handler", () => {
 		await user.on(msg).click("action:delete");
 
 		expect(capturedData).not.toBeNull();
-		expect(capturedData![1]).toBe("delete");
+		expect(capturedData?.[1]).toBe("delete");
 	});
 });
 
@@ -476,7 +477,10 @@ describe("@gramio/test — onError hook", () => {
 
 		// @ts-expect-error source Bot vs packaged AnyBot
 		const env = new TelegramTestEnvironment(bot);
-		env.onApi("sendMessage", apiError(403, "Forbidden: bot was blocked by the user"));
+		env.onApi(
+			"sendMessage",
+			apiError(403, "Forbidden: bot was blocked by the user"),
+		);
 
 		const user = env.createUser({ first_name: "Bob" });
 
@@ -569,7 +573,10 @@ describe("@gramio/test — API mocking", () => {
 
 		// @ts-expect-error source Bot vs packaged AnyBot
 		const env = new TelegramTestEnvironment(bot);
-		env.onApi("sendMessage", apiError(429, "Too Many Requests", { retry_after: 30 }));
+		env.onApi(
+			"sendMessage",
+			apiError(429, "Too Many Requests", { retry_after: 30 }),
+		);
 
 		const user = env.createUser({ first_name: "Charlie" });
 
@@ -594,7 +601,9 @@ describe("@gramio/test — API mocking", () => {
 
 		await user.sendMessage("trigger");
 
-		expect((env.lastApiCall("sendMessage")?.response as any).message_id).not.toBe(999);
+		expect(
+			(env.lastApiCall("sendMessage")?.response as any).message_id,
+		).not.toBe(999);
 	});
 
 	test("offApi with no args resets all overrides", async () => {
@@ -613,7 +622,9 @@ describe("@gramio/test — API mocking", () => {
 
 		await user.sendMessage("trigger");
 
-		expect((env.lastApiCall("sendMessage")?.response as any).message_id).not.toBe(999);
+		expect(
+			(env.lastApiCall("sendMessage")?.response as any).message_id,
+		).not.toBe(999);
 	});
 });
 
@@ -956,7 +967,7 @@ describe("@gramio/test — inlineQuery handler", () => {
 		await user.sendInlineQuery("search:typescript");
 
 		expect(capturedArgs).not.toBeNull();
-		expect(capturedArgs![1]).toBe("typescript");
+		expect(capturedArgs?.[1]).toBe("typescript");
 	});
 
 	test("does not match regex that doesn't fit", async () => {
@@ -1087,7 +1098,7 @@ describe("@gramio/test — chosenInlineResult handler", () => {
 		await user.chooseInlineResult("item-1", "search:typescript");
 
 		expect(capturedArgs).not.toBeNull();
-		expect(capturedArgs![1]).toBe("typescript");
+		expect(capturedArgs?.[1]).toBe("typescript");
 	});
 
 	test("function predicate receives full context (can check query)", async () => {
@@ -1236,5 +1247,55 @@ describe("@gramio/test — UserOnMessageScope", () => {
 		await user.on(msg).react(["👍", "❤"]);
 
 		expect(handler).toHaveBeenCalled();
+	});
+});
+
+describe("bot.extend(plainComposer) — command WeakMap isolation", () => {
+	// When a plain Composer is extended into Bot, its .command() middleware runs
+	// in Object.create(ctx) ("local" scope). WeakMap-backed getters like ctx.text
+	// fail because WeakMap.has(Object.create(ctx)) === false.
+	//
+	// Baseline (working): bot.command() registers directly on Bot → runs on ctx itself → OK.
+	// Broken path: new Composer().command() extended via bot.extend() → Object.create(ctx) → crash.
+
+	test("baseline: bot.command() handler can access ctx.text", async () => {
+		let capturedText: string | null = null;
+
+		const bot = new Bot(TOKEN).command("hello", (ctx) => {
+			capturedText = ctx.text ?? null;
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+
+		await user.sendCommand("hello");
+
+		expect(capturedText as string | null).toBe("/hello");
+	});
+
+	test("plain Composer.command() extended into Bot — WeakMap isolation prevents clean execution", async () => {
+		// Known bug: Object.create(ctx) scope breaks WeakMap-backed property access.
+		// Handler either crashes (onError fires) or is never cleanly reached.
+		let handlerReached = false;
+		let errorCaught = false;
+
+		const composer = new Composer().command("hello", (ctx) => {
+			handlerReached = true;
+			void ctx.text; // triggers the WeakMap isolation crash
+		});
+
+		const bot = new Bot(TOKEN).extend(composer).onError(() => {
+			errorCaught = true;
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Bob" });
+
+		await user.sendCommand("hello");
+
+		// Must NOT succeed cleanly: either crashed (errorCaught) or handler wasn't reached
+		expect(handlerReached && !errorCaught).toBe(false);
 	});
 });
