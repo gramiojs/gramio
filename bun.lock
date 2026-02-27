@@ -6,10 +6,10 @@
       "name": "gramio",
       "dependencies": {
         "@gramio/callback-data": "^0.1.0",
-        "@gramio/composer": "^0.3.0",
+        "@gramio/composer": "^0.3.1",
         "@gramio/contexts": "^0.4.0",
         "@gramio/files": "^0.3.0",
-        "@gramio/format": "^0.3.4",
+        "@gramio/format": "^0.4.0",
         "@gramio/keyboards": "^1.3.0",
         "@gramio/types": "^9.4.2",
         "debug": "^4.4.3",
@@ -20,7 +20,7 @@
         "@types/bun": "^1.3.9",
         "@types/debug": "^4.1.12",
         "expect-type": "^1.3.0",
-        "pkgroll": "^2.26.3",
+        "pkgroll": "^2.27.0",
         "typescript": "^5.9.3",
       },
     },
@@ -98,13 +98,13 @@
 
     "@gramio/callback-data": ["@gramio/callback-data@0.1.0", "", {}, "sha512-eqpR2Bod7dySDLDu8RB3xJdcrwyE3ZrhHaP+v0xOqWbgOCGY+gZp37E2E0KeXq/ko/8DLp3XeTaQD61++kiK6A=="],
 
-    "@gramio/composer": ["@gramio/composer@0.3.0", "", {}, "sha512-IqO6FqehXH9xx+o6HRP87E6a6v78IuGrVFeoiH1HQ9FXNtq3xQZ/ZhP5f9MgT09vNMgRoRvxjFQ2aK2w++pTXQ=="],
+    "@gramio/composer": ["@gramio/composer@0.3.1", "", {}, "sha512-m/OJPlwXSR/Fbne1Jgi3cMNrNRa6UBXasCpnySXvVztpGcZ239UutOGRnwGTwaUhxt6+Jp6ET9KlvTg8Hr1/7g=="],
 
     "@gramio/contexts": ["@gramio/contexts@0.4.0", "", { "peerDependencies": { "@gramio/types": "^9.4.0", "inspectable": "^3.0.1" } }, "sha512-yWThdaII6ewPWvVlYHYWzVKGAmzMmP0PDYkdLz64Jd8sKh2vmimLap7nVcw0ZvITY5U6USDJX8Cxun/rvx7qmA=="],
 
     "@gramio/files": ["@gramio/files@0.3.0", "", { "dependencies": { "@gramio/types": "^9.0.0" } }, "sha512-ZdrwRm57xxWzQ+KxGB5V2aC6raZ9B0yZavkPhd0JzKFUkKS1jbeG3W35qQxdlZZLtD9aeZbjwRAHk4VrRDbpqA=="],
 
-    "@gramio/format": ["@gramio/format@0.3.4", "", { "dependencies": { "@gramio/types": "^9.1.3" }, "peerDependencies": { "marked": "^15.0.11" }, "optionalPeers": ["marked"] }, "sha512-j5fUVG8cJ4Oi3Tdtxp1K5K34ED/Btkg4ctpFdLDIOHRvN9N8TUIw7MwqPRxNYBXTXawJ2YmPTkEahitbMSjZOA=="],
+    "@gramio/format": ["@gramio/format@0.4.0", "", { "dependencies": { "@gramio/types": "^9.1.3" }, "peerDependencies": { "marked": "^15.0.11", "node-html-parser": ">=6.0.0" }, "optionalPeers": ["marked", "node-html-parser"] }, "sha512-UiSn92H2RVv2yUbtmCwI8PIxUocinQYuPcUoQhp11o+mnuMf3yIQuNLIe4/Vc4tuE4LlTK1VBvJswacK3iGrLQ=="],
 
     "@gramio/keyboards": ["@gramio/keyboards@1.3.0", "", { "dependencies": { "@gramio/types": "^9.3.1" } }, "sha512-bIt2gJPRawDM5AjFW4oEvxUls1cp2d6gOrfmGtLrkBvNjR5QqsLmKmItXAh2uFDEhJjY5mFsPVIoH7J3xA0j+w=="],
 
@@ -260,7 +260,7 @@
 
     "picomatch": ["picomatch@4.0.2", "", {}, "sha512-M7BAV6Rlcy5u+m6oPhAPFgJTzAioX/6B0DxyvDlo9l8+T3nLKbrczg2WLUyzd45L8RqfUMyGPzekbMvX2Ldkwg=="],
 
-    "pkgroll": ["pkgroll@2.26.3", "", { "dependencies": { "@rollup/plugin-alias": "^6.0.0", "@rollup/plugin-commonjs": "^29.0.0", "@rollup/plugin-dynamic-import-vars": "^2.1.5", "@rollup/plugin-json": "^6.1.0", "@rollup/plugin-node-resolve": "^16.0.3", "cjs-module-lexer": "^2.2.0", "esbuild": "^0.26.0", "magic-string": "^0.30.21", "rollup": "^4.53.5", "rollup-plugin-import-trace": "^1.0.1", "rollup-pluginutils": "^2.8.2", "yaml": "^2.8.2" }, "peerDependencies": { "typescript": "^4.1 || ^5.0" }, "optionalPeers": ["typescript"], "bin": { "pkgroll": "dist/cli.mjs" } }, "sha512-Ed+uTZXaYHiwPCf4nH32toY/x7PkqMpeDAmcO0GtAQsgdCGGTXMt/Y8fdq8q9MwEzn0S+qeSnyL13PQ/1wZImg=="],
+    "pkgroll": ["pkgroll@2.27.0", "", { "dependencies": { "@rollup/plugin-alias": "^6.0.0", "@rollup/plugin-commonjs": "^29.0.0", "@rollup/plugin-dynamic-import-vars": "^2.1.5", "@rollup/plugin-json": "^6.1.0", "@rollup/plugin-node-resolve": "^16.0.3", "cjs-module-lexer": "^2.2.0", "esbuild": "^0.26.0", "magic-string": "^0.30.21", "rollup": "^4.53.5", "rollup-plugin-import-trace": "^1.0.1", "rollup-pluginutils": "^2.8.2", "yaml": "^2.8.2" }, "peerDependencies": { "typescript": "^4.1 || ^5.0" }, "optionalPeers": ["typescript"], "bin": { "pkgroll": "dist/cli.mjs" } }, "sha512-Huw5ZRxWTWeQ0PbNNKdbkAl52bPMy009RXdB4u3qjb47AMEBLG5VVF0V6oOD+YYiZaHaFxvjEeX+A2T9ckaClQ=="],
 
     "queue-microtask": ["queue-microtask@1.2.3", "", {}, "sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A=="],
 
@@ -288,13 +288,13 @@
 
     "@gramio/files/@gramio/types": ["@gramio/types@9.1.3", "", {}, "sha512-Mbu6bIS7ChKSZndB11yO5gtneEoQCRxNsEK58E/MBZWnXAzg9ITyipJR8oys92xzbgRemL9CkZOynYBXa7O5Tg=="],
 
-    "@gramio/format/@gramio/types": ["@gramio/types@9.3.1", "", {}, "sha512-vptADjo3iG11ZJnewn+Kf2uSlk0OisnEXlW4gSLwqNlSIwgZ7gyWC0PuebNbjWgqowLWDlFpjbzUycojTMNY+w=="],
-
     "@gramio/keyboards/@gramio/types": ["@gramio/types@9.3.1", "", {}, "sha512-vptADjo3iG11ZJnewn+Kf2uSlk0OisnEXlW4gSLwqNlSIwgZ7gyWC0PuebNbjWgqowLWDlFpjbzUycojTMNY+w=="],
 
     "@rollup/plugin-dynamic-import-vars/magic-string": ["magic-string@0.30.17", "", { "dependencies": { "@jridgewell/sourcemap-codec": "^1.5.0" } }, "sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA=="],
 
     "gramio/@gramio/callback-data": ["@gramio/callback-data@0.0.3", "", {}, "sha512-fL+fo3c58dIE6cl2yEoG9E4Y+mT+zvpw7PXImcATFVdRcK4mnuDzzxyOOibopzjKNszlHQZXYJer515kBr81RQ=="],
+
+    "gramio/@gramio/format": ["@gramio/format@0.3.4", "", { "dependencies": { "@gramio/types": "^9.1.3" }, "peerDependencies": { "marked": "^15.0.11" }, "optionalPeers": ["marked"] }, "sha512-j5fUVG8cJ4Oi3Tdtxp1K5K34ED/Btkg4ctpFdLDIOHRvN9N8TUIw7MwqPRxNYBXTXawJ2YmPTkEahitbMSjZOA=="],
 
     "gramio/@gramio/types": ["@gramio/types@9.4.0", "", {}, "sha512-yVxgrXBGj8AD78wXixC9UPXqF9KrzHw3uW1Rx1gaP6mA/RX2AnvbvK3eHfKYbY3ZB1DsxtkvD7o+MHCm+rvlaQ=="],
 
@@ -303,5 +303,7 @@
     "rollup-pluginutils/estree-walker": ["estree-walker@0.6.1", "", {}, "sha512-SqmZANLWS0mnatqbSfRP5g8OXZC12Fgg1IwNtLsyHDzJizORW4khDfjPqJZsemPWBB2uqykUah5YpQ6epsqC/w=="],
 
     "@rollup/plugin-dynamic-import-vars/magic-string/@jridgewell/sourcemap-codec": ["@jridgewell/sourcemap-codec@1.5.4", "", {}, "sha512-VT2+G1VQs/9oz078bLrYbecdZKs912zQlkelYpuf+SXF+QvZDYJlbx/LSx+meSAwdDFnF8FVXW92AVjjkVmgFw=="],
+
+    "gramio/@gramio/format/@gramio/types": ["@gramio/types@9.3.1", "", {}, "sha512-vptADjo3iG11ZJnewn+Kf2uSlk0OisnEXlW4gSLwqNlSIwgZ7gyWC0PuebNbjWgqowLWDlFpjbzUycojTMNY+w=="],
   }
 }
