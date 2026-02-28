@@ -6,6 +6,7 @@ import {
 	type ContextOf,
 	createComposer,
 	defineComposerMethods,
+	EventContextOf,
 	EventQueue,
 	eventTypes,
 	type MacroDefinitions,
@@ -35,10 +36,9 @@ type Ctx<K extends keyof ContextsMapping<AnyBot>> = InstanceType<
  * bodies need: macro registry and the cross-method `chosenInlineResult` call.
  */
 type GramIOLike<T> = ComposerLike<T> & {
-	"~": { macros: MacroDefinitions };
+	"~": { macros: MacroDefinitions; Derives?: Record<string, object> };
 	chosenInlineResult(trigger: any, handler: any, macroOptions?: any): T;
 };
-
 /** Teach EventComposer about GramIO-specific overloads */
 declare module "@gramio/composer" {
 	interface EventComposer<TBase, TEventMap, TIn, TOut, TExposed, TDerives, TMethods, TMacros> {
@@ -61,17 +61,18 @@ const methods = defineComposerMethods({
 	reaction<TThis extends GramIOLike<TThis>>(
 		this: TThis,
 		trigger: MaybeArray<TelegramReactionTypeEmojiEmoji>,
-		handler: (context: Ctx<"message_reaction"> & ContextOf<TThis>) => unknown,
+		handler: (context: Ctx<"message_reaction"> & EventContextOf<TThis, "message_reaction">) => unknown,
 		macroOptions?: Record<string, unknown>,
 	): TThis {
 		const reactions = Array.isArray(trigger) ? trigger : [trigger];
 		const macroHandler = macroOptions
-			? buildFromOptions(this["~"].macros, macroOptions, handler)
+			? buildFromOptions(this["~"].macros, macroOptions, handler as (ctx: any) => unknown)
 			: null;
 
+		type Inner = Ctx<"message_reaction"> & EventContextOf<TThis, "message_reaction">;
 		return this.on(
 			"message_reaction",
-			(context: Ctx<"message_reaction"> & ContextOf<TThis>, next: Next) => {
+			(context: Inner, next: Next) => {
 				const oldEmojis = new Set<string>();
 				for (const r of context.oldReactions) {
 					if (r.type === "emoji") oldEmojis.add(r.emoji);
@@ -99,11 +100,11 @@ const methods = defineComposerMethods({
 				: Trigger extends RegExp
 					? RegExpMatchArray
 					: never;
-		} & ContextOf<TThis>) => unknown,
+		} & EventContextOf<TThis, "callback_query">) => unknown,
 		macroOptions?: Record<string, unknown>,
 	): TThis {
 		const macroHandler = macroOptions
-			? buildFromOptions(this["~"].macros, macroOptions, handler)
+			? buildFromOptions(this["~"].macros, macroOptions, handler as (ctx: any) => unknown)
 			: null;
 
 		type QueryData = Trigger extends CallbackData
@@ -111,7 +112,7 @@ const methods = defineComposerMethods({
 			: Trigger extends RegExp
 				? RegExpMatchArray
 				: never;
-		type Inner = Ctx<"callback_query"> & { queryData: QueryData } & ContextOf<TThis>;
+		type Inner = Ctx<"callback_query"> & { queryData: QueryData } & EventContextOf<TThis, "callback_query">;
 
 		if (typeof trigger === "string") {
 			return this.on("callback_query", (context: Inner, next: Next) => {
@@ -145,13 +146,13 @@ const methods = defineComposerMethods({
 		handler: (
 			context: Ctx<"chosen_inline_result"> & {
 				args: RegExpMatchArray | null;
-			} & ContextOf<TThis>,
+			} & EventContextOf<TThis, "chosen_inline_result">,
 		) => unknown,
 		macroOptions?: Record<string, unknown>,
 	): TThis {
-		type Inner = Ctx<"chosen_inline_result"> & { args: RegExpMatchArray | null } & ContextOf<TThis>;
+		type Inner = Ctx<"chosen_inline_result"> & { args: RegExpMatchArray | null } & EventContextOf<TThis, "chosen_inline_result">;
 		const macroHandler = macroOptions
-			? buildFromOptions(this["~"].macros, macroOptions, handler)
+			? buildFromOptions(this["~"].macros, macroOptions, handler as (ctx: any) => unknown)
 			: null;
 
 		if (typeof trigger === "string") {
@@ -184,24 +185,24 @@ const methods = defineComposerMethods({
 		handler: (
 			context: Ctx<"inline_query"> & {
 				args: RegExpMatchArray | null;
-			} & ContextOf<TThis>,
+			} & EventContextOf<TThis, "inline_query">,
 		) => unknown,
 		options: {
 			onResult?: (
 				context: Ctx<"chosen_inline_result"> & {
 					args: RegExpMatchArray | null;
-				} & ContextOf<TThis>,
+				} & EventContextOf<TThis, "chosen_inline_result">,
 			) => unknown;
 		} & Record<string, unknown> = {},
 	): TThis {
 		if (options.onResult) this.chosenInlineResult(trigger, options.onResult);
 
-		type Inner = Ctx<"inline_query"> & { args: RegExpMatchArray | null } & ContextOf<TThis>;
+		type Inner = Ctx<"inline_query"> & { args: RegExpMatchArray | null } & EventContextOf<TThis, "inline_query">;
 
 		const { onResult: _, ...macroOptions } = options;
 		const hasMacros = Object.keys(macroOptions).length > 0;
 		const macroHandler = hasMacros
-			? buildFromOptions(this["~"].macros, macroOptions, handler)
+			? buildFromOptions(this["~"].macros, macroOptions, handler as (ctx: any) => unknown)
 			: null;
 
 		if (typeof trigger === "string") {
@@ -237,13 +238,13 @@ const methods = defineComposerMethods({
 		handler: (
 			context: Ctx<"message"> & {
 				args: RegExpMatchArray | null;
-			} & ContextOf<TThis>,
+			} & EventContextOf<TThis, "message">,
 		) => unknown,
 		macroOptions?: Record<string, unknown>,
 	): TThis {
-		type Inner = Ctx<"message"> & { args: RegExpMatchArray | null } & ContextOf<TThis>;
+		type Inner = Ctx<"message"> & { args: RegExpMatchArray | null } & EventContextOf<TThis, "message">;
 		const macroHandler = macroOptions
-			? buildFromOptions(this["~"].macros, macroOptions, handler)
+			? buildFromOptions(this["~"].macros, macroOptions, handler as (ctx: any) => unknown)
 			: null;
 
 		if (typeof trigger === "string") {
@@ -283,7 +284,7 @@ const methods = defineComposerMethods({
 	command<TThis extends GramIOLike<TThis>>(
 		this: TThis,
 		command: MaybeArray<string>,
-		handler: (context: Ctx<"message"> & { args: string | null } & ContextOf<TThis>) => unknown,
+		handler: (context: Ctx<"message"> & { args: string | null } & EventContextOf<TThis, "message">) => unknown,
 		macroOptions?: Record<string, unknown>,
 	): TThis {
 		const normalizedCommands: string[] =
@@ -294,9 +295,9 @@ const methods = defineComposerMethods({
 				throw new Error(`Do not use / in command name (${cmd})`);
 		}
 
-		type Inner = Ctx<"message"> & { args: string | null } & ContextOf<TThis>;
+		type Inner = Ctx<"message"> & { args: string | null } & EventContextOf<TThis, "message">;
 		const macroHandler = macroOptions
-			? buildFromOptions(this["~"].macros, macroOptions, handler)
+			? buildFromOptions(this["~"].macros, macroOptions, handler as (ctx: any) => unknown)
 			: null;
 
 		return this.on(["message", "business_message"], (context: Inner, next: Next) => {
@@ -328,12 +329,12 @@ const methods = defineComposerMethods({
 	startParameter<TThis extends GramIOLike<TThis>>(
 		this: TThis,
 		parameter: RegExp | MaybeArray<string>,
-		handler: Handler<Ctx<"message"> & { rawStartPayload: string } & ContextOf<TThis>>,
+		handler: Handler<Ctx<"message"> & { rawStartPayload: string } & EventContextOf<TThis, "message">>,
 		macroOptions?: Record<string, unknown>,
 	): TThis {
-		type Inner = Ctx<"message"> & { rawStartPayload: string } & ContextOf<TThis>;
+		type Inner = Ctx<"message"> & { rawStartPayload: string } & EventContextOf<TThis, "message">;
 		const macroHandler = macroOptions
-			? buildFromOptions(this["~"].macros, macroOptions, handler)
+			? buildFromOptions(this["~"].macros, macroOptions, handler as (ctx: any) => unknown)
 			: null;
 
 		if (parameter instanceof RegExp) {

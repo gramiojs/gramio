@@ -1250,26 +1250,26 @@ describe("@gramio/test — UserOnMessageScope", () => {
 	});
 });
 
-describe("plugin lazy-cached getter isolation — TypeError: Unable to delete property", () => {
-	// Regression test for: when a Plugin handler accesses a lazy-cached getter
-	// (ctx.text, ctx.from, ctx.chat, etc.), @gramio/contexts caches the value via
-	// Object.defineProperty(this, field, { value, enumerable: true, writable: true })
-	// — without `configurable: true`. After the plugin's isolated scope runs,
-	// @gramio/composer tries `delete ctx[key]` for all new own keys, which throws
-	// "TypeError: Unable to delete property." for non-configurable cached properties.
+describe("lazy-cached getter + composer isolation — TypeError: Unable to delete property", () => {
+	// Regression: @gramio/contexts caches lazy getters (ctx.from, ctx.chat, …) via
+	//   Object.defineProperty(this, field, { value, enumerable: true, writable: true })
+	// Notice: `configurable` is NOT set → defaults to false.
+	// When a plain Composer (local scope) is extended into the bot, the isolation
+	// wrapper captures preKeys, runs the chain, then does `delete ctx[key]` for any
+	// new own keys. If a handler accessed ctx.from / ctx.chat inside that chain,
+	// those are now non-configurable own props → "TypeError: Unable to delete property."
 
-	test("plugin handler accessing ctx.text does not throw", async () => {
+	test("bot.extend(plainComposer) accessing ctx.from does not throw", async () => {
 		let errorCaught: unknown = null;
 
-		const plugin = new Plugin("text-plugin").on("message", (ctx, next) => {
-			// Accessing ctx.text triggers lazy caching with configurable: false —
-			// afterwards the composer's `delete ctx["text"]` throws.
-			void ctx.text;
+		// Plain Composer without .as("scoped") → "local" scope → isolated by extend()
+		const composer = new Composer().on("message", (ctx: any, next) => {
+			void ctx.from; // triggers lazy caching with configurable: false
 			return next();
 		});
 
 		const bot = new Bot(TOKEN)
-			.extend(plugin)
+			.extend(composer)
 			.on("message", (ctx) => ctx.send("ok"))
 			.onError(({ error }) => {
 				errorCaught = error;
@@ -1285,17 +1285,16 @@ describe("plugin lazy-cached getter isolation — TypeError: Unable to delete pr
 		expect(env.apiCalls[0]?.method).toBe("sendMessage");
 	});
 
-	test("plugin handler accessing ctx.from does not throw", async () => {
+	test("bot.extend(plainComposer) accessing ctx.chat does not throw", async () => {
 		let errorCaught: unknown = null;
 
-		const plugin = new Plugin("from-plugin").on("message", (ctx, next) => {
-			// Accessing ctx.from triggers lazy caching with configurable: false
-			void ctx.from;
+		const composer = new Composer().on("message", (ctx: any, next) => {
+			void ctx.chat; // triggers lazy caching with configurable: false
 			return next();
 		});
 
 		const bot = new Bot(TOKEN)
-			.extend(plugin)
+			.extend(composer)
 			.on("message", (ctx) => ctx.send("ok"))
 			.onError(({ error }) => {
 				errorCaught = error;
@@ -1313,12 +1312,8 @@ describe("plugin lazy-cached getter isolation — TypeError: Unable to delete pr
 });
 
 describe("bot.extend(plainComposer) — command WeakMap isolation", () => {
-	// When a plain Composer is extended into Bot, its .command() middleware runs
-	// in Object.create(ctx) ("local" scope). WeakMap-backed getters like ctx.text
-	// fail because WeakMap.has(Object.create(ctx)) === false.
-	//
-	// Baseline (working): bot.command() registers directly on Bot → runs on ctx itself → OK.
-	// Broken path: new Composer().command() extended via bot.extend() → Object.create(ctx) → crash.
+	// Regression guard: plain Composer extended into Bot must run handlers on the
+	// original ctx (not Object.create(ctx)), so WeakMap-backed getters work correctly.
 
 	test("baseline: bot.command() handler can access ctx.text", async () => {
 		let capturedText: string | null = null;
@@ -1336,15 +1331,13 @@ describe("bot.extend(plainComposer) — command WeakMap isolation", () => {
 		expect(capturedText as string | null).toBe("/hello");
 	});
 
-	test("plain Composer.command() extended into Bot — WeakMap isolation prevents clean execution", async () => {
-		// Known bug: Object.create(ctx) scope breaks WeakMap-backed property access.
-		// Handler either crashes (onError fires) or is never cleanly reached.
+	test("plain Composer.command() extended into Bot — handler reaches cleanly", async () => {
 		let handlerReached = false;
 		let errorCaught = false;
 
 		const composer = new Composer().command("hello", (ctx) => {
 			handlerReached = true;
-			void ctx.text; // triggers the WeakMap isolation crash
+			void ctx.text;
 		});
 
 		const bot = new Bot(TOKEN).extend(composer).onError(() => {
@@ -1357,8 +1350,8 @@ describe("bot.extend(plainComposer) — command WeakMap isolation", () => {
 
 		await user.sendCommand("hello");
 
-		// Must NOT succeed cleanly: either crashed (errorCaught) or handler wasn't reached
-		expect(handlerReached && !errorCaught).toBe(false);
+		expect(handlerReached).toBe(true);
+		expect(errorCaught).toBe(false);
 	});
 });
 
