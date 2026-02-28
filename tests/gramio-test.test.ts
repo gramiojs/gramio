@@ -1,4 +1,4 @@
-import { describe, expect, mock, test } from "bun:test";
+import { describe, expect, expectTypeOf, mock, test } from "bun:test";
 import { apiError, TelegramTestEnvironment } from "@gramio/test";
 import { Bot } from "../src/bot.ts";
 import { Composer } from "../src/composer.ts";
@@ -1250,6 +1250,68 @@ describe("@gramio/test — UserOnMessageScope", () => {
 	});
 });
 
+describe("plugin lazy-cached getter isolation — TypeError: Unable to delete property", () => {
+	// Regression test for: when a Plugin handler accesses a lazy-cached getter
+	// (ctx.text, ctx.from, ctx.chat, etc.), @gramio/contexts caches the value via
+	// Object.defineProperty(this, field, { value, enumerable: true, writable: true })
+	// — without `configurable: true`. After the plugin's isolated scope runs,
+	// @gramio/composer tries `delete ctx[key]` for all new own keys, which throws
+	// "TypeError: Unable to delete property." for non-configurable cached properties.
+
+	test("plugin handler accessing ctx.text does not throw", async () => {
+		let errorCaught: unknown = null;
+
+		const plugin = new Plugin("text-plugin").on("message", (ctx, next) => {
+			// Accessing ctx.text triggers lazy caching with configurable: false —
+			// afterwards the composer's `delete ctx["text"]` throws.
+			void ctx.text;
+			return next();
+		});
+
+		const bot = new Bot(TOKEN)
+			.extend(plugin)
+			.on("message", (ctx) => ctx.send("ok"))
+			.onError(({ error }) => {
+				errorCaught = error;
+			});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+
+		await user.sendMessage("hello");
+
+		expect(errorCaught).toBeNull();
+		expect(env.apiCalls[0]?.method).toBe("sendMessage");
+	});
+
+	test("plugin handler accessing ctx.from does not throw", async () => {
+		let errorCaught: unknown = null;
+
+		const plugin = new Plugin("from-plugin").on("message", (ctx, next) => {
+			// Accessing ctx.from triggers lazy caching with configurable: false
+			void ctx.from;
+			return next();
+		});
+
+		const bot = new Bot(TOKEN)
+			.extend(plugin)
+			.on("message", (ctx) => ctx.send("ok"))
+			.onError(({ error }) => {
+				errorCaught = error;
+			});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Bob" });
+
+		await user.sendMessage("hello");
+
+		expect(errorCaught).toBeNull();
+		expect(env.apiCalls[0]?.method).toBe("sendMessage");
+	});
+});
+
 describe("bot.extend(plainComposer) — command WeakMap isolation", () => {
 	// When a plain Composer is extended into Bot, its .command() middleware runs
 	// in Object.create(ctx) ("local" scope). WeakMap-backed getters like ctx.text
@@ -1297,5 +1359,102 @@ describe("bot.extend(plainComposer) — command WeakMap isolation", () => {
 
 		// Must NOT succeed cleanly: either crashed (errorCaught) or handler wasn't reached
 		expect(handlerReached && !errorCaught).toBe(false);
+	});
+});
+
+describe(".derive(['event1', 'event2']) — per-event scoped derive", () => {
+	describe("via Plugin.extend()", () => {
+		test("type: ctx.shared is string in .on('message') and .on('callback_query')", () => {
+			const plugin = new Plugin("shared-derive").derive(
+				["message", "callback_query"],
+				() => ({ shared: "hello" as string }),
+			);
+			const bot = new Bot(TOKEN).extend(plugin);
+
+			// Compile-time assertions only — handlers are never invoked at runtime
+			bot.on("message", (ctx) => {
+				expectTypeOf(ctx.shared).toEqualTypeOf<string>();
+			});
+			bot.on("callback_query", (ctx) => {
+				expectTypeOf(ctx.shared).toEqualTypeOf<string>();
+			});
+		});
+
+		test("runtime: derive runs and value appears in .on('message') and .on('callback_query')", async () => {
+			let capturedMessage: unknown;
+			let capturedCallback: unknown;
+
+			const plugin = new Plugin("shared-derive").derive(
+				["message", "callback_query"],
+				() => ({ shared: "derived-value" }),
+			);
+
+			const bot = new Bot(TOKEN)
+				.extend(plugin)
+				.on("message", (ctx) => {
+					capturedMessage = (ctx as any).shared;
+				})
+				.on("callback_query", (ctx) => {
+					capturedCallback = (ctx as any).shared;
+				});
+
+			// @ts-expect-error source Bot vs packaged AnyBot
+			const env = new TelegramTestEnvironment(bot);
+			const user = env.createUser({ first_name: "Alice" });
+
+			await user.sendMessage("hello");
+			expect(capturedMessage).toBe("derived-value");
+
+			const msg = await user.sendMessage("trigger");
+			await user.on(msg).click("btn");
+			expect(capturedCallback).toBe("derived-value");
+		});
+	});
+
+	describe("via Composer.as('scoped') + bot.extend()", () => {
+		test("type: ctx.shared is string in .on('message') and .on('callback_query')", () => {
+			const composer = new Composer()
+				.derive(["message", "callback_query"], () => ({ shared: "hello" as string }))
+				.as("scoped");
+
+			const bot = new Bot(TOKEN).extend(composer);
+
+			// Compile-time assertions only — handlers are never invoked at runtime
+			bot.on("message", (ctx) => {
+				expectTypeOf(ctx.shared).toEqualTypeOf<string>();
+			});
+			bot.on("callback_query", (ctx) => {
+				expectTypeOf(ctx.shared).toEqualTypeOf<string>();
+			});
+		});
+
+		test("runtime: derive propagates to shared context after .as('scoped')", async () => {
+			let capturedMessage: unknown;
+			let capturedCallback: unknown;
+
+			const composer = new Composer()
+				.derive(["message", "callback_query"], () => ({ shared: "composer-derived" }))
+				.as("scoped");
+
+			const bot = new Bot(TOKEN)
+				.extend(composer)
+				.on("message", (ctx) => {
+					capturedMessage = (ctx as any).shared;
+				})
+				.on("callback_query", (ctx) => {
+					capturedCallback = (ctx as any).shared;
+				});
+
+			// @ts-expect-error source Bot vs packaged AnyBot
+			const env = new TelegramTestEnvironment(bot);
+			const user = env.createUser({ first_name: "Alice" });
+
+			await user.sendMessage("hello");
+			expect(capturedMessage).toBe("composer-derived");
+
+			const msg = await user.sendMessage("trigger");
+			await user.on(msg).click("btn");
+			expect(capturedCallback).toBe("composer-derived");
+		});
 	});
 });
