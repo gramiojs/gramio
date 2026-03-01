@@ -67,7 +67,7 @@
 		"@gramio/callback-data": "^0.1.0",
 		"@gramio/composer": "^0.3.3",
 		"@gramio/contexts": "^0.5.0",
-		"@gramio/files": "^0.3.1",
+		"@gramio/files": "^0.3.2",
 		"@gramio/format": "^0.5.0",
 		"@gramio/keyboards": "^1.3.0",
 		"@gramio/types": "^9.5.0",
