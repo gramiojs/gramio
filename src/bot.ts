@@ -30,9 +30,15 @@ import type {
 	TelegramUser,
 } from "@gramio/types";
 import debug from "debug";
+import {
+	AllowedUpdatesFilter,
+	buildAllowedUpdates,
+	detectOptInUpdates,
+} from "./allowed-updates.js";
 import { ErrorKind, TelegramError } from "./errors.js";
 import { Plugin } from "./plugin.js";
 import type {
+	AllowedUpdates,
 	AnyBot,
 	AnyPlugin,
 	BotOptions,
@@ -1396,10 +1402,26 @@ export class Bot<
 		webhook,
 		longPolling,
 		dropPendingUpdates,
-		allowedUpdates,
+		allowedUpdates: allowedUpdatesRaw,
 		deleteWebhook: deleteWebhookRaw,
 	}: BotStartOptions = {}) {
 		await this.init();
+
+		// Resolve allowedUpdates
+		let allowedUpdates: AllowedUpdates | undefined;
+		if (allowedUpdatesRaw === "strict") {
+			allowedUpdates = buildAllowedUpdates(this);
+		} else if (allowedUpdatesRaw === undefined) {
+			const optIn = detectOptInUpdates(
+				this.updates.composer.registeredEvents(),
+			);
+			allowedUpdates =
+				optIn.length > 0
+					? AllowedUpdatesFilter.default.add(...optIn)
+					: undefined;
+		} else {
+			allowedUpdates = allowedUpdatesRaw;
+		}
 
 		const deleteWebhook = deleteWebhookRaw ?? "on-conflict-with-polling";
 

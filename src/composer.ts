@@ -54,6 +54,7 @@ declare module "@gramio/composer" {
 			TMethods,
 			TMacros & P["_"]["Macros"]
 		>;
+		registeredEvents(): Set<string>;
 	}
 }
 
@@ -370,6 +371,25 @@ export const { Composer } = createComposer<
 	types: eventTypes<TelegramEventMap>(),
 	methods,
 });
+
+// Polyfill registeredEvents() if the installed @gramio/composer doesn't provide it.
+// This method scans the middleware list to collect registered event names.
+if (typeof (Composer.prototype as any).registeredEvents !== "function") {
+	(Composer.prototype as any).registeredEvents = function (
+		this: any,
+	): Set<string> {
+		const events = new Set<string>();
+		for (const mw of this["~"].middlewares) {
+			if ((mw.type === "on" || mw.type === "derive") && mw.name) {
+				for (const part of mw.name.split("|")) {
+					const eventPart = part.includes(":") ? part.split(":")[0] : part;
+					if (eventPart) events.add(eventPart);
+				}
+			}
+		}
+		return events;
+	};
+}
 
 export { EventQueue, buildFromOptions, compose, noopNext, skip, stop };
 export type { Next };

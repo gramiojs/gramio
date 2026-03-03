@@ -13,6 +13,7 @@ export * from "@gramio/files";
 export * from "@gramio/format";
 export * from "@gramio/keyboards";
 export type * from "@gramio/types";
+export * from "./allowed-updates.js";
 export * from "./bot.js";
 export * from "./composer.js";
 export * from "./errors.js";

@@ -397,7 +397,33 @@ export interface BotStartOptions {
 	webhook?: BotStartOptionsWebhook;
 	longPolling?: BotStartOptionsLongPolling;
 	dropPendingUpdates?: boolean;
-	allowedUpdates?: AllowedUpdates;
+	/**
+	 * Which update types to receive from Telegram.
+	 *
+	 * - **`undefined`** (default) — Telegram's default set, plus automatic opt-in
+	 *   for `chat_member`, `message_reaction`, and `message_reaction_count` if
+	 *   the bot has handlers registered for them.
+	 * - **`"strict"`** — only receive update types that handlers explicitly
+	 *   register for via `.on()`. Equivalent to `AllowedUpdatesFilter.from(bot)`.
+	 *   Filter-only `.on()` and `.use()` are not included.
+	 * - **`AllowedUpdatesFilter` / array** — explicit list of update types.
+	 *
+	 * @example
+	 * ```typescript
+	 * // Auto opt-in (default): Telegram default + auto chat_member/reaction if needed
+	 * bot.start();
+	 *
+	 * // Strict: only registered events
+	 * bot.start({ allowedUpdates: "strict" });
+	 *
+	 * // Manual
+	 * bot.start({ allowedUpdates: AllowedUpdatesFilter.all });
+	 *
+	 * // Strict + customize
+	 * bot.start({ allowedUpdates: AllowedUpdatesFilter.from(bot).add("poll") });
+	 * ```
+	 */
+	allowedUpdates?: AllowedUpdates | "strict";
 	// "on conflict with long-polling"
 	deleteWebhook?: boolean | "on-conflict-with-polling";
 }
