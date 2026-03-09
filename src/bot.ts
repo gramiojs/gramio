@@ -664,7 +664,7 @@ export class Bot<
 	 * import { Bot } from "gramio";
 	 *
 	 * const bot = new Bot(process.env.TOKEN!).onStart(
-	 *     ({ plugins, info, updatesFrom }) => {
+	 *     ({ plugins, info, updatesFrom, bot }) => {
 	 *         console.log(`plugin list - ${plugins.join(", ")}`);
 	 *         console.log(`bot username is @${info.username}`);
 	 * 		   console.log(`updates from ${updatesFrom}`);
@@ -690,7 +690,7 @@ export class Bot<
 	 * import { Bot } from "gramio";
 	 *
 	 * const bot = new Bot(process.env.TOKEN!).onStop(
-	 *     ({ plugins, info, updatesFrom }) => {
+	 *     ({ plugins, info, bot }) => {
 	 *         console.log(`plugin list - ${plugins.join(", ")}`);
 	 *         console.log(`bot username is @${info.username}`);
 	 *     }
@@ -1449,6 +1449,7 @@ export class Bot<
 				// biome-ignore lint/style/noNonNullAssertion: bot.init() guarantees this.info
 				info: this.info!,
 				updatesFrom: "long-polling",
+				bot: this,
 			});
 
 			return this.info!;
@@ -1472,6 +1473,7 @@ export class Bot<
 			// biome-ignore lint/style/noNonNullAssertion: bot.init() guarantees this.info
 			info: this.info!,
 			updatesFrom: "webhook",
+			bot: this,
 		});
 
 		return this.info!;
@@ -1492,6 +1494,7 @@ export class Bot<
 			plugins: this.dependencies,
 			// biome-ignore lint/style/noNonNullAssertion: bot.init() guarantees this.info
 			info: this.info!,
+			bot: this,
 		});
 	}
 }

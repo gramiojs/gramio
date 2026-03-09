@@ -254,7 +254,7 @@ export namespace Hooks {
 	 * import { Bot } from "gramio";
 	 *
 	 * const bot = new Bot(process.env.TOKEN!).onStart(
-	 *     ({ plugins, info, updatesFrom }) => {
+	 *     ({ plugins, info, updatesFrom, bot }) => {
 	 *         console.log(`plugin list - ${plugins.join(", ")}`);
 	 *         console.log(`bot username is @${info.username}`);
 	 * 		   console.log(`updates from ${updatesFrom}`);
@@ -270,6 +270,7 @@ export namespace Hooks {
 		plugins: string[];
 		info: TelegramUser;
 		updatesFrom: "webhook" | "long-polling";
+		bot: BotLike;
 	}) => unknown;
 
 	/**
@@ -280,7 +281,7 @@ export namespace Hooks {
 	 * import { Bot } from "gramio";
 	 *
 	 * const bot = new Bot(process.env.TOKEN!).onStop(
-	 *     ({ plugins, info, updatesFrom }) => {
+	 *     ({ plugins, info, bot }) => {
 	 *         console.log(`plugin list - ${plugins.join(", ")}`);
 	 *         console.log(`bot username is @${info.username}`);
 	 *     }
@@ -295,6 +296,7 @@ export namespace Hooks {
 	export type OnStop = (context: {
 		plugins: string[];
 		info: TelegramUser;
+		bot: BotLike;
 	}) => unknown;
 
 	/**
