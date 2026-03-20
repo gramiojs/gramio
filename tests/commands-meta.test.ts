@@ -1,10 +1,15 @@
 import { describe, expect, mock, test } from "bun:test";
 import { TelegramTestEnvironment } from "@gramio/test";
-import type { CommandMeta } from "@gramio/composer";
 import { Bot } from "../src/bot.ts";
 import { Composer } from "../src/composer.ts";
+import type { CommandMeta } from "../src/types.ts";
 
 const TOKEN = "test-token";
+
+/** Helper to get typed commandsMeta from bot */
+function getCommandsMeta(bot: Bot<any, any, any>): Map<string, CommandMeta> {
+	return (bot.updates.composer["~"].commandsMeta ?? new Map()) as Map<string, CommandMeta>;
+}
 
 describe("Command Metadata — Registration", () => {
 	test("command with meta stores metadata on the composer", () => {
@@ -13,7 +18,7 @@ describe("Command Metadata — Registration", () => {
 				description: "Start the bot",
 			}, (ctx) => ctx.send("Hello!"));
 
-		const meta = bot.updates.composer["~"].commandsMeta;
+		const meta = getCommandsMeta(bot);
 		expect(meta.size).toBe(1);
 		expect(meta.get("start")).toEqual({
 			description: "Start the bot",
@@ -24,7 +29,7 @@ describe("Command Metadata — Registration", () => {
 		const bot = new Bot(TOKEN)
 			.command("start", (ctx) => ctx.send("Hello!"));
 
-		const meta = bot.updates.composer["~"].commandsMeta;
+		const meta = getCommandsMeta(bot);
 		expect(meta?.size ?? 0).toBe(0);
 	});
 
@@ -38,7 +43,7 @@ describe("Command Metadata — Registration", () => {
 				},
 			}, (ctx) => ctx.send("Hello!"));
 
-		const meta = bot.updates.composer["~"].commandsMeta.get("start");
+		const meta = getCommandsMeta(bot).get("start");
 		expect(meta?.locales).toEqual({
 			ru: "Запустить бота",
 			de: "Bot starten",
@@ -52,7 +57,7 @@ describe("Command Metadata — Registration", () => {
 				scopes: ["all_chat_administrators"],
 			}, (ctx) => ctx.send("Banned"));
 
-		const meta = bot.updates.composer["~"].commandsMeta.get("ban");
+		const meta = getCommandsMeta(bot).get("ban");
 		expect(meta?.scopes).toEqual(["all_chat_administrators"]);
 	});
 
@@ -66,7 +71,7 @@ describe("Command Metadata — Registration", () => {
 			}, (ctx) => ctx.send("Help"))
 			.command("settings", (ctx) => ctx.send("Settings"));
 
-		const meta = bot.updates.composer["~"].commandsMeta;
+		const meta = getCommandsMeta(bot);
 		expect(meta.size).toBe(2);
 		expect(meta.has("start")).toBe(true);
 		expect(meta.has("help")).toBe(true);
@@ -79,7 +84,7 @@ describe("Command Metadata — Registration", () => {
 				description: "Start the bot",
 			}, (ctx) => ctx.send("Hello!"));
 
-		const meta = bot.updates.composer["~"].commandsMeta;
+		const meta = getCommandsMeta(bot);
 		expect(meta.size).toBe(2);
 		expect(meta.get("start")?.description).toBe("Start the bot");
 		expect(meta.get("begin")?.description).toBe("Start the bot");
@@ -94,7 +99,7 @@ describe("Command Metadata — Registration", () => {
 				description: "New description",
 			}, (ctx) => ctx.send("v2"));
 
-		const meta = bot.updates.composer["~"].commandsMeta;
+		const meta = getCommandsMeta(bot);
 		expect(meta.size).toBe(1);
 		expect(meta.get("start")?.description).toBe("New description");
 	});
@@ -155,7 +160,7 @@ describe("Command Metadata — Merging via extend()", () => {
 			}, (ctx) => ctx.send("Hello!"))
 			.extend(sub);
 
-		const meta = bot.updates.composer["~"].commandsMeta;
+		const meta = getCommandsMeta(bot);
 		expect(meta.size).toBe(2);
 		expect(meta.get("start")?.description).toBe("Start the bot");
 		expect(meta.get("help")?.description).toBe("Show help");
@@ -173,7 +178,7 @@ describe("Command Metadata — Merging via extend()", () => {
 			}, (ctx) => ctx.send("Hello!"))
 			.extend(sub);
 
-		const meta = bot.updates.composer["~"].commandsMeta;
+		const meta = getCommandsMeta(bot);
 		expect(meta.get("start")?.description).toBe("Overridden");
 	});
 
@@ -191,7 +196,7 @@ describe("Command Metadata — Merging via extend()", () => {
 
 		const bot = new Bot(TOKEN).extend(outer);
 
-		const meta = bot.updates.composer["~"].commandsMeta;
+		const meta = getCommandsMeta(bot);
 		expect(meta.size).toBe(2);
 		expect(meta.has("inner")).toBe(true);
 		expect(meta.has("outer")).toBe(true);

@@ -36,7 +36,7 @@ type Ctx<K extends keyof ContextsMapping<AnyBot>> = InstanceType<
  * bodies need: macro registry and the cross-method `chosenInlineResult` call.
  */
 type GramIOLike<T> = ComposerLike<T> & {
-	"~": { macros: MacroDefinitions; commandsMeta: Map<string, CommandMeta>; Derives?: Record<string, object> };
+	"~": { macros: MacroDefinitions; commandsMeta?: Map<string, unknown>; Derives?: Record<string, object> };
 	chosenInlineResult(trigger: any, handler: any, macroOptions?: any): T;
 };
 /** Teach EventComposer about GramIO-specific overloads */
