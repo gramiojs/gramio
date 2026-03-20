@@ -2,13 +2,11 @@ import fs from "node:fs/promises";
 import { Readable } from "node:stream";
 import type { CallbackData } from "@gramio/callback-data";
 import type {
-	CommandMeta,
 	DeriveFromOptions,
 	EventComposer,
 	HandlerOptions,
 	MacroDef,
 	MacroDefinitions,
-	ScopeShorthand,
 } from "@gramio/composer";
 import {
 	type Attachment,
@@ -47,6 +45,7 @@ import type {
 	BotOptions,
 	BotStartOptions,
 	CallbackQueryShorthandContext,
+	CommandMeta,
 	DeriveDefinitions,
 	ErrorDefinitions,
 	Handler,
@@ -1339,7 +1338,7 @@ export class Bot<
 		> = {},
 	>(
 		command: MaybeArray<string>,
-		meta: CommandMeta<TelegramBotCommandScope>,
+		meta: CommandMeta,
 		handler: (
 			context: ContextType<typeof this, "message"> & {
 				args: string | null;
@@ -1407,7 +1406,7 @@ export class Bot<
 	 * ```
 	 */
 	async syncCommands(options?: SyncCommandsOptions): Promise<void> {
-		const commandsMeta = (this.updates.composer["~"].commandsMeta ?? new Map()) as Map<string, CommandMeta<TelegramBotCommandScope>>;
+		const commandsMeta = (this.updates.composer["~"].commandsMeta ?? new Map()) as Map<string, CommandMeta>;
 		if (commandsMeta.size === 0) return;
 
 		const storage = options?.storage;

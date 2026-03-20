@@ -11,6 +11,7 @@ import type {
 	APIMethodReturn,
 	APIMethods,
 	SetWebhookParams,
+	TelegramBotCommandScope,
 	TelegramUser,
 } from "@gramio/types";
 import type { Bot } from "./bot.js";
@@ -433,6 +434,30 @@ export interface BotStartOptions {
 export interface PollingStartOptions {
 	dropPendingUpdates?: boolean;
 	deleteWebhookOnConflict?: boolean;
+}
+
+// ─── Command Metadata Types ─────────────────────────────────────────────────
+
+/** Shorthand strings for common BotCommandScope types */
+export type ScopeShorthand =
+	| "default"
+	| "all_private_chats"
+	| "all_group_chats"
+	| "all_chat_administrators";
+
+/**
+ * Metadata for a bot command, used by `syncCommands()` to push
+ * descriptions, localized names, and visibility scopes to the Telegram API.
+ */
+export interface CommandMeta {
+	/** Command description shown in the Telegram menu (1-256 chars) */
+	description: string;
+	/** Localized descriptions keyed by IETF language tag */
+	locales?: Record<string, string>;
+	/** Where this command is visible. Default: `["default"]` */
+	scopes?: (TelegramBotCommandScope | ScopeShorthand)[];
+	/** Exclude this command from `syncCommands()`. The handler still works. @default false */
+	hide?: boolean;
 }
 
 /** Minimal key-value storage interface compatible with `@gramio/storage` */

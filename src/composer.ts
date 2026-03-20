@@ -1,7 +1,6 @@
 import type { CallbackData } from "@gramio/callback-data";
 import {
 	buildFromOptions,
-	type CommandMeta,
 	compose,
 	type ComposerLike,
 	type ContextOf,
@@ -18,7 +17,7 @@ import {
 } from "@gramio/composer";
 import type { Context, ContextsMapping } from "@gramio/contexts";
 import type { TelegramReactionTypeEmojiEmoji } from "@gramio/types";
-import type { AnyBot, AnyPlugin, Handler } from "./types.js";
+import type { AnyBot, AnyPlugin, CommandMeta, Handler } from "./types.js";
 import type { MaybeArray } from "./utils.internal.js";
 
 type TelegramEventMap = {
@@ -441,7 +440,6 @@ export { EventQueue, buildFromOptions, compose, noopNext, skip, stop };
 export type { Next };
 export type { EventComposer, Middleware } from "@gramio/composer";
 export type {
-	CommandMeta,
 	ContextCallback,
 	WithCtx,
 	MacroHooks,
@@ -451,5 +449,4 @@ export type {
 	MacroDeriveType,
 	HandlerOptions,
 	DeriveFromOptions,
-	ScopeShorthand,
 } from "@gramio/composer";
