@@ -35,6 +35,15 @@ export const debug$updates = debug("gramio:updates");
 
 export type MaybeArray<T> = T | T[] | ReadonlyArray<T>;
 
+/** Simple djb2-based string hash — deterministic, non-crypto, for cache keys */
+export function simpleHash(str: string): string {
+	let hash = 5381;
+	for (let i = 0; i < str.length; i++) {
+		hash = ((hash << 5) + hash + str.charCodeAt(i)) | 0;
+	}
+	return (hash >>> 0).toString(36);
+}
+
 export function timeoutWebhook(
 	task: Promise<unknown>,
 	timeout: number,

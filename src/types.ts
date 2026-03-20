@@ -434,3 +434,19 @@ export interface PollingStartOptions {
 	dropPendingUpdates?: boolean;
 	deleteWebhookOnConflict?: boolean;
 }
+
+/** Minimal key-value storage interface compatible with `@gramio/storage` */
+export interface SyncStorage {
+	get(key: string): string | undefined | Promise<string | undefined>;
+	set(key: string, value: string): void | Promise<void>;
+}
+
+/** Options for {@link Bot.syncCommands} */
+export interface SyncCommandsOptions {
+	/** Storage for caching sync hashes. When provided, only changed groups trigger API calls. */
+	storage?: SyncStorage;
+	/** Delete commands for scopes not declared by any command. @default false */
+	cleanUnusedScopes?: boolean;
+	/** Command names to exclude from syncing (in addition to commands with `hide: true`) */
+	exclude?: string[];
+}

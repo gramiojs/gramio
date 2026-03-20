@@ -2,11 +2,13 @@ import fs from "node:fs/promises";
 import { Readable } from "node:stream";
 import type { CallbackData } from "@gramio/callback-data";
 import type {
+	CommandMeta,
 	DeriveFromOptions,
 	EventComposer,
 	HandlerOptions,
 	MacroDef,
 	MacroDefinitions,
+	ScopeShorthand,
 } from "@gramio/composer";
 import {
 	type Attachment,
@@ -26,6 +28,7 @@ import type {
 	APIMethodParams,
 	APIMethods,
 	TelegramAPIResponse,
+	TelegramBotCommandScope,
 	TelegramReactionTypeEmojiEmoji,
 	TelegramUser,
 } from "@gramio/types";
@@ -51,9 +54,10 @@ import type {
 	MaybePromise,
 	MaybeSuppressedParams,
 	SuppressedAPIMethods,
+	SyncCommandsOptions,
 } from "./types.js";
 import { Updates } from "./updates.js";
-import { IS_BUN, type MaybeArray, simplifyObject } from "./utils.internal.ts";
+import { IS_BUN, type MaybeArray, simpleHash, simplifyObject } from "./utils.internal.ts";
 import { withRetries } from "./utils.ts";
 
 /**
@@ -1303,6 +1307,15 @@ export class Bot<
 	 *     return context.send(`You message is /start ${context.args}`);
 	 * });
 	 * ```
+	 *
+	 * @example
+	 * ```ts
+	 * // With metadata — description will be synced via syncCommands()
+	 * new Bot().command("start", {
+	 *     description: "Start the bot",
+	 *     locales: { ru: "Запустить бота" },
+	 * }, (context) => context.send("Hello!"));
+	 * ```
 	 */
 	command<
 		TOptions extends HandlerOptions<
@@ -1317,8 +1330,31 @@ export class Bot<
 			} & DeriveFromOptions<Macros, TOptions>,
 		) => unknown,
 		options?: TOptions,
+	): typeof this;
+
+	command<
+		TOptions extends HandlerOptions<
+			ContextType<typeof this, "message">,
+			Macros
+		> = {},
+	>(
+		command: MaybeArray<string>,
+		meta: CommandMeta<TelegramBotCommandScope>,
+		handler: (
+			context: ContextType<typeof this, "message"> & {
+				args: string | null;
+			} & DeriveFromOptions<Macros, TOptions>,
+		) => unknown,
+		options?: TOptions,
+	): typeof this;
+
+	command(
+		command: MaybeArray<string>,
+		handlerOrMeta: any,
+		handlerOrOptions?: any,
+		macroOptions?: any,
 	) {
-		this.updates.composer.command(command, handler as any, options as any);
+		this.updates.composer.command(command, handlerOrMeta, handlerOrOptions, macroOptions);
 		return this;
 	}
 
@@ -1357,6 +1393,123 @@ export class Bot<
 	/** Currently not isolated!!! */
 	group(grouped: (bot: typeof this) => AnyBot): typeof this {
 		return grouped(this) as any;
+	}
+
+	/**
+	 * Sync registered command metadata with the Telegram API.
+	 *
+	 * Groups commands by `{scope, language_code}` and calls `setMyCommands` for each group.
+	 * When a `storage` is provided, hashes each payload and skips unchanged groups.
+	 *
+	 * @example
+	 * ```ts
+	 * bot.onStart(() => bot.syncCommands());
+	 * ```
+	 */
+	async syncCommands(options?: SyncCommandsOptions): Promise<void> {
+		const commandsMeta = (this.updates.composer["~"].commandsMeta ?? new Map()) as Map<string, CommandMeta<TelegramBotCommandScope>>;
+		if (commandsMeta.size === 0) return;
+
+		const storage = options?.storage;
+		const botId = this.info?.id;
+		const excludeSet = options?.exclude ? new Set(options.exclude) : undefined;
+
+		// Build grouped calls: Map<serializedKey, { scope?, language_code?, commands[] }>
+		const groups = new Map<string, {
+			scope?: TelegramBotCommandScope;
+			language_code?: string;
+			commands: { command: string; description: string }[];
+		}>();
+
+		const getOrCreateGroup = (scope: TelegramBotCommandScope | undefined, langCode: string) => {
+			const key = `${JSON.stringify(scope ?? { type: "default" })}:${langCode}`;
+			let group = groups.get(key);
+			if (!group) {
+				group = { scope, language_code: langCode || undefined, commands: [] };
+				groups.set(key, group);
+			}
+			return group;
+		};
+
+		for (const [name, meta] of commandsMeta) {
+			// Skip hidden commands (hide: true in meta) and excluded commands
+			if (meta.hide) continue;
+			if (excludeSet?.has(name)) continue;
+			const scopes: (TelegramBotCommandScope | undefined)[] = meta.scopes
+				? meta.scopes.map((s) =>
+					typeof s === "string" ? ({ type: s } as TelegramBotCommandScope) : s,
+				)
+				: [undefined]; // undefined = default scope
+
+			for (const scope of scopes) {
+				// Fallback description (no language_code)
+				getOrCreateGroup(scope, "").commands.push({
+					command: name,
+					description: meta.description,
+				});
+
+				// Localized descriptions
+				if (meta.locales) {
+					for (const [lang, desc] of Object.entries(meta.locales)) {
+						getOrCreateGroup(scope, lang).commands.push({
+							command: name,
+							description: desc,
+						});
+					}
+				}
+			}
+		}
+
+		// Validate: max 100 commands per group
+		for (const [key, group] of groups) {
+			if (group.commands.length > 100) {
+				throw new Error(
+					`Too many commands (${group.commands.length}) for scope ${key}. Telegram allows max 100 per scope+language.`,
+				);
+			}
+		}
+
+		// Sync each group
+		for (const [, group] of groups) {
+			const payload = {
+				commands: group.commands,
+				scope: group.scope,
+				language_code: group.language_code,
+			};
+
+			// Hash-based caching when storage is provided
+			if (storage) {
+				const hash = simpleHash(JSON.stringify(payload));
+				const storageKey = `gramio:commands:${botId ?? "unknown"}:${JSON.stringify(group.scope ?? { type: "default" })}:${group.language_code ?? ""}`;
+				const stored = await storage.get(storageKey);
+				if (stored === hash) continue;
+				await this.api.setMyCommands(payload);
+				await storage.set(storageKey, hash);
+			} else {
+				await this.api.setMyCommands(payload);
+			}
+		}
+
+		// Optionally clean unused scopes
+		if (options?.cleanUnusedScopes) {
+			const declaredScopes = new Set<string>();
+			for (const [, group] of groups) {
+				declaredScopes.add(JSON.stringify(group.scope ?? { type: "default" }));
+			}
+
+			const allScopes: TelegramBotCommandScope[] = [
+				{ type: "default" },
+				{ type: "all_private_chats" },
+				{ type: "all_group_chats" },
+				{ type: "all_chat_administrators" },
+			];
+
+			for (const scope of allScopes) {
+				if (!declaredScopes.has(JSON.stringify(scope))) {
+					await this.api.deleteMyCommands({ scope });
+				}
+			}
+		}
 	}
 
 	/**

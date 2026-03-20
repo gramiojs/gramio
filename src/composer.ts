@@ -1,6 +1,7 @@
 import type { CallbackData } from "@gramio/callback-data";
 import {
 	buildFromOptions,
+	type CommandMeta,
 	compose,
 	type ComposerLike,
 	type ContextOf,
@@ -36,7 +37,7 @@ type Ctx<K extends keyof ContextsMapping<AnyBot>> = InstanceType<
  * bodies need: macro registry and the cross-method `chosenInlineResult` call.
  */
 type GramIOLike<T> = ComposerLike<T> & {
-	"~": { macros: MacroDefinitions; Derives?: Record<string, object> };
+	"~": { macros: MacroDefinitions; commandsMeta: Map<string, CommandMeta>; Derives?: Record<string, object> };
 	chosenInlineResult(trigger: any, handler: any, macroOptions?: any): T;
 };
 /** Teach EventComposer about GramIO-specific overloads */
@@ -285,9 +286,26 @@ const methods = defineComposerMethods({
 	command<TThis extends GramIOLike<TThis>>(
 		this: TThis,
 		command: MaybeArray<string>,
-		handler: (context: Ctx<"message"> & { args: string | null } & EventContextOf<TThis, "message">) => unknown,
+		handlerOrMeta: ((context: Ctx<"message"> & { args: string | null } & EventContextOf<TThis, "message">) => unknown) | CommandMeta,
+		handlerOrOptions?: ((context: Ctx<"message"> & { args: string | null } & EventContextOf<TThis, "message">) => unknown) | Record<string, unknown>,
 		macroOptions?: Record<string, unknown>,
 	): TThis {
+		// Disambiguate overloads: (command, handler, options?) vs (command, meta, handler, options?)
+		let handler: (context: any) => unknown;
+		let meta: CommandMeta | undefined;
+		let resolvedMacroOptions: Record<string, unknown> | undefined;
+
+		if (typeof handlerOrMeta === "function") {
+			// Existing: command(name, handler, macroOptions?)
+			handler = handlerOrMeta;
+			resolvedMacroOptions = handlerOrOptions as Record<string, unknown> | undefined;
+		} else {
+			// New: command(name, meta, handler, macroOptions?)
+			meta = handlerOrMeta;
+			handler = handlerOrOptions as (context: any) => unknown;
+			resolvedMacroOptions = macroOptions;
+		}
+
 		const normalizedCommands: string[] =
 			typeof command === "string" ? [command] : Array.from(command);
 
@@ -296,9 +314,19 @@ const methods = defineComposerMethods({
 				throw new Error(`Do not use / in command name (${cmd})`);
 		}
 
+		// Store command metadata for syncCommands()
+		if (meta) {
+			if (!this["~"].commandsMeta) {
+				this["~"].commandsMeta = new Map();
+			}
+			for (const cmd of normalizedCommands) {
+				this["~"].commandsMeta.set(cmd, meta);
+			}
+		}
+
 		type Inner = Ctx<"message"> & { args: string | null } & EventContextOf<TThis, "message">;
-		const macroHandler = macroOptions
-			? buildFromOptions(this["~"].macros, macroOptions, handler as (ctx: any) => unknown)
+		const macroHandler = resolvedMacroOptions
+			? buildFromOptions(this["~"].macros, resolvedMacroOptions, handler as (ctx: any) => unknown)
 			: null;
 
 		return this.on(["message", "business_message"], (context: Inner, next: Next) => {
@@ -391,10 +419,29 @@ if (typeof (Composer.prototype as any).registeredEvents !== "function") {
 	};
 }
 
+// Patch extend() to also merge commandsMeta from sub-composers.
+// This ensures command metadata is collected transitively when using .extend().
+{
+	const originalExtend = (Composer.prototype as any).extend;
+	(Composer.prototype as any).extend = function (this: any, other: any) {
+		const result = originalExtend.call(this, other);
+		if (other["~"]?.commandsMeta) {
+			if (!this["~"].commandsMeta) {
+				this["~"].commandsMeta = new Map();
+			}
+			for (const [cmd, meta] of other["~"].commandsMeta) {
+				this["~"].commandsMeta.set(cmd, meta);
+			}
+		}
+		return result;
+	};
+}
+
 export { EventQueue, buildFromOptions, compose, noopNext, skip, stop };
 export type { Next };
 export type { EventComposer, Middleware } from "@gramio/composer";
 export type {
+	CommandMeta,
 	ContextCallback,
 	WithCtx,
 	MacroHooks,
@@ -404,4 +451,5 @@ export type {
 	MacroDeriveType,
 	HandlerOptions,
 	DeriveFromOptions,
+	ScopeShorthand,
 } from "@gramio/composer";
