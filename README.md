@@ -7,6 +7,7 @@
 [![npm downloads](https://img.shields.io/npm/dw/gramio?logo=npm&style=flat&labelColor=000&color=3b82f6)](https://www.npmjs.org/package/gramio)
 [![JSR](https://jsr.io/badges/@gramio/core)](https://jsr.io/@gramio/core)
 [![JSR Score](https://jsr.io/badges/@gramio/core/score)](https://jsr.io/@gramio/core)
+[![AI Slop Inside](https://sladge.net/badge.svg)](https://sladge.net)
 
 </div>
 
