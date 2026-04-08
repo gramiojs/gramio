@@ -551,8 +551,8 @@ export class Bot<
 			);
 		else if (handler)
 			this.updates.composer.derive(
-				updateNameOrHandler as Update | Update[],
-				handler as Hooks.Derive<ContextType<AnyBot, Update>>,
+				updateNameOrHandler as any,
+				handler as any,
 			);
 
 		return this;

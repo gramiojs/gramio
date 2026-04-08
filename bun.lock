@@ -7,7 +7,7 @@
       "dependencies": {
         "@gramio/callback-data": "^0.1.0",
         "@gramio/composer": "0.4.1",
-        "@gramio/contexts": "^0.5.0",
+        "@gramio/contexts": "0.5.1",
         "@gramio/files": "^0.3.2",
         "@gramio/format": "^0.5.0",
         "@gramio/keyboards": "^1.3.1",
@@ -100,7 +100,7 @@
 
     "@gramio/composer": ["@gramio/composer@0.4.1", "", {}, "sha512-oGW1Kj0wiAD1NpORhxDSt9/WId2GANOwYmwlI3bivf4LGEEWB1kokcDW6Ji5/s3FwcK17YjTq1wWtgk0Z/uHnQ=="],
 
-    "@gramio/contexts": ["@gramio/contexts@0.5.0", "", { "peerDependencies": { "@gramio/types": "9.5.0", "inspectable": "^3.0.1" } }, "sha512-hSdzLSk0SVQC4jaEwYvxjdzrdxgKYshkwzCIUOHxetlBn5leXIZfyecEBBYbgaH7kqasrci6SIipE1rzGxTTSA=="],
+    "@gramio/contexts": ["@gramio/contexts@0.5.1", "", { "peerDependencies": { "@gramio/types": "9.5.0", "inspectable": "^3.0.1" } }, "sha512-uExIy9cRfNqMLRkAdIZavDSFX1iXODZCtyP0OhHAs5xC5HIDOHiDqRo+Yy0p5zfIZa+XJ8hVvomnlWapN6gNCw=="],
 
     "@gramio/files": ["@gramio/files@0.3.2", "", { "dependencies": { "@gramio/types": ">=9.5.0" } }, "sha512-8ZGNd9OqiaBh4uvYe2tWxCdTH3P8habxfZI86xC1LrrGRm7zqanWFGKeYG5qP4FC96aIE6lbk959M+ew6VzrHQ=="],
 

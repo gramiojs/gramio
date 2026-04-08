@@ -11,7 +11,7 @@ import type {
 } from "@gramio/contexts";
 import type { APIMethods } from "@gramio/types";
 import type { Bot } from "./bot.js";
-import { Composer } from "./composer.js";
+import { _composerMethods, Composer } from "./composer.js";
 import { ErrorKind } from "./errors.js";
 import type {
 	AnyBot,
@@ -221,8 +221,8 @@ export class Plugin<
 			);
 		else if (handler)
 			this._.composer.derive(
-				updateNameOrHandler,
-				handler as Hooks.Derive<ContextType<AnyBot, Update>>,
+				updateNameOrHandler as any,
+				handler as any,
 			);
 
 		return this;
@@ -677,7 +677,6 @@ export class Plugin<
 // Add shorthand methods (command, callbackQuery, hears, etc.) to Plugin prototype.
 // These are the same functions used by EventComposer — they call `this.on()` internally
 // and use `this["~"]` for macros/commandsMeta, both of which Plugin exposes.
-import { _composerMethods } from "./composer.js";
 for (const [name, fn] of Object.entries(_composerMethods)) {
 	(Plugin.prototype as any)[name] = fn;
 }
