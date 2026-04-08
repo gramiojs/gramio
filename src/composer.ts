@@ -39,25 +39,6 @@ type GramIOLike<T> = ComposerLike<T> & {
 	"~": { macros: MacroDefinitions; commandsMeta?: Map<string, unknown>; Derives?: Record<string, object> };
 	chosenInlineResult(trigger: any, handler: any, macroOptions?: any): T;
 };
-/** Teach EventComposer about GramIO-specific overloads */
-declare module "@gramio/composer" {
-	interface EventComposer<TBase, TEventMap, TIn, TOut, TExposed, TDerives, TMethods, TMacros> {
-		extend<P extends AnyPlugin>(
-			plugin: P,
-		): EventComposer<
-			TBase,
-			TEventMap,
-			TIn,
-			TOut & P["_"]["Derives"]["global"],
-			TExposed,
-			TDerives & Omit<P["_"]["Derives"], "global">,
-			TMethods,
-			TMacros & P["_"]["Macros"]
-		>;
-		registeredEvents(): Set<string>;
-	}
-}
-
 const methods = defineComposerMethods({
 	reaction<TThis extends GramIOLike<TThis>>(
 		this: TThis,
@@ -388,6 +369,34 @@ const methods = defineComposerMethods({
 		});
 	},
 });
+/** Teach EventComposer about GramIO-specific overloads */
+declare module "@gramio/composer" {
+	interface EventComposer<TBase, TEventMap, TIn, TOut, TExposed, TDerives, TMethods, TMacros> {
+		extend<P extends AnyPlugin>(
+			plugin: P,
+		): EventComposer<
+			TBase,
+			TEventMap,
+			TIn,
+			TOut & P["_"]["Derives"]["global"],
+			TExposed,
+			TDerives & Omit<P["_"]["Derives"], "global">,
+			TMethods,
+			TMacros & P["_"]["Macros"]
+		>;
+		registeredEvents(): Set<string>;
+		// Shorthand methods — referenced as properties (not method overloads) to
+		// avoid the TS 5.9 inference regression that breaks base extend overloads
+		// when generic methods are added via augmentation.
+		callbackQuery: (typeof methods)["callbackQuery"];
+		command: (typeof methods)["command"];
+		hears: (typeof methods)["hears"];
+		reaction: (typeof methods)["reaction"];
+		inlineQuery: (typeof methods)["inlineQuery"];
+		chosenInlineResult: (typeof methods)["chosenInlineResult"];
+		startParameter: (typeof methods)["startParameter"];
+	}
+}
 
 export const { Composer } = createComposer<
 	Context<AnyBot>,
@@ -449,6 +458,7 @@ if (typeof (Composer.prototype as any).registeredEvents !== "function") {
 	};
 }
 
+export { methods as _composerMethods };
 export { EventQueue, buildFromOptions, compose, noopNext, skip, stop };
 export type { Next };
 export type { EventComposer, Middleware } from "@gramio/composer";

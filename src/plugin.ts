@@ -64,6 +64,7 @@ type CompatibleUpdates<B extends BotLike, Narrowing> = {
  *     });
  * ```
  */
+// biome-ignore lint/suspicious/noUnsafeDeclarationMerging: shorthand methods are merged via interface declaration below
 export class Plugin<
 	Errors extends ErrorDefinitions = {},
 	Derives extends DeriveDefinitions = DeriveDefinitions,
@@ -130,11 +131,11 @@ export class Plugin<
 	};
 
 	/** Expose composer internals so `composer.extend(plugin)` works via duck-typing */
-	get "~"(): InstanceType<typeof Composer>["~"] {
+	get "~"(): Omit<InstanceType<typeof Composer>["~"], "Out" | "Derives"> & { Out: Derives["global"]; Derives: Omit<Derives, "global"> } {
 		// Promote to "scoped" so plugin middleware shares context (not isolated).
 		// Same as what Bot.extend(plugin) does. Idempotent — safe to call repeatedly.
 		this._.composer.as("scoped");
-		return this._.composer["~"];
+		return this._.composer["~"] as any;
 	}
 
 	/** Create new Plugin. Please provide `name` */
@@ -671,4 +672,37 @@ export class Plugin<
 
 		return this;
 	}
+}
+
+// Add shorthand methods (command, callbackQuery, hears, etc.) to Plugin prototype.
+// These are the same functions used by EventComposer — they call `this.on()` internally
+// and use `this["~"]` for macros/commandsMeta, both of which Plugin exposes.
+import { _composerMethods } from "./composer.js";
+for (const [name, fn] of Object.entries(_composerMethods)) {
+	(Plugin.prototype as any)[name] = fn;
+}
+
+// Type-level declaration: Plugin gets the same shorthand methods as Composer
+export interface Plugin<
+	// biome-ignore lint/correctness/noUnusedVariables: generic params required for declaration merging
+	Errors,
+	// biome-ignore lint/correctness/noUnusedVariables: generic params required for declaration merging
+	Derives,
+	// biome-ignore lint/correctness/noUnusedVariables: generic params required for declaration merging
+	Macros,
+> {
+	/** Register callback query handler */
+	callbackQuery: (typeof _composerMethods)["callbackQuery"];
+	/** Register command handler */
+	command: (typeof _composerMethods)["command"];
+	/** Register text/caption pattern handler */
+	hears: (typeof _composerMethods)["hears"];
+	/** Register reaction handler */
+	reaction: (typeof _composerMethods)["reaction"];
+	/** Register inline query handler */
+	inlineQuery: (typeof _composerMethods)["inlineQuery"];
+	/** Register chosen inline result handler */
+	chosenInlineResult: (typeof _composerMethods)["chosenInlineResult"];
+	/** Register deep-link parameter handler */
+	startParameter: (typeof _composerMethods)["startParameter"];
 }
