@@ -608,13 +608,13 @@ export class Plugin<
 		composer: EventComposer<any, any, any, any, UExposed, UDerives>,
 	): Plugin<Errors, Derives & { global: UExposed } & UDerives>;
 
-	/**
-	 * ! ** At the moment, it can only pick up types** */
+	/** Extend plugin with another Plugin (merges middleware, hooks, decorators, error definitions, groups, and dependencies) */
 	extend<NewPlugin extends AnyPlugin>(
 		plugin: MaybePromise<NewPlugin>,
 	): Plugin<
 		Errors & NewPlugin["_"]["Errors"],
-		Derives & NewPlugin["_"]["Derives"]
+		Derives & NewPlugin["_"]["Derives"],
+		Macros & NewPlugin["_"]["Macros"]
 	>;
 
 	extend(
@@ -628,6 +628,45 @@ export class Plugin<
 			!("_" in pluginOrComposer)
 		) {
 			this._.composer.extend(pluginOrComposer);
+			return this;
+		}
+
+		const plugin = pluginOrComposer as AnyPlugin;
+
+		// Merge middleware/macros via composer
+		if (plugin._.composer["~"].middlewares.length) {
+			plugin._.composer.as("scoped");
+			this._.composer.extend(plugin._.composer);
+		} else if (Object.keys(plugin._.composer["~"].macros).length) {
+			Object.assign(this._.composer["~"].macros, plugin._.composer["~"].macros);
+		}
+
+		// Merge error definitions
+		for (const [key, value] of Object.entries(plugin._.errorsDefinitions)) {
+			this._.errorsDefinitions[key] = value;
+			this._.composer["~"].errorsDefinitions[key] = value;
+		}
+
+		// Merge decorators
+		Object.assign(this._.decorators, plugin._.decorators);
+
+		// Merge hooks
+		this._.preRequests.push(...plugin._.preRequests);
+		this._.onResponses.push(...plugin._.onResponses);
+		this._.onResponseErrors.push(...plugin._.onResponseErrors);
+		this._.onApiCalls.push(...plugin._.onApiCalls);
+		this._.onErrors.push(...plugin._.onErrors);
+		this._.onStarts.push(...plugin._.onStarts);
+		this._.onStops.push(...plugin._.onStops);
+
+		// Merge groups
+		this._.groups.push(...plugin._.groups);
+
+		// Merge dependencies
+		for (const dep of plugin._.dependencies) {
+			if (!this._.dependencies.includes(dep)) {
+				this._.dependencies.push(dep);
+			}
 		}
 
 		return this;

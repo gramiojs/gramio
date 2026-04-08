@@ -1032,6 +1032,58 @@ export class Bot<
 			!("_" in pluginOrComposer)
 		) {
 			this.updates.composer.extend(pluginOrComposer);
+
+			// Process any plugins that were extended into this composer.
+			// Composer.extend(plugin) merges middleware/macros/errors but not
+			// Plugin-specific hooks, decorators, or groups — apply those here.
+			const trackedPlugins = (pluginOrComposer as any)["~"]
+				?.__plugins as AnyPlugin[] | undefined;
+			if (trackedPlugins) {
+				for (const p of trackedPlugins) {
+					this.decorate(p._.decorators);
+
+					for (const value of p._.preRequests) {
+						const [preRequest, updateName] = value;
+						if (!updateName) this.preRequest(preRequest);
+						else this.preRequest(updateName, preRequest);
+					}
+
+					for (const value of p._.onResponses) {
+						const [onResponse, updateName] = value;
+						if (!updateName) this.onResponse(onResponse);
+						else this.onResponse(updateName, onResponse);
+					}
+
+					for (const value of p._.onResponseErrors) {
+						const [onResponseError, updateName] = value;
+						if (!updateName) this.onResponseError(onResponseError);
+						else this.onResponseError(updateName, onResponseError);
+					}
+
+					for (const value of p._.onApiCalls) {
+						const [onApiCall, methods] = value;
+						if (!methods) this.onApiCall(onApiCall);
+						else this.onApiCall(methods, onApiCall);
+					}
+
+					for (const handler of p._.groups) {
+						this.group(handler);
+					}
+
+					for (const value of p._.onErrors) {
+						this.onError(value);
+					}
+					for (const value of p._.onStarts) {
+						this.onStart(value);
+					}
+					for (const value of p._.onStops) {
+						this.onStop(value);
+					}
+
+					this.dependencies.push(p._.name);
+				}
+			}
+
 			return this;
 		}
 

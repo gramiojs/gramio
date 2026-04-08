@@ -418,11 +418,19 @@ if (typeof (Composer.prototype as any).registeredEvents !== "function") {
 	};
 }
 
-// Patch extend() to also merge commandsMeta from sub-composers.
-// This ensures command metadata is collected transitively when using .extend().
+// Patch extend() to track plugins and merge commandsMeta from sub-composers.
+// When a Plugin is passed to composer.extend(), its middleware/macros/errors are
+// merged by the base extend(), but Plugin-specific features (hooks, decorators,
+// groups) are stored on "__plugins" so Bot.extend(composer) can apply them.
 {
 	const originalExtend = (Composer.prototype as any).extend;
 	(Composer.prototype as any).extend = function (this: any, other: any) {
+		// Track plugins that are extended into this composer
+		if ("_" in other && !(other instanceof Promise)) {
+			if (!this["~"].__plugins) this["~"].__plugins = [];
+			this["~"].__plugins.push(other);
+		}
+
 		const result = originalExtend.call(this, other);
 		if (other["~"]?.commandsMeta) {
 			if (!this["~"].commandsMeta) {
@@ -431,6 +439,11 @@ if (typeof (Composer.prototype as any).registeredEvents !== "function") {
 			for (const [cmd, meta] of other["~"].commandsMeta) {
 				this["~"].commandsMeta.set(cmd, meta);
 			}
+		}
+		// Propagate tracked plugins from sub-composers transitively
+		if (other["~"]?.__plugins) {
+			if (!this["~"].__plugins) this["~"].__plugins = [];
+			this["~"].__plugins.push(...other["~"].__plugins);
 		}
 		return result;
 	};
