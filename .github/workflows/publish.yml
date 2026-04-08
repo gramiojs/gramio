@@ -47,7 +47,7 @@ jobs:
               run: bun jsr
 
             - name: Type-check
-              run: tsc --noEmit
+              run: bunx tsc --noEmit
 
             - name: Setup Deno
               uses: denoland/setup-deno@v1
