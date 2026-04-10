@@ -114,4 +114,15 @@ Before pushing a version bump, verify locally:
 2. `bun run type` — clean
 3. `bun run lint` — note: some pre-existing warnings/errors exist on `main` unrelated to the release; only block on *new* regressions you introduced
 
-When bumping GramIO sub-package deps (`@gramio/contexts`, `@gramio/types`, `@gramio/files`, etc.): check `@gramio/contexts`'s `peerDependencies` for `@gramio/types` — it pins an exact version (e.g. `9.6.0`), so pin the same exact version here (not `^9.6.0`) or `bun install` will warn about an incorrect peer dependency. Also, when `@gramio/types` adds a new top-level Telegram update (a new key on `TelegramUpdate`), `src/allowed-updates.ts`'s `ALL_NAMES` must be extended — the file has a compile-time `_assertComplete` check that fails type-check otherwise.
+When bumping GramIO sub-package deps (`@gramio/contexts`, `@gramio/types`, `@gramio/files`, etc.):
+- Sanity-check `@gramio/contexts`'s `peerDependencies["@gramio/types"]` — it should be a range like `^9.6.0`. If some release accidentally ships an exact pin, fix it in `contexts` and patch-bump there rather than working around it in core (otherwise every downstream consumer gets stuck on one types version).
+- When `@gramio/types` adds a new top-level Telegram update (a new key on `TelegramUpdate`, e.g. `managed_bot` in Bot API 9.6), `src/allowed-updates.ts`'s `ALL_NAMES` must be extended — the file has a compile-time `_assertComplete<AllowedUpdateName extends (typeof ALL_NAMES)[number] ? true : false>` check that fails type-check otherwise.
+
+### Naming releases that bump `@gramio/types`
+
+When a `gramio` release bumps `@gramio/types` across a Telegram Bot API version boundary, phrase the commit/release title in Bot API terms — not dep-bump terms. Users understand "Bot API 9.7" much faster than "@gramio/types ^9.6.1 → ^9.7.0".
+
+- ✅ `feat: Bot API 9.7 support` / `chore: bump to Bot API 9.7`
+- ❌ `chore: bump @gramio/types to 9.7.0`
+
+The dep bumps still go in the commit body; the headline should be the Bot API version the release unlocks. This applies to GitHub Release titles too (the workflow uses `v${version}` for the tag, but the release body/body-header should mention the Bot API version).
