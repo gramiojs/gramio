@@ -84,3 +84,34 @@ When modifying bot behavior (handlers, hooks, plugins, middleware), update or ad
 - `.on()` filter-only overload: `on(filter, handler)` — no event name. Type-narrowing filters give handler `ContextType<Bot, CompatibleUpdates<Bot, Narrowing>> & Derives["global"] & Narrowing` — a union of all compatible context types (e.g. message-like contexts for `filters.text`) intersected with the narrowing. This means `ctx.send`, `ctx.text`, etc. are available when appropriate. `CompatibleUpdates<B, Narrowing>` is a local mapped type in `bot.ts`/`plugin.ts` that resolves which `UpdateName` values have all keys from `Narrowing`. Boolean filters give `Context<Bot> & Derives["global"]` (base class, no narrowing).
 - Boolean filters (`from`, `chatId`, `not`) return `(ctx: any) => boolean` (not a type predicate), matching the boolean overload which preserves the full context without narrowing.
 - `Require`/`RequireValue` from `@gramio/contexts` can't be used in filter output types because `Omit` strips class private properties. Use intersection (`{ attachment: PhotoAttachment }`) instead.
+
+## Release process
+
+Publishing is handled by the `publish.yml` GitHub Actions workflow — never `npm publish` locally. The workflow runs tests, type-checks, builds, publishes to npm, and creates a GitHub Release tagged `v${version}`. Changelog comes from `scripts/generate-changelog.ts`. Trigger and monitor it with `gh`:
+
+```bash
+# 1. bump version in package.json, commit, push to origin/main
+git push origin main
+
+# 2. kick off the workflow (workflow_dispatch)
+gh workflow run publish.yml --repo gramiojs/gramio --ref main
+
+# 3. grab the run id and watch it until it exits
+gh run list --repo gramiojs/gramio --workflow=publish.yml --limit 1
+gh run watch <run-id> --repo gramiojs/gramio --exit-status
+
+# on failure, pull only the error lines (avoid dumping the full log)
+gh run view <run-id> --repo gramiojs/gramio --log-failed | grep "error TS"
+
+# confirm the new version landed on npm
+curl -s https://registry.npmjs.org/gramio/latest | jq -r .version
+```
+
+Note: JSR publish step in `publish.yml` is currently commented out — only npm is published by the workflow. Use `bun run jsr` locally if JSR release is needed.
+
+Before pushing a version bump, verify locally:
+1. `bun test` — all pass
+2. `bun run type` — clean
+3. `bun run lint` — note: some pre-existing warnings/errors exist on `main` unrelated to the release; only block on *new* regressions you introduced
+
+When bumping GramIO sub-package deps (`@gramio/contexts`, `@gramio/types`, `@gramio/files`, etc.): check `@gramio/contexts`'s `peerDependencies` for `@gramio/types` — it pins an exact version (e.g. `9.6.0`), so pin the same exact version here (not `^9.6.0`) or `bun install` will warn about an incorrect peer dependency. Also, when `@gramio/types` adds a new top-level Telegram update (a new key on `TelegramUpdate`), `src/allowed-updates.ts`'s `ALL_NAMES` must be extended — the file has a compile-time `_assertComplete` check that fails type-check otherwise.
