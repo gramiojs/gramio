@@ -1,4 +1,4 @@
-import type { Bot } from "../bot.js";
+import type { AnyBot } from "../types.js";
 import { timeoutWebhook } from "../utils.internal.js";
 import { type FrameworkAdapter, frameworks } from "./adapters.js";
 
@@ -47,7 +47,7 @@ export interface WebhookHandlerOptions {
  * ```
  */
 export function webhookHandler<Framework extends keyof typeof frameworks>(
-	bot: Bot,
+	bot: AnyBot,
 	framework: Framework,
 	secretTokenOrOptions?: string | WebhookHandlerOptions,
 ) {
