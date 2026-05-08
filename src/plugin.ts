@@ -700,6 +700,8 @@ export interface Plugin<
 	reaction: (typeof _composerMethods)["reaction"];
 	/** Register inline query handler */
 	inlineQuery: (typeof _composerMethods)["inlineQuery"];
+	/** Register guest query (`guest_message`) handler */
+	guestQuery: (typeof _composerMethods)["guestQuery"];
 	/** Register chosen inline result handler */
 	chosenInlineResult: (typeof _composerMethods)["chosenInlineResult"];
 	/** Register deep-link parameter handler */

@@ -1034,6 +1034,24 @@ describe("@gramio/test — inlineQuery handler", () => {
 		expect(onResultHandler).toHaveBeenCalledTimes(1);
 	});
 
+	test("no-arg form matches any inline query", async () => {
+		const handler = mock((ctx: any) => {
+			return ctx.args;
+		});
+
+		const bot = new Bot(TOKEN).inlineQuery(handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Ivy" });
+
+		await user.sendInlineQuery("anything goes");
+		await user.sendInlineQuery("");
+
+		expect(handler).toHaveBeenCalledTimes(2);
+		expect(handler.mock.calls[0]?.[0].args).toBeNull();
+	});
+
 	test("user.in(chat).sendInlineQuery() carries chat_type", async () => {
 		let receivedChatType: string | undefined;
 
@@ -1049,6 +1067,112 @@ describe("@gramio/test — inlineQuery handler", () => {
 		await user.in(group).sendInlineQuery("test query");
 
 		expect(receivedChatType).toBe("group");
+	});
+});
+
+describe("guestQuery handler", () => {
+	function guestMessage(
+		user: { id: number; first_name: string; is_bot: boolean },
+		text: string,
+		guest_query_id = "gq-1",
+	) {
+		return {
+			update_id: 0,
+			guest_message: {
+				message_id: Date.now(),
+				date: Math.floor(Date.now() / 1000),
+				chat: { id: user.id, type: "private" as const },
+				from: user,
+				text,
+				guest_query_id,
+			},
+		};
+	}
+
+	test("string trigger matches exact text", async () => {
+		const handler = mock((_ctx: any) => {});
+		const bot = new Bot(TOKEN).guestQuery("ping", handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+
+		await env.emitUpdate(guestMessage(user.payload, "ping"));
+		await env.emitUpdate(guestMessage(user.payload, "pong"));
+
+		expect(handler).toHaveBeenCalledTimes(1);
+		expect(handler.mock.calls[0]?.[0].args).toBeNull();
+		expect(handler.mock.calls[0]?.[0].guestQueryId).toBe("gq-1");
+	});
+
+	test("regex trigger captures args", async () => {
+		const handler = mock((_ctx: any) => {});
+		const bot = new Bot(TOKEN).guestQuery(/^find (.+)/i, handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+
+		await env.emitUpdate(guestMessage(user.payload, "find pizza"));
+		await env.emitUpdate(guestMessage(user.payload, "hello"));
+
+		expect(handler).toHaveBeenCalledTimes(1);
+		expect(handler.mock.calls[0]?.[0].args?.[1]).toBe("pizza");
+	});
+
+	test("predicate trigger", async () => {
+		const handler = mock((_ctx: any) => {});
+		const bot = new Bot(TOKEN).guestQuery(
+			(ctx) => (ctx.text ?? "").length > 3,
+			handler,
+		);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+
+		await env.emitUpdate(guestMessage(user.payload, "hi"));
+		await env.emitUpdate(guestMessage(user.payload, "hello"));
+
+		expect(handler).toHaveBeenCalledTimes(1);
+	});
+
+	test("no-arg form matches any guest message", async () => {
+		const handler = mock((_ctx: any) => {});
+		const bot = new Bot(TOKEN).guestQuery(handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+
+		await env.emitUpdate(guestMessage(user.payload, "anything"));
+		await env.emitUpdate(guestMessage(user.payload, ""));
+
+		expect(handler).toHaveBeenCalledTimes(2);
+		expect(handler.mock.calls[0]?.[0].args).toBeNull();
+	});
+
+	test("ctx.answerGuestQuery calls answerGuestQuery API", async () => {
+		const bot = new Bot(TOKEN).guestQuery(async (ctx) => {
+			await ctx.answerGuestQuery({
+				type: "article",
+				id: "1",
+				title: "hi",
+				input_message_content: { message_text: "hello" },
+			});
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Alice" });
+
+		await env.emitUpdate(guestMessage(user.payload, "hello", "gq-42"));
+
+		const call = env.lastApiCall("answerGuestQuery");
+		expect(call?.params).toMatchObject({
+			guest_query_id: "gq-42",
+			result: { type: "article", id: "1", title: "hi" },
+		});
 	});
 });
 

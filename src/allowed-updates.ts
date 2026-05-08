@@ -39,6 +39,7 @@ const ALL_NAMES = [
 	"chat_boost",
 	"removed_chat_boost",
 	"managed_bot",
+	"guest_message",
 ] as const satisfies readonly AllowedUpdateName[];
 
 // Completeness check: TS error if a new AllowedUpdateName value is not listed above.

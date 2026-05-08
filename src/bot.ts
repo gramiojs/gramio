@@ -1300,6 +1300,9 @@ export class Bot<
 	 * ```
 	 * */
 	inlineQuery<Ctx = ContextType<typeof this, "inline_query">>(
+		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
+	): this;
+	inlineQuery<Ctx = ContextType<typeof this, "inline_query">>(
 		trigger: RegExp | string | ((context: Ctx) => boolean),
 		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
 		options?: HandlerOptions<Ctx, Macros> & {
@@ -1309,12 +1312,52 @@ export class Bot<
 				},
 			) => unknown;
 		},
+	): this;
+	inlineQuery(
+		triggerOrHandler: any,
+		handler?: any,
+		options?: any,
 	) {
 		this.updates.composer.inlineQuery(
-			trigger as any,
-			handler as any,
-			options as any,
+			triggerOrHandler,
+			handler,
+			options,
 		);
+		return this;
+	}
+
+	/**
+	 * Register handler to `guest_message` update — a message sent to the bot
+	 * from a chat where the bot is not a member, via a guest query.
+	 *
+	 * Reply with {@link MessageContext.answerGuestQuery `context.answerGuestQuery()`}
+	 * (NOT `context.send`/`context.reply`, which target a chat the bot can't post to).
+	 *
+	 * @example
+	 * ```ts
+	 * new Bot().guestQuery(/^find (.*)/i, async (context) => {
+	 *     await context.answerGuestQuery({
+	 *         type: "text",
+	 *         text: `Looking up ${context.args?.[1]}…`,
+	 *     });
+	 * });
+	 *
+	 * // No-trigger form — match any guest message:
+	 * new Bot().guestQuery(async (context) => {
+	 *     await context.answerGuestQuery({ type: "text", text: "Hi!" });
+	 * });
+	 * ```
+	 * */
+	guestQuery<Ctx = ContextType<typeof this, "guest_message">>(
+		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
+	): this;
+	guestQuery<Ctx = ContextType<typeof this, "guest_message">>(
+		trigger: RegExp | string | ((context: Ctx) => boolean),
+		handler: (context: Ctx & { args: RegExpMatchArray | null }) => unknown,
+		options?: HandlerOptions<Ctx, Macros>,
+	): this;
+	guestQuery(triggerOrHandler: any, handler?: any, options?: any) {
+		this.updates.composer.guestQuery(triggerOrHandler, handler, options);
 		return this;
 	}
 

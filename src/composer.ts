@@ -163,8 +163,16 @@ const methods = defineComposerMethods({
 
 	inlineQuery<TThis extends GramIOLike<TThis>>(
 		this: TThis,
-		trigger: RegExp | string | ((context: Ctx<"inline_query">) => boolean),
-		handler: (
+		triggerOrHandler:
+			| RegExp
+			| string
+			| ((context: Ctx<"inline_query">) => boolean)
+			| ((
+					context: Ctx<"inline_query"> & {
+						args: RegExpMatchArray | null;
+					} & EventContextOf<TThis, "inline_query">,
+			  ) => unknown),
+		maybeHandler?: (
 			context: Ctx<"inline_query"> & {
 				args: RegExpMatchArray | null;
 			} & EventContextOf<TThis, "inline_query">,
@@ -177,6 +185,19 @@ const methods = defineComposerMethods({
 			) => unknown;
 		} & Record<string, unknown> = {},
 	): TThis {
+		const trigger =
+			maybeHandler === undefined
+				? ((() => true) as (context: Ctx<"inline_query">) => boolean)
+				: (triggerOrHandler as
+						| RegExp
+						| string
+						| ((context: Ctx<"inline_query">) => boolean));
+		const handler = (maybeHandler ?? triggerOrHandler) as (
+			context: Ctx<"inline_query"> & {
+				args: RegExpMatchArray | null;
+			} & EventContextOf<TThis, "inline_query">,
+		) => unknown;
+
 		if (options.onResult) this.chosenInlineResult(trigger, options.onResult);
 
 		type Inner = Ctx<"inline_query"> & { args: RegExpMatchArray | null } & EventContextOf<TThis, "inline_query">;
@@ -206,6 +227,68 @@ const methods = defineComposerMethods({
 		// function predicate
 		return this.on("inline_query", (context: Inner, next: Next) => {
 			if (!trigger(context)) return next();
+			context.args = null;
+			return macroHandler ? macroHandler(context, noopNext) : handler(context);
+		});
+	},
+
+	guestQuery<TThis extends GramIOLike<TThis>>(
+		this: TThis,
+		triggerOrHandler:
+			| RegExp
+			| string
+			| ((context: Ctx<"guest_message">) => boolean)
+			| ((
+					context: Ctx<"guest_message"> & {
+						args: RegExpMatchArray | null;
+					} & EventContextOf<TThis, "guest_message">,
+			  ) => unknown),
+		maybeHandler?: (
+			context: Ctx<"guest_message"> & {
+				args: RegExpMatchArray | null;
+			} & EventContextOf<TThis, "guest_message">,
+		) => unknown,
+		macroOptions?: Record<string, unknown>,
+	): TThis {
+		const trigger =
+			maybeHandler === undefined
+				? ((() => true) as (context: Ctx<"guest_message">) => boolean)
+				: (triggerOrHandler as
+						| RegExp
+						| string
+						| ((context: Ctx<"guest_message">) => boolean));
+		const handler = (maybeHandler ?? triggerOrHandler) as (
+			context: Ctx<"guest_message"> & {
+				args: RegExpMatchArray | null;
+			} & EventContextOf<TThis, "guest_message">,
+		) => unknown;
+
+		type Inner = Ctx<"guest_message"> & { args: RegExpMatchArray | null } & EventContextOf<TThis, "guest_message">;
+		const macroHandler = macroOptions
+			? buildFromOptions(this["~"].macros, macroOptions, handler as (ctx: any) => unknown)
+			: null;
+
+		if (typeof trigger === "string") {
+			return this.on("guest_message", (context: Inner, next: Next) => {
+				const text = context.text ?? context.caption;
+				if (text !== trigger) return next();
+				context.args = null;
+				return macroHandler ? macroHandler(context, noopNext) : handler(context);
+			});
+		}
+
+		if (trigger instanceof RegExp) {
+			return this.on("guest_message", (context: Inner, next: Next) => {
+				const text = context.text ?? context.caption;
+				if (!text || !trigger.test(text)) return next();
+				context.args = text.match(trigger);
+				return macroHandler ? macroHandler(context, noopNext) : handler(context);
+			});
+		}
+
+		// function predicate
+		return this.on("guest_message", (context: Inner, next: Next) => {
+			if (!trigger(context as unknown as Ctx<"guest_message">)) return next();
 			context.args = null;
 			return macroHandler ? macroHandler(context, noopNext) : handler(context);
 		});
@@ -393,6 +476,7 @@ declare module "@gramio/composer" {
 		hears: (typeof methods)["hears"];
 		reaction: (typeof methods)["reaction"];
 		inlineQuery: (typeof methods)["inlineQuery"];
+		guestQuery: (typeof methods)["guestQuery"];
 		chosenInlineResult: (typeof methods)["chosenInlineResult"];
 		startParameter: (typeof methods)["startParameter"];
 	}
