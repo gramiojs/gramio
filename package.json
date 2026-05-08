@@ -75,5 +75,8 @@
 	},
 	"files": [
 		"dist"
-	]
+	],
+	"overrides": {
+		"@gramio/types": "$@gramio/types"
+	}
 }
