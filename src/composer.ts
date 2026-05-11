@@ -545,7 +545,15 @@ if (typeof (Composer.prototype as any).registeredEvents !== "function") {
 export { methods as _composerMethods };
 export { EventQueue, buildFromOptions, compose, noopNext, skip, stop };
 export type { Next };
-export type { EventComposer, Middleware } from "@gramio/composer";
+export type {
+	EventComposer,
+	Middleware,
+	WithDerives,
+	WithEventDerive,
+	WithDecorate,
+	WithExtend,
+	DeriveHandler,
+} from "@gramio/composer";
 export type {
 	ContextCallback,
 	WithCtx,
