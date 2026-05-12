@@ -1,4 +1,5 @@
 import { describe, expect, expectTypeOf, mock, test } from "bun:test";
+import { CallbackData } from "@gramio/callback-data";
 import { apiError, TelegramTestEnvironment } from "@gramio/test";
 import { Bot } from "../src/bot.ts";
 import { Composer } from "../src/composer.ts";
@@ -1255,6 +1256,49 @@ describe("@gramio/test — chosenInlineResult handler", () => {
 		const user = env.createUser({ first_name: "Eve" });
 
 		await user.chooseInlineResult("result-1", "free:plan");
+
+		expect(handler).not.toHaveBeenCalled();
+	});
+
+	test("CallbackData schema: matches result_id and unpacks into queryData", async () => {
+		const trackRef = new CallbackData("track").string("src").string("id");
+		let captured: { src: string; id: string } | null = null as
+			| { src: string; id: string }
+			| null;
+
+		const bot = new Bot(TOKEN).chosenInlineResult(trackRef, (ctx) => {
+			expectTypeOf(ctx.queryData).toEqualTypeOf<{
+				src: string;
+				id: string;
+			}>();
+			captured = ctx.queryData;
+		});
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Frank" });
+
+		const packed = trackRef.pack({ src: "spotify", id: "abc123" });
+		await user.chooseInlineResult(packed, "the user's typed query");
+
+		expect(captured).toEqual({ src: "spotify", id: "abc123" });
+	});
+
+	test("CallbackData schema: does not match unrelated result_id", async () => {
+		const trackRef = new CallbackData("track").string("src").string("id");
+		const otherRef = new CallbackData("album").string("id");
+		const handler = mock(() => {});
+
+		const bot = new Bot(TOKEN).chosenInlineResult(trackRef, handler);
+
+		// @ts-expect-error source Bot vs packaged AnyBot
+		const env = new TelegramTestEnvironment(bot);
+		const user = env.createUser({ first_name: "Gina" });
+
+		await user.chooseInlineResult(
+			otherRef.pack({ id: "wrong-schema" }),
+			"any query",
+		);
 
 		expect(handler).not.toHaveBeenCalled();
 	});

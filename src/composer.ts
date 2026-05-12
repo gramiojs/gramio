@@ -119,20 +119,33 @@ const methods = defineComposerMethods({
 		});
 	},
 
-	chosenInlineResult<TThis extends GramIOLike<TThis>>(
-		this: TThis,
-		trigger:
+	chosenInlineResult<
+		TThis extends GramIOLike<TThis>,
+		Trigger extends
+			| CallbackData
 			| RegExp
 			| string
 			| ((context: Ctx<"chosen_inline_result">) => boolean),
+	>(
+		this: TThis,
+		trigger: Trigger,
 		handler: (
 			context: Ctx<"chosen_inline_result"> & {
 				args: RegExpMatchArray | null;
+				queryData: Trigger extends CallbackData
+					? ReturnType<Trigger["unpack"]>
+					: never;
 			} & EventContextOf<TThis, "chosen_inline_result">,
 		) => unknown,
 		macroOptions?: Record<string, unknown>,
 	): TThis {
-		type Inner = Ctx<"chosen_inline_result"> & { args: RegExpMatchArray | null } & EventContextOf<TThis, "chosen_inline_result">;
+		type QueryData = Trigger extends CallbackData
+			? ReturnType<Trigger["unpack"]>
+			: never;
+		type Inner = Ctx<"chosen_inline_result"> & {
+			args: RegExpMatchArray | null;
+			queryData: QueryData;
+		} & EventContextOf<TThis, "chosen_inline_result">;
 		const macroHandler = macroOptions
 			? buildFromOptions(this["~"].macros, macroOptions, handler as (ctx: any) => unknown)
 			: null;
@@ -153,10 +166,19 @@ const methods = defineComposerMethods({
 			});
 		}
 
-		// function predicate
+		if (typeof trigger === "function") {
+			return this.on("chosen_inline_result", (context: Inner, next: Next) => {
+				if (!trigger(context)) return next();
+				context.args = null;
+				return macroHandler ? macroHandler(context, noopNext) : handler(context);
+			});
+		}
+
+		// CallbackData — filters on result_id, not query
 		return this.on("chosen_inline_result", (context: Inner, next: Next) => {
-			if (!trigger(context)) return next();
+			if (!context.resultId || !trigger.filter(context.resultId)) return next();
 			context.args = null;
+			context.queryData = trigger.unpack(context.resultId) as QueryData;
 			return macroHandler ? macroHandler(context, noopNext) : handler(context);
 		});
 	},

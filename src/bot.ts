@@ -1242,17 +1242,49 @@ export class Bot<
 		return this;
 	}
 
-	/** Register handler to `chosen_inline_result` update */
+	/**
+	 * Register handler to `chosen_inline_result` update
+	 *
+	 * Accepts a `CallbackData` schema for type-safe filtering on `result_id`:
+	 *
+	 * @example
+	 * ```ts
+	 * const trackRef = new CallbackData("track").string("src").string("id");
+	 *
+	 * new Bot()
+	 *     .on("inline_query", async (ctx) => {
+	 *         await ctx.answer(tracks.map((t) => ({
+	 *             type: "audio",
+	 *             id: trackRef.pack({ src: t.source, id: t.id }),
+	 *             audio_url: t.url,
+	 *             title: t.title,
+	 *         })));
+	 *     })
+	 *     .chosenInlineResult(trackRef, (ctx) => {
+	 *         ctx.queryData; // { src: string; id: string }
+	 *     });
+	 * ```
+	 *
+	 * String/RegExp/predicate triggers filter on `context.query` (the user's
+	 * typed text); the `CallbackData` schema filters on `context.resultId`.
+	 */
 	chosenInlineResult<
+		Trigger extends
+			| CallbackData
+			| RegExp
+			| string
+			| ((context: ContextType<typeof this, "chosen_inline_result">) => boolean),
 		Ctx = ContextType<typeof this, "chosen_inline_result">,
 		TOptions extends HandlerOptions<Ctx, Macros> = {},
 	>(
-		trigger: RegExp | string | ((context: Ctx) => boolean),
+		trigger: Trigger,
 		handler: (
-			context: Ctx & { args: RegExpMatchArray | null } & DeriveFromOptions<
-					Macros,
-					TOptions
-				>,
+			context: Ctx & {
+				args: RegExpMatchArray | null;
+				queryData: Trigger extends CallbackData
+					? ReturnType<Trigger["unpack"]>
+					: never;
+			} & DeriveFromOptions<Macros, TOptions>,
 		) => unknown,
 		options?: TOptions,
 	) {

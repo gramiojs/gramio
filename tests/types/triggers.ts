@@ -47,7 +47,16 @@ import { Plugin } from "../../src/plugin.ts";
 		)
 		.chosenInlineResult("a", (context) => {
 			expectTypeOf<typeof context>().toBeObject();
-		});
+		})
+		.chosenInlineResult(
+			new CallbackData("track").string("src").string("id"),
+			(context) => {
+				expectTypeOf<typeof context.queryData>().toEqualTypeOf<{
+					src: string;
+					id: string;
+				}>();
+			},
+		);
 }
 
 // ── ContextOf propagation: derive flows into shorthand methods ────────────────
