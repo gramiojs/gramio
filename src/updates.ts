@@ -113,6 +113,13 @@ export class Updates {
 				);
 				this.isRequestActive = false;
 
+				// If stop() flipped isStarted to false while we awaited getUpdates,
+				// leave offset+queue untouched. Telegram only confirms updates on the
+				// next getUpdates with a higher offset, so abandoning this batch is
+				// safe — it will be re-delivered on the next start. Without this,
+				// the batch is locally dropped AND marked confirmed on Telegram's side.
+				if (!this.isStarted) break;
+
 				const updateId = updates.at(-1)?.update_id;
 				this.offset = updateId ? updateId + 1 : this.offset;
 
