@@ -3,6 +3,14 @@
 	"type": "module",
 	"version": "0.13.0",
 	"description": "Powerful, extensible and really type-safe Telegram Bot API framework",
+	"homepage": "https://github.com/gramiojs/gramio#readme",
+	"bugs": {
+		"url": "https://github.com/gramiojs/gramio/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/gramiojs/gramio.git"
+	},
 	"main": "dist/index.cjs",
 	"module": "dist/index.js",
 	"types": "dist/index.d.ts",
