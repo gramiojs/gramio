@@ -561,24 +561,31 @@ export const { Composer } = createComposer<
 	methods,
 });
 
-// Polyfill registeredEvents() if the installed @gramio/composer doesn't provide it.
-// This method scans the middleware list to collect registered event names.
-if (typeof (Composer.prototype as any).registeredEvents !== "function") {
-	(Composer.prototype as any).registeredEvents = function (
-		this: any,
-	): Set<string> {
-		const events = new Set<string>();
-		for (const mw of this["~"].middlewares) {
-			if ((mw.type === "on" || mw.type === "derive") && mw.name) {
-				for (const part of mw.name.split("|")) {
-					const eventPart = part.includes(":") ? part.split(":")[0] : part;
-					if (eventPart) events.add(eventPart);
-				}
+// Local middleware is hidden inside an isolation wrapper by extend(). Keep its
+// event snapshot on the wrapper function, which survives further composition.
+const isolatedEvents = new WeakMap<object, Set<string>>();
+type ComposerState = InstanceType<typeof Composer>["~"];
+type ComposerMiddleware = ComposerState["middlewares"][number];
+
+function collectRegisteredEvents(
+	middlewares: readonly ComposerMiddleware[],
+): Set<string> {
+	const events = new Set<string>();
+	for (const mw of middlewares) {
+		for (const event of isolatedEvents.get(mw.fn) ?? []) events.add(event);
+		if ((mw.type === "on" || mw.type === "derive") && mw.name) {
+			for (const part of mw.name.split("|")) {
+				const eventPart = part.includes(":") ? part.split(":")[0] : part;
+				if (eventPart) events.add(eventPart);
 			}
 		}
-		return events;
-	};
+	}
+	return events;
 }
+
+Composer.prototype.registeredEvents = function () {
+	return collectRegisteredEvents(this["~"].middlewares);
+};
 
 // Patch extend() to track plugins and merge commandsMeta from sub-composers.
 // When a Plugin is passed to composer.extend(), its middleware/macros/errors are
@@ -593,7 +600,23 @@ if (typeof (Composer.prototype as any).registeredEvents !== "function") {
 			this["~"].__plugins.push(other);
 		}
 
+		const target: ComposerState = this["~"];
+		const source: ComposerState = other["~"];
+		const previousLength = target.middlewares.length;
+		const alreadyExtended = Array.from(target.extended);
+		// Match the base composer's transitive plugin deduplication: only local
+		// middleware actually included in the new wrapper contributes events.
+		const localMiddlewares = source.middlewares.filter(
+			(mw) =>
+				mw.scope === "local" &&
+				(!mw.plugin ||
+					!alreadyExtended.some((key) => key.startsWith(`${mw.plugin}:`))),
+		);
 		const result = originalExtend.call(this, other);
+		const wrapper = target.middlewares[previousLength];
+		if (localMiddlewares.length > 0 && wrapper?.type === "extend") {
+			isolatedEvents.set(wrapper.fn, collectRegisteredEvents(localMiddlewares));
+		}
 		if (other["~"]?.commandsMeta) {
 			if (!this["~"].commandsMeta) {
 				this["~"].commandsMeta = new Map();

@@ -7,6 +7,8 @@ import {
 	OPT_IN_TYPES,
 } from "../src/allowed-updates.ts";
 import { Bot } from "../src/bot.ts";
+import { Composer } from "../src/composer.ts";
+import { Plugin } from "../src/plugin.ts";
 
 const TOKEN = "test-token";
 
@@ -109,6 +111,75 @@ describe("AllowedUpdatesFilter Bot API 10.3 defaults", () => {
 // ─── buildAllowedUpdates ──────────────────────────────────────────────────────
 
 describe("buildAllowedUpdates()", () => {
+	for (const scope of ["local", "scoped", "global"] as const) {
+		test(`includes extended ${scope} composer handlers with and without bot handlers`, () => {
+			const composer = new Composer()
+				.command("start", () => {})
+				.callbackQuery("confirm", () => {});
+			if (scope !== "local") composer.as(scope);
+			const bot = new Bot(TOKEN).extend(composer);
+			const expected = new Set([
+				"message",
+				"business_message",
+				"callback_query",
+			] as const);
+			expect(new Set(buildAllowedUpdates(bot))).toEqual(expected);
+			bot.on("message", () => {});
+			expect(new Set(buildAllowedUpdates(bot))).toEqual(expected);
+		});
+	}
+
+	test("preserves events through nested local composers and plugins", () => {
+		const inner = new Composer().callbackQuery("confirm", () => {});
+		const outer = new Composer().extend(inner).on("chat_member", () => {});
+		const plugin = new Plugin("nested-events").extend(outer);
+		const bot = new Bot(TOKEN).extend(plugin);
+		expect(new Set(buildAllowedUpdates(bot))).toEqual(
+			new Set(["callback_query", "chat_member"]),
+		);
+		expect(detectOptInUpdates(bot.updates.composer.registeredEvents())).toEqual([
+			"chat_member",
+		]);
+	});
+
+	test("snapshots extended handlers without tracking later source mutations", () => {
+		const composer = new Composer().callbackQuery("confirm", () => {});
+		const bot = new Bot(TOKEN).extend(composer);
+		composer.on("poll", () => {});
+		expect(buildAllowedUpdates(bot).toArray()).toEqual(["callback_query"]);
+	});
+
+	test("does not add events from a deduplicated named composer", () => {
+		const first = new Composer({ name: "same" }).on("message", () => {});
+		const duplicate = new Composer({ name: "same" }).on("poll", () => {});
+		const bot = new Bot(TOKEN).extend(first).extend(duplicate);
+		expect(buildAllowedUpdates(bot).toArray()).toEqual(["message"]);
+	});
+
+	test("excludes transitive duplicates while retaining new local events", () => {
+		const first = new Composer({ name: "shared" })
+			.on("message", () => {})
+			.as("global");
+		const duplicate = new Composer({ name: "shared" })
+			.on("poll", () => {})
+			.as("scoped");
+		const outer = new Composer()
+			.extend(duplicate)
+			.callbackQuery("confirm", () => {});
+		const bot = new Bot(TOKEN).extend(first).extend(outer);
+		expect(new Set(buildAllowedUpdates(bot))).toEqual(
+			new Set(["message", "callback_query"]),
+		);
+	});
+
+	test("includes event-specific derives but not generic middleware", () => {
+		const composer = new Composer()
+			.derive("message_reaction", () => ({ enabled: true }))
+			.use(() => {});
+		const bot = new Bot(TOKEN).extend(composer);
+		expect(buildAllowedUpdates(bot).toArray()).toEqual(["message_reaction"]);
+	});
+
 	test("returns AllowedUpdatesFilter (instanceof Array)", () => {
 		const bot = new Bot(TOKEN);
 		const result = buildAllowedUpdates(bot);
