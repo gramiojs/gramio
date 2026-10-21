@@ -57,6 +57,15 @@ export interface BotOptions {
 		 * @default 1000
 		 */
 		retryGetUpdatesWait?: number;
+		/**
+		 * Extra time in milliseconds added to the Telegram timeout for each
+		 * getUpdates HTTP request, including reading its response body.
+		 * Must be finite and nonnegative; the total deadline must not exceed
+		 * 2147483647ms. Default polling uses a 30s Telegram timeout, so its
+		 * default HTTP deadline is 45s. Other API methods are unaffected.
+		 * @default 15000
+		 */
+		getUpdatesTimeoutAllowance?: number;
 	};
 	/**
 	 * File download/serving options — mainly for a **local Bot API server**.

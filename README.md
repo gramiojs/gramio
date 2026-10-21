@@ -44,6 +44,29 @@ bot.start();
 
 For more, please see [documentation](https://gramio.dev).
 
+### Long-polling request deadlines
+
+Every `getUpdates` HTTP request has a client-side deadline covering both the
+response headers and body: the Telegram `timeout` (in seconds) plus a 15-second
+allowance. Default polling uses `timeout: 30`, giving a 45-second deadline.
+Stalled polls are aborted and retried without advancing the update offset.
+
+Configure the allowance in milliseconds for slower networks or local Bot API
+servers:
+
+```typescript
+const bot = new Bot(process.env.TOKEN as string, {
+    api: { getUpdatesTimeoutAllowance: 20_000 },
+});
+
+bot.start({ longPolling: { timeout: 30 } }); // 50-second HTTP deadline
+```
+
+The deadline also applies to direct `bot.api.getUpdates()` calls and
+`dropPendingUpdates`. It composes with `api.fetchOptions.signal` and does not
+change other API methods. The allowance must be finite and nonnegative, and the
+total deadline must not exceed 2,147,483,647 milliseconds.
+
 ### GramIO in action
 
 Example which uses some interesting features.

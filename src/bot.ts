@@ -195,6 +195,17 @@ export class Bot<
 		if (typeof token !== "string")
 			throw new Error(`Token is ${typeof token} but it should be a string!`);
 
+		const getUpdatesTimeoutAllowance =
+			options?.api?.getUpdatesTimeoutAllowance ?? 15_000;
+		if (
+			!Number.isFinite(getUpdatesTimeoutAllowance) ||
+			getUpdatesTimeoutAllowance < 0 ||
+			getUpdatesTimeoutAllowance > 2_147_483_647
+		)
+			throw new RangeError(
+				"api.getUpdatesTimeoutAllowance must be between 0 and 2147483647 milliseconds",
+			);
+
 		this.options = {
 			...options,
 			token,
@@ -321,9 +332,45 @@ export class Bot<
 			}
 			debug$api$method("options: %j", reqOptions);
 
-			const response = await fetch(url, reqOptions);
+			let requestTimeout: ReturnType<typeof setTimeout> | undefined;
+			let data: TelegramAPIResponse;
+			try {
+				if (method === "getUpdates") {
+					const telegramTimeout =
+						params && "timeout" in params ? (params.timeout ?? 0) : 0;
+					const timeoutMs =
+						telegramTimeout * 1000 +
+						(this.options.api.getUpdatesTimeoutAllowance ?? 15_000);
+					// Avoid timer overflow, which would turn a long deadline into 1ms.
+					if (
+						!Number.isFinite(timeoutMs) ||
+						timeoutMs < 0 ||
+						timeoutMs > 2_147_483_647
+					)
+						throw new RangeError("getUpdates request timeout is out of range");
 
-			const data = (await response.json()) as TelegramAPIResponse;
+					const controller = new AbortController();
+					const callerSignal = this.options.api.fetchOptions?.signal;
+					reqOptions.signal = callerSignal
+						? AbortSignal.any([callerSignal, controller.signal])
+						: controller.signal;
+					requestTimeout = setTimeout(
+						() =>
+							controller.abort(
+								new DOMException(
+									"getUpdates request timed out",
+									"TimeoutError",
+								),
+							),
+						timeoutMs,
+					);
+				}
+
+				const response = await fetch(url, reqOptions);
+				data = (await response.json()) as TelegramAPIResponse;
+			} finally {
+				if (requestTimeout !== undefined) clearTimeout(requestTimeout);
+			}
 			debug$api$method("response: %j", data);
 
 			if (!data.ok) {

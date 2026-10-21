@@ -1,7 +1,7 @@
 {
 	"name": "gramio",
 	"type": "module",
-	"version": "0.15.2",
+	"version": "0.15.3",
 	"description": "Powerful, extensible and really type-safe Telegram Bot API framework",
 	"repository": {
 		"type": "git",

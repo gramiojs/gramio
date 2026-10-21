@@ -104,14 +104,18 @@ export class Updates {
 		while (this.isStarted) {
 			try {
 				this.isRequestActive = true;
-				const updates = await withRetries(() =>
-					this.bot.api.getUpdates({
-						timeout: 30,
-						...params,
-						offset: this.offset,
-					}),
-				);
-				this.isRequestActive = false;
+				let updates: TelegramUpdate[];
+				try {
+					updates = await withRetries(() =>
+						this.bot.api.getUpdates({
+							timeout: 30,
+							...params,
+							offset: this.offset,
+						}),
+					);
+				} finally {
+					this.isRequestActive = false;
+				}
 
 				// If stop() flipped isStarted to false while we awaited getUpdates,
 				// leave offset+queue untouched. Telegram only confirms updates on the
@@ -125,6 +129,8 @@ export class Updates {
 
 				this.queue.addBatch(updates);
 			} catch (error) {
+				if (!this.isStarted) break;
+
 				if (error instanceof TelegramError) {
 					if (error.code === 409 && error.message.includes("deleteWebhook")) {
 						if (options.deleteWebhookOnConflict)
